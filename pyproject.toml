@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=65"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nautilius"
+version = "0.1.0"
+description = "Domain-extensible robotic failure forensics and simulation-based repair verification"
+requires-python = ">=3.10"
+
+dependencies = [
+    "numpy>=1.24,<3",
+    "matplotlib>=3.6,<4",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7,<10",
+]
+
+[tool.setuptools.packages.find]
+include = ["nautilius*"]
+
