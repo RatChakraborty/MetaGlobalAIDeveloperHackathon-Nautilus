@@ -1,12 +1,8 @@
-# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
 *$py.class
-
-# C extensions
 *.so
 
-# Distribution / packaging
 .Python
 build/
 develop-eggs/
@@ -25,196 +21,168 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+pip-wheel-metadata/
 
-# PyInstaller
-#   Usually these files are written by a python script from a template
-#   before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
 
-# Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
 
-# Unit test / coverage reports
-htmlcov/
+.venv/
+venv/
+env/
+ENV/
+virtualenv/
+env.bak/
+venv.bak/
+__pypackages__/
+
+.env
+.env.*
+!.env.example
+.envrc
+
+*.pem
+*.key
+credentials.json
+secrets.json
+.pypirc
+
+.streamlit/secrets.toml
+.streamlit/credentials.toml
+
+outputs/
+artifacts/
+reports/
+run_logs/
+
+# IMPORTANT:
+# Benchmark data includes injected fault parameters,
+# hidden plant configurations, and ground truth.
+# Keep these files out of GitHub until an intentional
+# dataset publishing strategy is established.
+
+benchmark_cases/
+
+ground_truth.json
+truth.csv
+manifest_private.json
+
+.pytest_cache/
+.hypothesis/
 .tox/
 .nox/
+
 .coverage
 .coverage.*
-.cache
-nosetests.xml
+htmlcov/
 coverage.xml
+nosetests.xml
+junit.xml
+test-results/
+cover/
+
 *.cover
 *.py.cover
 *.lcov
-.hypothesis/
-.pytest_cache/
-cover/
 
-# Translations
-*.mo
-*.pot
-
-# Django stuff:
-*.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
-
-# Flask stuff:
-instance/
-.webassets-cache
-
-# Scrapy stuff:
-.scrapy
-
-# Sphinx documentation
-docs/_build/
-
-# PyBuilder
-.pybuilder/
-target/
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# IPython
-profile_default/
-ipython_config.py
-
-# pyenv
-#   For a library or package, you might want to ignore these files since the code is
-#   intended to run in multiple environments; otherwise, check them in:
-# .python-version
-
-# pipenv
-#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
-#   However, in case of collaboration, if having platform-specific dependencies or dependencies
-#   having no cross-platform support, pipenv may install dependencies that don't work, or not
-#   install all needed dependencies.
-# Pipfile.lock
-
-# uv
-#   Similar to Pipfile.lock, it is generally recommended to include uv.lock in version control.
-#   This is especially recommended for binary packages to ensure reproducibility, and is more
-#   commonly ignored for libraries.
-# uv.lock
-
-# poetry
-#   Similar to Pipfile.lock, it is generally recommended to include poetry.lock in version control.
-#   This is especially recommended for binary packages to ensure reproducibility, and is more
-#   commonly ignored for libraries.
-#   https://python-poetry.org/docs/basic-usage/#commit-your-poetrylock-file-to-version-control
-# poetry.lock
-# poetry.toml
-
-# pdm
-#   Similar to Pipfile.lock, it is generally recommended to include pdm.lock in version control.
-#   pdm recommends including project-wide configuration in pdm.toml, but excluding .pdm-python.
-#   https://pdm-project.org/en/latest/usage/project/#working-with-version-control
-# pdm.lock
-# pdm.toml
-.pdm-python
-.pdm-build/
-
-# pixi
-#   Similar to Pipfile.lock, it is generally recommended to include pixi.lock in version control.
-# pixi.lock
-#   Pixi creates a virtual environment in the .pixi directory, just like venv module creates one
-#   in the .venv directory. It is recommended not to include this directory in version control.
-.pixi/*
-!.pixi/config.toml
-
-# PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
-__pypackages__/
-
-# Celery stuff
-celerybeat-schedule*
-celerybeat.pid
-
-# Redis
-*.rdb
-*.aof
-*.pid
-
-# RabbitMQ
-mnesia/
-rabbitmq/
-rabbitmq-data/
-
-# ActiveMQ
-activemq-data/
-
-# SageMath parsed files
-*.sage.py
-
-# Environments
-.env
-.envrc
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-# Spyder project settings
-.spyderproject
-.spyproject
-
-# Rope project settings
-.ropeproject
-
-# mkdocs/Zensical documentation
-/site
-
-# mypy
 .mypy_cache/
 .dmypy.json
 dmypy.json
 
-# Pyre type checker
 .pyre/
-
-# pytype static type analyzer
 .pytype/
+.ruff_cache/
+.cache/
 
-# Cython debug symbols
-cython_debug/
+.ipynb_checkpoints/
+profile_default/
+ipython_config.py
 
-# PyCharm
-#   JetBrains specific template is maintained in a separate JetBrains.gitignore that can
-#   be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
-#   and can be added to the global gitignore or merged into this file.  For a more nuclear
-#   option (not recommended) you can uncomment the following to ignore the entire idea folder.
-# .idea/
+# Actual .ipynb notebooks are NOT ignored.
+# Source notebooks can be committed if useful.
 
-# Abstra
-#   Abstra is an AI-powered process automation framework.
-#   Ignore directories containing user credentials, local state, and settings.
-#   Learn more at https://abstra.io/docs
-.abstra/
+.vscode/
+.idea/
 
-# Visual Studio Code
-#   Visual Studio Code specific template is maintained in a separate VisualStudioCode.gitignore that
-#   can be found at https://github.com/github/gitignore/blob/main/Global/VisualStudioCode.gitignore
-#   and can be added to the global gitignore or merged into this file. However, if you prefer, you
-#   could uncomment the following to ignore the entire vscode folder
-# .vscode/
-# Temporary file for partial code execution
+.spyderproject
+.spyproject
+.ropeproject
+
+.project
+.pydevproject
+
 tempCodeRunnerFile.py
 
-# Ruff stuff:
-.ruff_cache/
+*.swp
+*.swo
+*~
 
-# PyPI configuration file
-.pypirc
+.DS_Store
+Thumbs.db
+Desktop.ini
+.AppleDouble
+.LSOverride
 
-# Marimo
+*.log
+*.tmp
+*.temp
+*.bak
+*.orig
+
+tmp/
+temp/
+
+*.db
+*.sqlite
+*.sqlite3
+db.sqlite3-journal
+
+.streamlit/cache/
+
+local_settings.py
+
+instance/
+.webassets-cache/
+
+.scrapy/
+
+docs/_build/
+
+.pybuilder/
+target/
+
+/site/
+
+cython_debug/
+
+*.sage.py
+
+*.mo
+*.pot
+
+.pdm-python
+.pdm-build/
+
+.pixi/*
+!.pixi/config.toml
+
+celerybeat-schedule*
+celerybeat.pid
+
+*.rdb
+*.aof
+*.pid
+
+mnesia/
+rabbitmq/
+rabbitmq-data/
+
+activemq-data/
+
+.abstra/
+
 marimo/_static/
 marimo/_lsp/
 __marimo__/
-
-# Streamlit
-.streamlit/secrets.toml
