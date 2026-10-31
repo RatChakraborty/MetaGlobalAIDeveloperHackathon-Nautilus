@@ -64,6 +64,10 @@ run_logs/
 # dataset publishing strategy is established.
 
 benchmark_cases/
+evaluation/
+private_evaluation/
+*_oracle*.json
+DAY2_REPORT.md
 
 ground_truth.json
 truth.csv

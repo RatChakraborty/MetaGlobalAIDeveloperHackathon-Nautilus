@@ -1,11 +1,5 @@
 
-"""
-Nautilius: robotic failure forensics.
 
-Day 1 implementation:
-    Simplified marine vehicle simulator with
-    fault injection and controlled experiments.
-"""
 
 from .simulator import (
     Vehicle,

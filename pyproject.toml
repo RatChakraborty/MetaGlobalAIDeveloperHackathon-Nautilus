@@ -3,7 +3,7 @@ requires = ["setuptools>=65"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "nautilius"
+name = "nautilus"
 version = "0.1.0"
 description = "Domain-extensible robotic failure forensics and simulation-based repair verification"
 requires-python = ">=3.10"
@@ -11,6 +11,7 @@ requires-python = ">=3.10"
 dependencies = [
     "numpy>=1.24,<3",
     "matplotlib>=3.6,<4",
+    "scipy>=1.10,<2",
 ]
 
 [project.optional-dependencies]
@@ -19,5 +20,5 @@ dev = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["nautilius*"]
+include = ["nautilus*"]
 

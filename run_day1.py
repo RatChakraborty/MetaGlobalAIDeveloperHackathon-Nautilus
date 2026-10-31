@@ -1,30 +1,12 @@
 
-"""
-Nautilus Day 1: Run marine vehicle simulations.
 
-Usage:
-    python run_day1.py --output outputs
-
-Generates:
-    outputs/
-        nominal/
-        cross_current/
-        weak_starboard/
-        compound/
-        comparison.png
-
-Each scenario directory contains:
-    telemetry.csv           (private ground truth)
-    observed_telemetry.csv  (agent-facing observations)
-    run.json                (private evaluation metadata)
-"""
 
 import argparse
 from pathlib import Path
 
 import matplotlib
 
-# Use a non-interactive backend for saving plots.
+
 matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
@@ -55,12 +37,12 @@ def main():
     output = Path(args.output)
     output.mkdir(parents=True, exist_ok=True)
 
-    # Shared vehicle, controller, and mission.
+
     vehicle = Vehicle()
     controller = Controller()
     mission = Mission()
 
-    # Four original test scenarios.
+
     cases = {
         "nominal": Faults(),
 
@@ -83,11 +65,11 @@ def main():
     print("\nNautilus — Day 1 Simulation Results")
     print("-" * 65)
 
-    # Run each scenario.
+
     for name, faults in cases.items():
 
-        # simulate() now returns SimulationResult,
-        # containing separate truth and observations.
+
+
         result = simulate(
             vehicle=vehicle,
             faults=faults,
@@ -95,7 +77,7 @@ def main():
             mission=mission,
         )
 
-        # Save both telemetry streams and metadata.
+
         data = save_run(
             result=result,
             path=output / name,
@@ -105,8 +87,8 @@ def main():
             vehicle=vehicle,
         )
 
-        # Plotting uses private ground truth.
-        # The future Muse agent must NOT receive this.
+
+
         trajectories[name] = result.truth
 
         report = data["metrics"]
@@ -125,9 +107,9 @@ def main():
             f"time={report['elapsed_s']:6.2f} s"
         )
 
-    # ------------------------------------------------
-    # Generate comparison plots.
-    # ------------------------------------------------
+
+
+
 
     fig, axes = plt.subplots(
         2,
@@ -136,7 +118,7 @@ def main():
         constrained_layout=True,
     )
 
-    # Plot trajectories in world coordinates.
+
     for name, rows in trajectories.items():
 
         x = [row["x_m"] for row in rows]
@@ -157,7 +139,7 @@ def main():
             linewidth=2,
         )
 
-    # Reference cable and inspection corridor.
+
     axes[0].axhline(
         0,
         color="black",
@@ -178,7 +160,7 @@ def main():
         title="AUV Inspection — Simulated Trajectories",
     )
 
-    # Cross-track error against time.
+
     axes[1].axhline(
         0,
         color="black",
@@ -198,12 +180,12 @@ def main():
         title="Tracking Error Over Time",
     )
 
-    # Formatting.
+
     for axis in axes:
         axis.legend(loc="best")
         axis.grid(alpha=0.2)
 
-    # Save plot.
+
     plot_path = output / "comparison.png"
 
     fig.savefig(

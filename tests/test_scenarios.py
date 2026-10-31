@@ -81,13 +81,7 @@ def test_dev_and_heldout_seeds_are_separate():
     CASE_FAMILIES,
 )
 def test_each_single_and_pair_can_generate_failure(families):
-    """
-    This is the important sampling acceptance test.
 
-    It may fail if a fault family is insufficiently severe.
-    If so, inspect the scenario rather than weakening
-    qualification silently.
-    """
 
     case = sample_qualified_case(
         start_seed=20000 + CASE_FAMILIES.index(families) * 1000,

@@ -1,6 +1,4 @@
-#Tests for Nautilus Marine simulator.
-#Compatible with the updated Nautilus/simulator.py containing: SimulationResult, PlantConfig,
-#HIDDEN_PLANT, Experiment, noisy yaw-rate observations, endpoint termination, separate truth and observation telemetry
+
 
 
 import csv
