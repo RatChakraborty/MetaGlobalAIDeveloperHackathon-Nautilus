@@ -1,6 +1,6 @@
 
 """
-Nautilius: robotic failure forensics.
+Nautilus: robotic failure forensics.
 
 Day 1 implementation:
     Simplified marine vehicle simulator with

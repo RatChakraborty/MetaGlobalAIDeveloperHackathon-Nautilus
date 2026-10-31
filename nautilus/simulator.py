@@ -76,6 +76,12 @@ class PlantConfig:
     actuator_tau_s: float = 0.0
     thrust_deadzone_n: float = 0.0
     drag_scale: float = 1.0
+    # Legacy drag_scale scales linear damping only. New physical scales apply
+    # to both linear and quadratic coefficients, with defaults preserving v1.
+    drag_surge_scale: float = 1.0
+    drag_sway_scale: float = 1.0
+    drag_yaw_scale: float = 1.0
+    uniform_drag_scale: float = 1.0
 
 HIDDEN_PLANT = PlantConfig(
     actuator_tau_s=0.15,
@@ -90,6 +96,11 @@ class Experiment:
     cruise_thrust_n: float | None = None
     duration_s: float | None = None
     maneuver: str = "cable_follow"
+    phase_s: float = 3.0
+    amplitude_n: float = 8.0
+    differential_n: float = 2.0
+    heading_step_rad: float = 0.25
+    max_abs_observed_y_m: float | None = None
 
 @dataclass
 class SimulationResult:
@@ -185,6 +196,22 @@ def validate(
         raise ValueError(
             "Invalid hidden-plant parameters."
         )
+    values = asdict(plant)
+    if not all(math.isfinite(v) for v in values.values()) or any(
+        values[k] <= 0 for k in ("drag_scale", "drag_surge_scale", "drag_sway_scale",
+                                 "drag_yaw_scale", "uniform_drag_scale")
+    ):
+        raise ValueError("Plant scales must be finite and positive")
+
+
+def effective_vehicle(vehicle: Vehicle, plant: PlantConfig) -> Vehicle:
+    """One physical implementation shared by hidden plant and diagnostic twin."""
+    changes = {}
+    for axis in ("surge", "sway", "yaw"):
+        scale = plant.uniform_drag_scale * getattr(plant, "drag_"+axis+"_scale")
+        changes["damping_"+axis] = getattr(vehicle, "damping_"+axis)*plant.drag_scale*scale
+        changes["quadratic_"+axis] = getattr(vehicle, "quadratic_"+axis)*scale
+    return replace(vehicle, **changes)
 
 def dynamics(
     state: np.ndarray,
@@ -287,12 +314,15 @@ def command(
     observed_yaw_rate: float,
     vehicle: Vehicle,
     controller: Controller,
+    target_heading: float | None = None,
 ) -> tuple[float, float, float]:
 
     wanted_heading = math.atan2(
         -observed_y,
         controller.lookahead_m,
     )
+    if target_heading is not None:
+        wanted_heading = target_heading
 
     wanted_heading = float(
         np.clip(
@@ -370,6 +400,31 @@ def actuator_step(
         + alpha * (target - actual)
     )
 
+def experiment_command(t, observed_y, observed_heading, observed_yaw_rate,
+                       vehicle, controller, experiment):
+    """Requested digital commands, never realized actuator forces or true state."""
+    mode = experiment.maneuver
+    if mode == "cable_follow":
+        return command(observed_y, observed_heading, observed_yaw_rate, vehicle, controller)
+    if mode == "heading_response":
+        target = experiment.heading_step_rad if t >= experiment.phase_s else 0.
+        return command(observed_y, observed_heading, observed_yaw_rate, vehicle, controller, target)
+    if mode == "thrust_step":
+        mean, differential = (experiment.amplitude_n if t >= experiment.phase_s else 0.), 0.
+    elif mode == "coast_down":
+        mean = experiment.amplitude_n if t < experiment.phase_s else 0.
+        differential = experiment.differential_n if t < experiment.phase_s else 0.
+    elif mode == "differential_step":
+        mean = controller.cruise_thrust
+        differential = experiment.differential_n if t >= experiment.phase_s else 0.
+    elif mode == "amplitude_ramp":
+        mean = 0.
+        differential = experiment.amplitude_n*min(1., max(0., t/experiment.phase_s))
+    else:
+        raise ValueError("Unsupported experiment mode")
+    return float(np.clip(mean-differential,-vehicle.max_thrust,vehicle.max_thrust)), float(np.clip(mean+differential,-vehicle.max_thrust,vehicle.max_thrust)), 0.
+
+
 def simulate(
     vehicle: Vehicle = Vehicle(),
     faults: Faults = Faults(),
@@ -379,17 +434,27 @@ def simulate(
     experiment: Experiment = Experiment(),
 ) -> SimulationResult:
 
-    if experiment.maneuver != "cable_follow":
+    if experiment.maneuver not in ("cable_follow", "heading_response", "thrust_step",
+                                    "coast_down", "differential_step", "amplitude_ramp"):
         raise ValueError(
             "Only cable_follow is implemented. "
             "Other maneuvers are not available yet."
         )
+    if (not all(math.isfinite(v) for v in (experiment.phase_s, experiment.amplitude_n,
+                                          experiment.differential_n, experiment.heading_step_rad))
+            or experiment.phase_s <= 0 or not 0 <= experiment.amplitude_n <= vehicle.max_thrust
+            or abs(experiment.differential_n) > vehicle.max_thrust
+            or abs(experiment.heading_step_rad) > .72
+            or (experiment.max_abs_observed_y_m is not None and
+                (not math.isfinite(experiment.max_abs_observed_y_m) or experiment.max_abs_observed_y_m <= 0))):
+        raise ValueError("Invalid waveform or observation-based stop limit")
 
     if experiment.cruise_thrust_n is not None:
 
         if not (
-            0 < experiment.cruise_thrust_n
-            <= vehicle.max_thrust
+            (0 < experiment.cruise_thrust_n <= vehicle.max_thrust
+             if experiment.maneuver == "cable_follow"
+             else 0 <= experiment.cruise_thrust_n <= vehicle.max_thrust)
         ):
             raise ValueError(
                 "Experiment cruise thrust must be "
@@ -419,21 +484,7 @@ def simulate(
 
     state = np.zeros(6, dtype=float)
     actuator_state = np.zeros(2, dtype=float)
-    effective_vehicle = replace(
-        vehicle,
-        damping_surge=(
-            vehicle.damping_surge
-            * plant.drag_scale
-        ),
-        damping_sway=(
-            vehicle.damping_sway
-            * plant.drag_scale
-        ),
-        damping_yaw=(
-            vehicle.damping_yaw
-            * plant.drag_scale
-        ),
-    )
+    plant_vehicle = effective_vehicle(vehicle, plant)
 
     truth_rows = []
     observation_rows = []
@@ -466,12 +517,14 @@ def simulate(
             )
         )
 
-        port, starboard, desired = command(
+        port, starboard, desired = experiment_command(
+            t,
             obs_y,
             obs_heading,
             obs_yaw_rate,
             vehicle,
             controller,
+            experiment,
         )
 
         truth_rows.append({
@@ -515,6 +568,7 @@ def simulate(
         if (
             state[0] >= mission.cable_length_m
             or t >= mission.duration_s - 1e-10
+            or (experiment.max_abs_observed_y_m is not None and abs(obs_y) > experiment.max_abs_observed_y_m)
         ):
             break
 
@@ -537,7 +591,7 @@ def simulate(
             state,
             actuator_state[0],
             actuator_state[1],
-            effective_vehicle,
+            plant_vehicle,
             faults,
         )
 
@@ -545,7 +599,7 @@ def simulate(
             state + 0.5 * dt * a,
             actuator_state[0],
             actuator_state[1],
-            effective_vehicle,
+            plant_vehicle,
             faults,
         )
 
@@ -553,7 +607,7 @@ def simulate(
             state + 0.5 * dt * b,
             actuator_state[0],
             actuator_state[1],
-            effective_vehicle,
+            plant_vehicle,
             faults,
         )
 
@@ -561,7 +615,7 @@ def simulate(
             state + dt * c,
             actuator_state[0],
             actuator_state[1],
-            effective_vehicle,
+            plant_vehicle,
             faults,
         )
 
