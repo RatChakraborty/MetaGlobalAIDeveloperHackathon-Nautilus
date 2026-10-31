@@ -129,8 +129,8 @@ def all_fits(episodes,cache):
 
 def policy(initial,initial_fits,backend,name,seed,cache):
     def provider(episodes,template,**kwargs):
-        # Only trusted benchmark invocation uses the all-model deterministic
-        # cache. Budgets still charge every logical fitting attempt per policy.
+
+
         if kwargs.get('knobs') or kwargs.get('bounds'):return fit_model(episodes,template,**kwargs)
         return next(f for f in all_fits(episodes,cache) if f.hypothesis==template)
     session=InvestigationSession(initial,backend.execute,initial_fits=initial_fits,
@@ -279,8 +279,8 @@ def run(manifest,destination,batch):
         try:
             record=one(plan,active=plan['active_assessment'])
         except (ValueError,FloatingPointError,OverflowError,np.linalg.LinAlgError) as exc:
-            # Preserve the planned case and numerical failure; never silently
-            # replace its seed or claim that missing execution consumed no cost.
+
+
             failed={'kind':'optimization_failure','selected':None,'competitive':[],
                     'reasons':['Generation/fitting/policy execution did not complete; cost unknown.']}
             record={**plan,'generation_status':'failed_execution','operational':'undetermined',
@@ -314,8 +314,8 @@ if __name__=='__main__':
         if not a.manifest or a.batch<1:p.error('run requires manifest and positive batch')
         run(json.loads(a.manifest.read_text()),a.output,a.batch)
     else:
-        # New development examples only. Full model and capability workflow is
-        # exercised before freeze; no v1 pool or future v2 seed is inspected.
+
+
         records=[]
         for i,h in enumerate(('actuator_lag','thrust_deadzone','drag_surge','heading_controller_gain')):
             result=one({'case_id':f'development-{i}','index':i,'seed':606000+i,'family':h,'stratum':'development'},split='development')

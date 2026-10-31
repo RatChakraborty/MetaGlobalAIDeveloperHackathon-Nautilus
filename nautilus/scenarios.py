@@ -1,10 +1,6 @@
 from __future__ import annotations
 
 
-#Nautilus: randomized marine-robot failure scenario generator.
-#This is a synthetic research benchmark, not field data.
-
-
 import argparse
 import csv
 import json
@@ -60,11 +56,7 @@ MIN_COMPLETION_DELAY_S = 5.0
 
 @dataclass(frozen=True)
 class Scenario:
-    """
-    WARNING:
-    This object contains hidden fault parameters.
-    Never pass it directly to Muse.
-    """
+
     case_id: str
     families: tuple[str, ...]
     seed: int
@@ -116,7 +108,7 @@ def sample_scenario(
     fault_params = {}
     controller = baseline_controller
 
-    # Sorting makes sampling independent of input order.
+
     sorted_families = tuple(sorted(families))
 
     for family in sorted_families:
@@ -187,7 +179,6 @@ def evaluate_scenario(
     baseline_controller: Controller = Controller(),
     hidden_plant: PlantConfig = HIDDEN_PLANT,
 ) -> QualifiedCase:
-
 
 
     seeded_mission = replace(

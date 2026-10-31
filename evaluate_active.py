@@ -80,7 +80,7 @@ def candidate(seed, label, case_id):
 
 def oracle_family(scenario):
     if len(scenario.families) > 1 or "controller" in scenario.families:
-        return None  # explicitly unsupported, never ordinary supported ambiguity
+        return None
     f = scenario.faults
     if not scenario.families:
         return "nominal"
@@ -165,13 +165,7 @@ def private_write(path, value):
 
 
 def assess(initial, outcome, protocol, backend_factory, true_family, seed):
-    """Offline assessment is evaluator-only. No future outcomes enter planner.
 
-    Deterministic fit caching is keyed only by actual public episode hashes and
-    the protocol. Policies still execute their requested tests; forecasts never
-    become observations. Common per-request sensor seeds match evidence across
-    policies and offline assessment, not across distinct experiments.
-    """
     cache = {}
     def refit(episodes, p):
         key = (p.fingerprint, tuple(sorted(digest(e) for e in episodes)))
@@ -207,7 +201,7 @@ def assess(initial, outcome, protocol, backend_factory, true_family, seed):
         result['confidently_wrong'] = result['decision'] is not None and not result['correct']
         result['appropriate_abstention'] = result['decision'] is None and result['error'] is None
         result['ledger_valid'] = verify_ledger(result['ledger'])
-        result['parameter_error'] = None  # filled privately by run, never by planner
+        result['parameter_error'] = None
         policies[strategy] = result
     return {"classification": category, "assessments": assessments, "policies": policies,
             "cached_evidence_sets": len(cache),
@@ -264,7 +258,7 @@ def accounting(records):
 
 
 def run(manifest, destination):
-    validate_manifest(manifest)  # must occur before any held-out scenario generation
+    validate_manifest(manifest)
     destination = Path(destination)
     if destination.exists():
         raise ValueError("Refusing to overwrite an existing benchmark run")

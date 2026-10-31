@@ -1,8 +1,4 @@
-"""Whitelisted public-evidence physical extensions, separate from the v1 library.
 
-No hidden defaults, truth, evaluator seeds, dynamic code or model classes enter
-this module. Physical equations are reused from simulator.py, not reimplemented.
-"""
 from dataclasses import dataclass, asdict, replace
 import math
 import time
@@ -50,8 +46,7 @@ for row in (
 
 EXTENSIONS=tuple(h for h in REGISTRY if h not in HYPOTHESES)
 
-# Declared engineering operating envelopes, not hidden plant settings. Model
-# presence alone is not evidence of a fault: ordinary lag/dead zone are healthy.
+
 HEALTHY={'actuator_lag':(0.,.25),'thrust_deadzone':(0.,.5),
          'drag_surge':(.9,1.1),'drag_sway':(.9,1.1),'drag_yaw':(.9,1.1),
          'heading_controller_gain':(35.,43.),'controller_lookahead':(6.,8.),
@@ -108,8 +103,8 @@ def configs(name, value=None):
 
 
 def commanded(a, control, experiment):
-    # These are requested digital commands, conditional on the same public
-    # sensor readings seen by the controller. Not independent noisy sensors.
+
+
     if experiment.cruise_thrust_n is not None:
         control=replace(control,cruise_thrust=experiment.cruise_thrust_n)
     return np.array([experiment_command(r[0],r[1],r[2],r[3],Vehicle(),control,experiment)[:2] for r in a])
@@ -136,13 +131,7 @@ class ModelFit:
 
 
 def fit_model(episodes,name,*,knobs=None,bounds=None,starts=2,max_nfev=40,dt_s=.05):
-    """Shared parameter fit over reset episodes; conditional public commands.
 
-    Rank by physical innovation SSE + deterministic command-law consistency SSE
-    + k*log(5*N). Adequacy is max(physical WRMS, command WRMS), so zero command
-    errors cannot dilute a bad physical fit. Digital consistency scale=0.05 N
-    is a declared logging tolerance, not an invented sensor channel or likelihood.
-    """
     spec,limits=validate_proposal(name,knobs,bounds)
     if type(starts) is not int or not 1<=starts<=3 or type(max_nfev) is not int or max_nfev<1:
         raise ValueError('Invalid optimization budget')

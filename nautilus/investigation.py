@@ -1,9 +1,4 @@
-"""Public-only deterministic investigation and an auditable evidence ledger.
 
-No oracle import, private parameters, simulator state or benchmark case labels.
-Backend.execute is a capability returning only public observations. All policies
-use the same diagnostic engine, allowed requests, budgets and evidence schema.
-"""
 from __future__ import annotations
 
 from dataclasses import asdict
@@ -28,7 +23,7 @@ def choose(outcome, remaining, protocol, strategy="greedy", rng=None):
         raise ValueError("Unknown investigation strategy")
     scores = {r.key: separation(fits, r, scales=protocol.scales, dt_s=protocol.dt_s)
               for r in remaining}
-    # Stable input-order tie break. Do not use hidden labels or truth here.
+
     selected = max(remaining, key=lambda r: scores[r.key])
     return selected, scores
 
@@ -65,7 +60,7 @@ def investigate(initial, protocol, execute, *, strategy="greedy", seed=0,
                     "predicted_separation": scores,
                     "prediction_is_evidence": False})
             rows = execute(request)
-            # Fit only after a real hidden-system call returns public evidence.
+
             updated = refit(episodes + [rows], protocol)
             episodes.append(rows)
             tests += 1
@@ -77,7 +72,7 @@ def investigate(initial, protocol, execute, *, strategy="greedy", seed=0,
             outcome = updated
         except (ValueError, FloatingPointError, OverflowError) as exc:
             record({"type": "experiment_error", "error": f"{type(exc).__name__}: {exc}"})
-            # Errors must not turn into a supported identification.
+
             return {"outcome": summary(outcome), "ledger": ledger, "tests": tests,
                     "time_s": spent, "error": str(exc), "decision": None}
     record({"type": "stopped", "reason": outcome.kind,

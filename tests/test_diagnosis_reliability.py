@@ -1,8 +1,4 @@
-"""Regression checks for public-only, measured-state innovation fitting.
 
-Fixed synthetic parameters here are test fixtures, not exported oracle runs.
-The existing replay tests remain unchanged.
-"""
 from dataclasses import replace
 import ast
 import inspect
@@ -44,8 +40,8 @@ def test_nominal_remains_a_distinct_winning_hypothesis(seed):
 
 def test_predictions_are_scored_before_measured_state_correction():
     rows = simulate(faults=Faults(heading_bias_rad=.3), mission=MISSION).observations
-    # A one-sample innovation must survive at that sample. A smoothing or
-    # copy-then-score implementation would erase this residual.
+
+
     fit = fit_hypothesis(rows, "nominal", config=CONFIG)
     changed = [dict(r) for r in rows]
     changed[5]["observed_y_m"] += .2

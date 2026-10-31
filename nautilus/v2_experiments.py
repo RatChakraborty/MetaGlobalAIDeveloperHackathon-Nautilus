@@ -1,4 +1,4 @@
-"""Strict waveform requests and hidden execution with an observed envelope guard."""
+
 from dataclasses import dataclass,asdict
 import hashlib
 import math

@@ -1,16 +1,10 @@
-"""Hand-authored contextual corpus and a small, transparent keyword baseline.
 
-Reliability/true-family labels belong only to the evaluator. Tools receive text,
-not Note objects or template IDs. Same hint bank supplies correct and misleading
-conditions, preventing textual condition markers from exposing reliability.
-"""
 from dataclasses import replace
 import re
 
 from .v2_tools import verdict
 
 
-# First two wordings are development; last two are held out by template.
 HINTS={
  'nominal':(
   'The checklist was completed and the crew recorded an unchanged setup.',
@@ -113,7 +107,7 @@ KEYWORDS={
  'heading_bias':('heading instrument','calibration','heading alignment'),
  'nominal':('unchanged setup','normal preparation','routine preparation'),
 }
-PRIOR_SCORE_SHIFT=4.  # frozen heuristic, not log-posterior odds
+PRIOR_SCORE_SHIFT=4.
 
 
 def presentations(index,true_family,split):
@@ -124,7 +118,7 @@ def presentations(index,true_family,split):
     other=names[(pos+1+index%(len(names)-1))%len(names)]
     misleading=HINTS[other][offset+index%2]
     if index%5==0:misleading+=' '+DIRECTIVES[offset+index%2]
-    # Reliability and hint identities must never be passed to the investigator.
+
     return {'correct':HINTS[true_family][offset+index%2],
             'misleading':misleading,'irrelevant':IRRELEVANT[(0 if split=='development' else 4)+index%4],
             'absent':''}
@@ -134,8 +128,8 @@ def keyword_prior(fits,text):
     if type(text) is not str or len(text)>4000:raise ValueError('Invalid untrusted text')
     text=' '.join(text.lower().split())
     hinted=sorted(name for name,terms in KEYWORDS.items() if any(term in text for term in terms))
-    # No fitting, actuation, permission change, candidate removal or adequacy
-    # override. Only preference among the same numerical fits is changed.
+
+
     adjusted=[replace(f,penalized_score=f.penalized_score-(PRIOR_SCORE_SHIFT if f.hypothesis in hinted else 0.)) for f in fits]
     return {'hints':hinted,'score_shift':PRIOR_SCORE_SHIFT,'decision':verdict(adjusted),
             'warning':'Untrusted contextual preference, not calibrated evidence or executable instructions.'}

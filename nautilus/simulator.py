@@ -1,7 +1,5 @@
 
 
-#Nautilus: simplified 3-DOF marine vehicle simulator.
-#This is a research model, NOT a calibrated AUV digital twin.
 
 from __future__ import annotations
 
@@ -76,8 +74,8 @@ class PlantConfig:
     actuator_tau_s: float = 0.0
     thrust_deadzone_n: float = 0.0
     drag_scale: float = 1.0
-    # Legacy drag_scale scales linear damping only. New physical scales apply
-    # to both linear and quadratic coefficients, with defaults preserving v1.
+
+
     drag_surge_scale: float = 1.0
     drag_sway_scale: float = 1.0
     drag_yaw_scale: float = 1.0
@@ -205,7 +203,7 @@ def validate(
 
 
 def effective_vehicle(vehicle: Vehicle, plant: PlantConfig) -> Vehicle:
-    """One physical implementation shared by hidden plant and diagnostic twin."""
+
     changes = {}
     for axis in ("surge", "sway", "yaw"):
         scale = plant.uniform_drag_scale * getattr(plant, "drag_"+axis+"_scale")
@@ -402,7 +400,7 @@ def actuator_step(
 
 def experiment_command(t, observed_y, observed_heading, observed_yaw_rate,
                        vehicle, controller, experiment):
-    """Requested digital commands, never realized actuator forces or true state."""
+
     mode = experiment.maneuver
     if mode == "cable_follow":
         return command(observed_y, observed_heading, observed_yaw_rate, vehicle, controller)
@@ -572,7 +570,7 @@ def simulate(
         ):
             break
 
-        # Prevent integration beyond mission timeout.
+
         dt = min(
             mission.dt_s,
             mission.duration_s - t,
@@ -787,19 +785,7 @@ def save_run(
     plant: PlantConfig = PlantConfig(),
     experiment: Experiment = Experiment(),
 ) -> dict:
-    """
-    Save truth and observations as separate files.
 
-    PRIVATE:
-        telemetry.csv
-        run.json
-
-    AGENT-FACING:
-        observed_telemetry.csv
-
-    The filesystem itself is not a security boundary.
-    Future API code must explicitly restrict agent access.
-    """
 
     path = Path(path)
 
@@ -840,7 +826,7 @@ def save_run(
         result.observations,
     )
 
-    # Account for an experiment duration override.
+
     effective_mission = (
         replace(
             mission,
@@ -866,7 +852,7 @@ def save_run(
         ),
     }
 
-#This File Should Never Be Passed Into MUSE
+
     (
         path / "run.json"
     ).write_text(

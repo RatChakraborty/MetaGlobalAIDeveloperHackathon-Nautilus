@@ -1,22 +1,4 @@
-"""Bounded, deterministic identification conditional on public commanded inputs.
 
-Commands are held over [t_i, t_{i+1}) and replayed through nominal dynamics.
-This conditions on the *actual noisy closed-loop actions*, including actions
-caused by heading bias. Bias is added to the predicted heading measurement;
-it is never applied a second time to replayed commands. Command residuals
-would double-count the same telemetry and are deliberately not scored.
-
-Requires the documented simulator reset: zero position, heading and velocity.
-No truth, plant parameters, observation seed or x-position is accepted. The
-unobserved x coordinate is propagated internally but never scored or used to
-terminate a prediction. All models use the same public time window.
-
-``FitConfig(method="observer")`` scores causal one-step innovations and then
-corrects measured state coordinates. It limits replay error accumulation without
-inventing velocity observations. Legacy ``replay`` is retained for reproducibility.
-``observer_discrepancy`` additionally estimates shared bounded plant nuisances;
-these are not hidden-plant inputs, and their recovery is not guaranteed.
-"""
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
@@ -31,7 +13,7 @@ from .simulator import (OBSERVATION_FIELDS, Faults, Vehicle, PlantConfig,
                         actuator_step, dynamics, wrap_angle, effective_vehicle)
 
 CHANNELS = ("observed_y_m", "observed_heading_rad", "observed_yaw_rate_radps")
-# Bounds are research operating limits, not statistical confidence intervals.
+
 HYPOTHESES = {
     "nominal": None,
     "lateral_current": ("current_y", -1.0, 1.0),
@@ -39,8 +21,8 @@ HYPOTHESES = {
     "starboard_degradation": ("starboard_efficiency", 0.1, 1.0),
     "heading_bias": ("heading_bias_rad", -0.8, 0.8),
 }
-# Common envelope for estimated engineering uncertainty. All candidates,
-# including nominal, receive these same nuisance bounds. No private defaults.
+
+
 DISCREPANCY_BOUNDS = (("actuator_tau_s", 0.0, 0.6),
                       ("thrust_deadzone_n", 0.0, 1.5),
                       ("drag_scale", 0.8, 1.2))
@@ -49,14 +31,14 @@ DISCREPANCY_BOUNDS = (("actuator_tau_s", 0.0, 0.6),
 @dataclass(frozen=True)
 class FitConfig:
     dt_s: float = 0.05
-    # Measurement standard deviations in CHANNELS order; must be positive.
+
     scales: tuple[float, float, float] = (0.035, 0.004, 0.003)
     max_nfev: int = 60
     starts: int = 3
     end_s: float | None = None
     ambiguity_delta: float = 6.0
     inadequacy_wrms: float = 2.0
-    # Legacy replay remains available and unchanged for comparisons.
+
     method: str = "replay"
 
 
@@ -121,8 +103,8 @@ def _prepare(observations, config):
     if not np.all(regular):
         if not np.all(regular[:-1]) or gaps[-1] >= config.dt_s:
             raise ValueError("Missing or irregular samples: full command history is required")
-        # Endpoint interpolation and a shortened timeout step cannot be
-        # distinguished from public telemetry. Exclude the final partial step.
+
+
         a = a[:-1]
         warnings.append("Final fractional-step observation excluded; endpoint x is unobserved.")
     if config.end_s is not None:
@@ -144,9 +126,9 @@ def _predict(a, vehicle, faults, method="replay", discrepancy=None):
         if i == len(a) - 1:
             break
         if method != "replay":
-            # Correct only measured coordinates, AFTER scoring the prior
-            # prediction. u/v remain latent and evolve under nominal dynamics.
-            # No differentiation of noisy positions or use of truth velocities.
+
+
+
             state[1] = row[1]
             state[2] = wrap_angle(row[2] - faults.heading_bias_rad)
             state[5] = row[3]
@@ -170,14 +152,7 @@ def fit_hypothesis(
     observations: Sequence[Mapping[str, float]], hypothesis: str,
     *, vehicle: Vehicle = Vehicle(), config: FitConfig = FitConfig(),
 ) -> FitResult:
-    """Fit one family on the complete regular reset-aligned public trace.
 
-    Scores use sum((prediction-observation)/scale)**2 + k*log(n).
-    This is a fixed-noise BIC-like complexity penalty, NOT calibrated BIC,
-    likelihood, posterior probability, or a confidence measure: conditional
-    closed-loop residuals and model mismatch violate iid noise assumptions.
-    Multiple starts probe optimizer sensitivity, not parameter uncertainty.
-    """
     if hypothesis not in HYPOTHESES:
         raise ValueError(f"Unknown hypothesis: {hypothesis}")
     started = time.perf_counter()
@@ -186,13 +161,7 @@ def fit_hypothesis(
 
 
 def fit_evidence(episodes, hypothesis, *, vehicle=Vehicle(), config=FitConfig(method="observer")):
-    """Share one physical parameter across independent reset experiments.
 
-    Every episode is public telemetry from a separate known-zero reset. Never
-    concatenate traces and integrate across experiment boundaries. The complexity
-    penalty is applied once, not once per experiment. All evidence is weighted
-    identically to a single trace; no passive-window truncation applies to tests.
-    """
     if not episodes:
         raise ValueError("At least one public episode is required")
     arrays, warnings = [], []
@@ -210,7 +179,7 @@ def _fit_arrays(arrays, warnings, hypothesis, vehicle, config, started):
     subsequent = np.ones(len(a), dtype=bool)
     subsequent[np.cumsum([0] + [len(x) for x in arrays[:-1]])] = False
     spec = HYPOTHESES[hypothesis]
-    # Shared, publicly declared engineering envelope, not supplied hidden values.
+
     nuisance_specs = DISCREPANCY_BOUNDS if config.method == "observer_discrepancy" else ()
     specs = ([spec] if spec else []) + list(nuisance_specs)
     evaluations = 0
@@ -229,9 +198,9 @@ def _fit_arrays(arrays, warnings, hypothesis, vehicle, config, started):
         scale = np.asarray(config.scales)
         residual = calculate(p)[1] / scale
         if config.method != "replay":
-            # One-step innovations include the current measurement and the
-            # previous measured-coordinate reset. Approximate sqrt(2) noise;
-            # initial reset measurement has only its own sensor variance.
+
+
+
             residual[subsequent] /= math.sqrt(2)
         return residual.ravel()
 
@@ -243,7 +212,7 @@ def _fit_arrays(arrays, warnings, hypothesis, vehicle, config, started):
                   for fraction in np.linspace(.1, .9, config.starts)]
         solutions = [least_squares(objective, s, bounds=(lower, upper),
                                    max_nfev=config.max_nfev, x_scale="jac") for s in starts]
-        # Prefer converged solutions, then lowest cost. Failed fits remain visible.
+
         successful = [s for s in solutions if s.success]
         solution = min(successful or solutions, key=lambda s: s.cost)
         all_params = {s[0]: float(v) for s, v in zip(specs, solution.x)}

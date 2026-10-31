@@ -17,12 +17,7 @@ from nautilus.simulator import Faults, HIDDEN_PLANT, Mission, PlantConfig, simul
 
 
 def evaluate_ablations(duration_s=30.0, starts=3):
-    """Isolate plant discrepancy with fixed faults and matched noise seeds.
 
-    Lateral current has current_x=0 here, unlike the randomized dev cases.
-    Fit only the known true family to isolate parameter error from selection.
-    Private oracle access is confined to this evaluation function.
-    """
     cases = [("nominal", Faults(), "nominal"),
              ("sensor", Faults(heading_bias_rad=.4), "heading_bias"),
              ("current", Faults(current_y=.45), "lateral_current")]
@@ -58,7 +53,7 @@ def evaluate(duration_s=30.0, starts=3):
     for case_id, seed, faults, true_hypothesis in cases:
         public = simulate(faults=faults, mission=replace(mission, seed=seed),
                           plant=HIDDEN_PLANT).observations
-        # ONLY the six public fields cross the diagnosis boundary.
+
         result = diagnose(public, config=config)
         true_fit = next(f for f in result.fits if f.hypothesis == true_hypothesis)
         errors = {p: abs(v - getattr(faults, p)) for p, v in true_fit.parameters.items()}
@@ -84,13 +79,7 @@ def evaluate(duration_s=30.0, starts=3):
 
 def compare_methods(duration_s=30.0, starts=3, methods=("replay", "observer"),
                     nominal_controls=10):
-    """Matched public traces; every private value remains in this evaluator.
 
-    These are development controls, not a held-out benchmark. The initial seven
-    cases remain identical to Day 2. Extra controls use a separate dev seed set.
-    Raw ranking false positives and non-abstaining false positives are both
-    reported; inadequacy/ambiguity must never silently disappear from counts.
-    """
     if not 1 <= nominal_controls <= 50:
         raise ValueError("Use 1..50 development nominal controls")
     configs = {m: FitConfig(method=m, starts=starts) for m in methods}
@@ -116,8 +105,8 @@ def compare_methods(duration_s=30.0, starts=3, methods=("replay", "observer"),
             true_fit = next(f for f in diagnosis.fits if f.hypothesis == true)
             serialized = asdict(diagnosis)
             for fit in serialized["fits"]:
-                # Keep the report reviewable; raw public traces are reproducible
-                # from seeds. No truth trace is recorded or passed to diagnosis.
+
+
                 for key in ("time_s", "predictions", "residuals"):
                     fit.pop(key)
             comparisons[method] = {

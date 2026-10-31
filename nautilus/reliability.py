@@ -36,7 +36,7 @@ def fit(episodes, hypothesis, *, method='nuisance', starts=2, max_nfev=60):
         raise ValueError('Invalid fitting request')
     spec = REGISTRY[hypothesis]
     parameters = {spec.parameter: spec.bounds} if spec.parameter else {}
-    # A fault replaces the matching healthy parameter; it is never counted twice.
+
     parameters.update({k: v for k, v in NUISANCE.items() if k != spec.parameter})
     if method == 'discrepancy':
         parameters['yaw_innovation_offset'] = (-.001, .001)

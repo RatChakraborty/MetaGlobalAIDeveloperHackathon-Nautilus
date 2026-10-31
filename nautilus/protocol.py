@@ -1,4 +1,4 @@
-"""Frozen public-only passive outcomes; no oracle imports or private labels."""
+
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
@@ -62,11 +62,7 @@ class Outcome:
 
 
 def classify(fits, protocol):
-    """Any missing/failed comparison blocks identification or ambiguity.
 
-    Ambiguity is only among converged, individually adequate explanations.
-    Private correctness is deliberately not a public outcome category.
-    """
     if (len(fits) != len(protocol.hypotheses)
             or {f.hypothesis for f in fits} != set(protocol.hypotheses)
             or any(not f.converged or not math.isfinite(f.penalized_score)
@@ -99,7 +95,7 @@ def passive(observations, protocol):
 
 
 def summary(outcome):
-    """Compact public output: fitted estimates are evidence, never oracle labels."""
+
     return {"kind": outcome.kind, "selected": outcome.selected,
             "competitive": outcome.competitive, "reasons": outcome.reasons,
             "fits": [{"hypothesis": f.hypothesis, "parameters": f.parameters,

@@ -1,4 +1,4 @@
-"""Bounded JSON investigation capabilities. No model API or arbitrary execution."""
+
 from dataclasses import asdict,replace
 from types import SimpleNamespace
 import json
@@ -36,7 +36,7 @@ def parse_json(value):
     if type(value) is str:
         value=json.loads(value,object_pairs_hook=pairs,
                          parse_constant=lambda _:(_ for _ in ()).throw(ValueError('Nonfinite JSON number')))
-    # Reject functions/classes/NaN even when an in-process caller passes a dict.
+
     json.dumps(value,allow_nan=False)
     if type(value) is not dict:raise ValueError('JSON object required')
     return value
@@ -47,7 +47,7 @@ def fields(value,expected):
 
 
 def capability_schema():
-    """Machine-readable closed operation schemas; semantic ranges are registry checked."""
+
     operations={
       'propose_hypothesis':{'template':{'type':'string','enum':list(REGISTRY)},
                             'knobs':{'type':'object'},'bounds':{'type':'object'},
@@ -108,8 +108,8 @@ class InvestigationSession:
         self._seen=set();self._closed=False;self.ledger=[]
         self._event('observation',{'observations':observations,'origin':'initial public telemetry'})
         self._event('operator_note',{'text':note,'trust':'untrusted evidence, never executable instructions'})
-        # Optional deterministic cache of already computed public fits must be
-        # supplied only by the trusted numerical caller, never by JSON tools.
+
+
         if initial_fits:
             for f in initial_fits:
                 validate_proposal(f.hypothesis)
@@ -148,8 +148,8 @@ class InvestigationSession:
             raise ValueError('Experiment outside this comparison protocol menu')
         if (self.tests>=self._experiment_limit or self.test_time_s+request.duration_s>self._time_limit
                 or request.key in self._seen):raise ValueError('Experiment budget exhausted or repeated request')
-        # Charge requested duration conservatively, even if observed guard ends
-        # the trial early. No hidden plant parameter is accepted in params.
+
+
         self.tests+=1;self.test_time_s+=request.duration_s;self._seen.add(request.key)
         self._event('request',{'request':asdict(request)})
         self._fits.clear()
@@ -157,7 +157,7 @@ class InvestigationSession:
         if set(result)!={'observations','experiment','envelope'}:raise ValueError('Invalid backend response')
         _prepare(result['observations'],FitConfig(method='observer'))
         self.episodes.append({'observations':result['observations'],'experiment':result['experiment']})
-        self._fits.clear()  # old scores may not justify a conclusion on new data
+        self._fits.clear()
         reference=self._event('observation',{'observations':result['observations'],
                                              'request':asdict(request),'envelope':result['envelope']})
         return {'observations':result['observations'],'evidence_ref':reference,
@@ -222,7 +222,7 @@ class InvestigationSession:
 
 
 def predicted_separation(fits,trial):
-    """Mean pairwise noise-normalized forecast difference; no posterior claim."""
+
     if len(fits)<2:return 0.
     predictions=[forward(f,trial) for f in fits]
     distances=[]

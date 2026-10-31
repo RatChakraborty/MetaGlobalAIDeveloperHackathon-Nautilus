@@ -38,7 +38,7 @@ def test_noisy_bias_conditions_on_actual_actions_and_is_deterministic():
     assert first.parameters["heading_bias_rad"] == pytest.approx(-.4, abs=.003)
     assert first.predictions == second.predictions
     assert first.weighted_sse == second.weighted_sse
-    # Replayed noisy commands make physical y and rate exact for the ideal plant.
+
     assert first.rmse[CHANNELS[0]] < .05
     assert first.rmse[CHANNELS[2]] < .005
 
@@ -104,7 +104,7 @@ def test_missing_family_and_failed_optimizer_do_not_force_conclusion():
 
 
 def test_hidden_plant_recovery_is_approximate_and_reports_misfit():
-    # This is a mismatch/abstention check, not a claim of calibrated accuracy.
+
     rows = simulate(faults=Faults(heading_bias_rad=.4),
                     mission=replace(MISSION, duration_s=8,
                                     sensor_y_std_m=.035,

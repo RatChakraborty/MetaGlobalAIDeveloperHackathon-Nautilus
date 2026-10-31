@@ -1,9 +1,4 @@
-"""Marine experiment capability: separate nominal forecasts and private execution.
 
-Only JSON-compatible requests and public observations cross this boundary. The
-Python object is not a security sandbox: future model tools must expose execute,
-not object inspection or arbitrary Python. No physical dynamics are changed.
-"""
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
@@ -36,12 +31,7 @@ EXPERIMENT_LIBRARY = (ExperimentRequest(6., 10.), ExperimentRequest(22., 20.))
 
 
 def forecast(fit, request, *, dt_s=.05):
-    """Free-running closed-loop nominal forecast, NEVER an observer prediction.
 
-    Uses fitted fault parameters, declared controller and nominal engineering
-    constants only. No observations, noise seed, or private plant configuration
-    is supplied. Forecasts are not experimental evidence.
-    """
     if not isinstance(request, ExperimentRequest):
         raise ValueError("Expected a bounded experiment request")
     spec = HYPOTHESES.get(fit.hypothesis)
@@ -59,12 +49,7 @@ def forecast(fit, request, *, dt_s=.05):
 
 def separation(fits, request, *, scales=(.035, .004, .003),
                discrepancy=(.10, .03, .02), dt_s=.05):
-    """Worst-pair RMS separation, normalized by noise + declared discrepancy.
 
-    The discrepancy envelope is an engineering assumption, not a calibrated
-    confidence band. Initial t=0 is excluded to favor response to actual actions.
-    Heading differences are circular; no x or ground truth is compared.
-    """
     if len(fits) < 2:
         return 0.
     predictions = [forecast(f, request, dt_s=dt_s) for f in fits]
@@ -75,8 +60,8 @@ def separation(fits, request, *, scales=(.035, .004, .003),
     scores = []
     for i, a in enumerate(predictions):
         for b in predictions[i+1:]:
-            # All forecast trials share a time grid and start at a reset. At
-            # these bounded durations/thrusts no forecast reaches the cable end.
+
+
             if not np.allclose([r['time_s'] for r in a[:n]], [r['time_s'] for r in b[:n]]):
                 raise ValueError("Forecasts are not time aligned")
             delta = np.array([[x[c]-y[c] for c in CHANNELS] for x,y in zip(a[1:n], b[1:n])])
@@ -86,12 +71,7 @@ def separation(fits, request, *, scales=(.035, .004, .003),
 
 
 class HiddenExperimentBackend:
-    """Private evaluator-owned plant. execute returns only new public evidence.
 
-    Independent experiment keys receive independent sensor seeds. Recreating a
-    backend for a different policy uses the same per-request seed schedule (common
-    random numbers for fair comparisons). Duplicate requests per trial are refused.
-    """
     def __init__(self, *, faults, controller, plant, seed, dt_s=.05,
                  budget=2, time_budget_s=30.):
         if (not isinstance(budget, int) or not 0 <= budget <= 2

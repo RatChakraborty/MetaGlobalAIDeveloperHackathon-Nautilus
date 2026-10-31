@@ -1,10 +1,4 @@
-"""New development-only sensitivity and experiment qualification; never v1 data.
 
-Predeclared grids: twenty common-thrust/drag cases and twenty lag/dead-zone
-cases. Qualification: at least12/20 adequate competitive fits and median public
-pair separation<=1 noise unit, plus an experiment with measured separation>2.
-No magnitude or threshold is adjusted after observing the output.
-"""
 from dataclasses import asdict,replace
 from pathlib import Path
 import argparse,json,time
@@ -36,7 +30,7 @@ def public_prediction(a,name,value):
 
 
 def sensitivity(a,eta):
-    # Same public record; no u/x from truth. Joint engineering model at mu=1.
+
     def predict(e,d):
         f=Faults(port_efficiency=e,starboard_efficiency=e)
         v=effective_vehicle(Vehicle(),PlantConfig(uniform_drag_scale=d))
@@ -58,8 +52,8 @@ def sensitivity(a,eta):
 
 def generated(name,value,seed,experiment=Experiment(),duration=30.):
     f,p,c=configs(name,value)
-    # Ordinary discrepancy is private execution-side only; no such constants
-    # are supplied to fit_model or a forward forecast.
+
+
     p=replace(p,actuator_tau_s=p.actuator_tau_s or HIDDEN_PLANT.actuator_tau_s,
               thrust_deadzone_n=p.thrust_deadzone_n or HIDDEN_PLANT.thrust_deadzone_n,
               drag_scale=HIDDEN_PLANT.drag_scale)
@@ -91,7 +85,7 @@ def run():
                                     'sensitivity':sensitivity(a,v1) if group=='common_drag' else None})
                     print(group,seed,name,'competitive',competitive,'separation',round(distance,4),flush=True)
         matrix=[]
-        # Predeclared representative operating points, not selected by outcomes.
+
         v1,v2=values[2]
         for trial in LIBRARY:
             rows=[generated(n,v,602000+len(matrix),trial.experiment(),trial.duration_s)
@@ -111,8 +105,8 @@ def run():
                        'median_public_separation':float(np.median([r['public_conditional_separation'] for r in records])),
                        'qualified_ambiguity_family':qualifies}
         matrices[group]=matrix
-    # Mechanistic amplitude check: isolate each actuator mechanism, known
-    # engineering geometry, PUBLIC gyro response only, no effective force readout.
+
+
     amplitude=[]
     for amp in (.5,1.,3.,6.):
         trial=Trial('differential_step',differential_n=amp,cruise_thrust_n=0.)
