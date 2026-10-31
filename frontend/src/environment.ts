@@ -1,0 +1,32 @@
+import * as THREE from 'three';
+export type Decorations={particles:boolean;fish:boolean;details:boolean};
+export function sedimentOffset(index:number,time:number,span:number){return {x:Math.sin(index*19.17)*span*.7+Math.sin(time*.035+index)*span*.006,z:Math.cos(index*8.31)*span*.55+Math.cos(time*.025+index)*span*.004};}
+const noise=(i:number)=>{const v=Math.sin(i*127.1+311.7)*43758.5453;return v-Math.floor(v);};
+export function underwaterEnvironment(scene:THREE.Scene,center:THREE.Vector3,span:number,software:boolean){
+ const details=new THREE.Group(),particlesGroup=new THREE.Group(),fishGroup=new THREE.Group(),shafts=new THREE.Group();
+ scene.background=new THREE.Color('#09252d');if(!software)scene.fog=new THREE.FogExp2('#09252d',.014);
+ const length=Math.max(span*2.3,100),width=Math.max(span*1.35,65),geometry=new THREE.PlaneGeometry(length,width,software?26:150,software?18:90);geometry.rotateX(-Math.PI/2);
+ const position=geometry.getAttribute('position'),colors=new Float32Array(position.count*3),color=new THREE.Color();
+ for(let i=0;i<position.count;i++){const x=position.getX(i)+center.x,z=position.getZ(i)+center.z;const ridge=Math.sin(x*.22+z*.13)*.18+Math.sin(x*.073-z*.34)*.13;position.setY(i,-2+ridge*Math.min(Math.abs(z)/5,1));color.setHSL(.11+noise(i)*.025,.13,.18+noise(Math.floor(x/3)+Math.floor(z/4)*17)*.05);colors.set([color.r,color.g,color.b],i*3);}
+ geometry.setAttribute('color',new THREE.BufferAttribute(colors,3));geometry.computeVertexNormals();
+ const sand=software?new THREE.MeshLambertMaterial({color:0x334b49}):new THREE.MeshStandardMaterial({vertexColors:true,roughness:.96,metalness:0});
+ if(!software){const size=128,data=new Uint8Array(size*size*4);for(let i=0;i<size*size;i++){const n=95+Math.floor(noise(i)*95);data.set([n,n,n,255],i*4);}const texture=new THREE.DataTexture(data,size,size);texture.wrapS=texture.wrapT=THREE.RepeatWrapping;texture.repeat.set(length/7,width/7);texture.needsUpdate=true;(sand as THREE.MeshStandardMaterial).bumpMap=texture;(sand as THREE.MeshStandardMaterial).bumpScale=.07;}
+ const floor=new THREE.Mesh(geometry,sand);floor.position.set(center.x,0,center.z);floor.receiveShadow=true;floor.renderOrder=-100;scene.add(floor);
+ const rockGeometry=new THREE.DodecahedronGeometry(1,software?0:1),rockMaterial=software?new THREE.MeshLambertMaterial({color:0x354c49}):new THREE.MeshStandardMaterial({color:0x3c4b44,roughness:.93});
+ const rocks=new THREE.InstancedMesh(rockGeometry,rockMaterial,software?16:72),dummy=new THREE.Object3D();
+ for(let i=0;i<rocks.count;i++){const x=center.x+(noise(i*3)-.5)*length*.85,z=(noise(i*3+1)-.5)*width*.9;dummy.position.set(x,-1.95,Math.sign(z||1)*(Math.abs(z)+2.3));const scale=.25+noise(i*3+2)*1.2;dummy.scale.set(scale,scale*.55,scale*.8);dummy.rotation.set(noise(i),i*1.9,.13);dummy.updateMatrix();rocks.setMatrixAt(i,dummy.matrix);}rocks.castShadow=!software;details.add(rocks);
+ if(software){details.remove(rocks);for(let i=0;i<rocks.count;i++){const rock=new THREE.Mesh(rockGeometry,rockMaterial);rocks.getMatrixAt(i,rock.matrix);rock.matrix.decompose(rock.position,rock.quaternion,rock.scale);details.add(rock);}}
+ const plantMaterial=new THREE.MeshLambertMaterial({color:0x294e42,side:THREE.DoubleSide});
+ for(let i=0;i<(software?9:24);i++){const plant=new THREE.Group(),x=center.x+(noise(i+80)-.5)*length*.8,z=(noise(i+90)-.5)*width*.8;for(let j=0;j<3;j++){const blade=new THREE.Mesh(new THREE.PlaneGeometry(.07,.6+noise(i+j)*.7,1,3),plantMaterial);blade.position.set(j*.09,.4,0);blade.rotation.set(.13,j*.7,.18*Math.sin(i+j));plant.add(blade);}plant.position.set(x,-1.9,Math.sign(z||1)*(Math.abs(z)+3));details.add(plant);}
+ const count=software?60:650,particleGeometry=new THREE.BufferGeometry(),particlePositions=new Float32Array(count*3),particleColors=new Float32Array(count*3);
+ for(let i=0;i<count;i++){const brightness=.3+noise(i)*.45;particleColors.set([brightness*.7,brightness*.9,brightness],i*3);}
+ particleGeometry.setAttribute('position',new THREE.BufferAttribute(particlePositions,3));particleGeometry.setAttribute('color',new THREE.BufferAttribute(particleColors,3));particlesGroup.add(new THREE.Points(particleGeometry,new THREE.PointsMaterial({vertexColors:true,size:software?.07:.035,transparent:true,opacity:.35,depthWrite:false})));
+ const fishMaterial=new THREE.MeshLambertMaterial({color:0x42635f}),fishGeometry=new THREE.SphereGeometry(1,8,5),tails:THREE.Mesh[]=[];
+ for(let i=0;i<12;i++){const fish=new THREE.Group(),body=new THREE.Mesh(fishGeometry,fishMaterial);body.scale.set(.25,.085,.07);fish.add(body);const tail=new THREE.Mesh(new THREE.ConeGeometry(.1,.15,3),fishMaterial);tail.rotation.z=Math.PI/2;tail.position.x=-.27;tails.push(tail);fish.add(tail);fishGroup.add(fish);}
+ if(!software){const beamMaterial=new THREE.MeshBasicMaterial({color:0x73a69e,transparent:true,opacity:.022,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending});for(let i=0;i<5;i++){const beam=new THREE.Mesh(new THREE.CylinderGeometry(.4,3.8,23,12,1,true),beamMaterial);beam.position.set(center.x+(i-2)*15,8,-6-i*4);beam.rotation.z=-.28;shafts.add(beam);}}
+ scene.add(details,particlesGroup,fishGroup,shafts);
+ return {set(settings:Decorations){details.visible=settings.details;particlesGroup.visible=settings.particles;fishGroup.visible=settings.fish;shafts.visible=settings.details;},update(time:number,lamp?:{position:THREE.Vector3;heading:number}){
+  for(let i=0;i<count;i++){const p=sedimentOffset(i,time,length*.55);const x=center.x+p.x,y=-1.5+noise(i+300)*9,z=center.z+p.z;particlePositions.set([x,y,z],i*3);const dx=x-(lamp?.position.x??0),dz=z-(lamp?.position.z??0),distance=Math.hypot(dx,dz,y);const cone=lamp&&distance<14?(dx*Math.cos(lamp.heading)-dz*Math.sin(lamp.heading))/Math.max(distance,.01):0;const brightness=.3+noise(i)*.35+(cone>.85?.6*(1-distance/14):0);particleColors.set([brightness*.7,brightness*.9,brightness],i*3);}particleGeometry.attributes.position.needsUpdate=true;particleGeometry.attributes.color.needsUpdate=true;
+  fishGroup.children.forEach((fish,i)=>{const school=Math.floor(i/4),phase=time*.035+school*2;fish.position.set(center.x+Math.sin(phase)*span*.28+(i%4)*.65,1+school*.45+Math.sin(time*.15+i)*.08,-7-school*3+Math.cos(phase*.63)*1.8);fish.rotation.y=-Math.atan2(-Math.sin(phase*.63)*.63*1.8,Math.cos(phase)*span*.28);tails[i].rotation.y=Math.sin(time*3+i)*.25;});
+ }};
+}
