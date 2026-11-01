@@ -56,8 +56,7 @@ For GitHub Pages, set the repository base path when building:
 NAUTILUS_BASE=/MetaGlobalAIDeveloperHackathon-Nautilus/ npm run build
 ```
 
-Deploy only `dist/` after approval. No workflow, commit, push or deployment is
-performed by these commands. Serve the directory over local HTTP for offline use;
+Deploy only `dist/` after approval. These local commands do not deploy. Serve the directory over local HTTP for offline use;
 opening `index.html` using `file://` is unsupported. Dependencies are pinned and
 locked. IBM Plex Sans and Mono are bundled locally under OFL; notices are in `public/licenses/`.
 Three.js0.180.0 was published2025-09-03, satisfying the version-age requirement.
@@ -80,4 +79,28 @@ record and visualization with matching cable/corridor dimensions. Runs align by
 recorded elapsed seconds and hold endpoints; a reference is not a verified repair.
 The detailed hull, cable thickness, propellers, wash and water effects are illustrative.
 Hardware WebGL2 adds fog, headlights, shadows and sand bump detail; the SVG fallback
-uses simpler lighting. No demonstration records are bundled or automatically fetched.
+uses simpler lighting. No demonstration records are bundled; ordinary builds make no startup data requests.
+
+`NAUTILUS_DEMO_ENABLED` defaults to disabled. Only after dataset approval, build
+with `NAUTILUS_DEMO_ENABLED=true` and place the four approved records under
+`public/demo/`. The default disturbance and nominal reference use the same schema
+validators and time alignment as manual imports; the initial tab is Trajectory.
+Loading is atomic and does not replace a manual selection made during startup.
+A missing or invalid demo leaves local import available. No sample files are
+currently included. Browser users can inspect every downloaded visualization file.
+
+The manual `Dashboard Pages` workflow installs the lockfile, runs frontend tests
+and validates TypeScript through the production build. Its default `publish=false`
+only verifies the build. It always disables demo loading. Publication is restricted
+to `main` and requires a separately approved manual invocation with `publish=true`,
+Pages configured for Actions, and any repository environment approvals. Do not
+invoke publication yet. Treat any Pages site as publicly accessible regardless of
+repository visibility. No site or demonstration dataset is currently deployed by
+this milestone. A future approved dataset change must install only the four
+reviewed JSON exports and explicitly enable the build flag.
+
+The proposed demonstration is synthetic simulation-only development telemetry.
+The nominal reference is not a repaired run. Fit reports and agent conclusions
+are unavailable. Exact publication hashes remain in the separate private review
+package; do not copy its source configurations or raw CSVs into this repository.
+See [the future replay contract](../PRE_MUSE_INTERFACE_CONTRACT.md).
