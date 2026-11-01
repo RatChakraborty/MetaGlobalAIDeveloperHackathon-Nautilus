@@ -1,0 +1,50 @@
+name: Dashboard Pages
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish only after separate deployment approval
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: dashboard-pages
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+        env:
+          NAUTILUS_BASE: /MetaGlobalAIDeveloperHackathon-Nautilus/
+          NAUTILUS_DEMO_ENABLED: 'false'
+      - uses: actions/upload-pages-artifact@v3
+        if: inputs.publish
+        with:
+          path: frontend/dist
+  deploy:
+    if: inputs.publish && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy approved static build
+        id: deployment
+        uses: actions/deploy-pages@v4
