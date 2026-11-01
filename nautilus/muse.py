@@ -25,13 +25,15 @@ class Reply:
     usage: dict
     latency_s: float
     status: str
+    http_status: int | None = None
+    incomplete_reason: str | None = None
 
     @property
     def calls(self):
         return [x for x in self.output if x['type'] == 'function_call']
 
 
-def parse_reply(value, model, latency_s):
+def parse_reply(value, model, latency_s, http_status=None):
     try:
         if type(value) is not dict or value.get('model') != model:
             raise ValueError()
@@ -61,7 +63,11 @@ def parse_reply(value, model, latency_s):
                 if type(usage[key]) is not int or usage[key] < 0:
                     raise ValueError()
                 safe[key] = usage[key]
-        return Reply(value['id'], model, output, safe, latency_s, value['status'])
+        details = value.get('incomplete_details')
+        reason = None
+        if value['status'] == 'incomplete' and type(details) is dict and details.get('reason') is not None:
+            reason = details['reason'] if details['reason'] in ('max_output_tokens','max_tokens','content_filter') else 'other'
+        return Reply(value['id'], model, output, safe, latency_s, value['status'], http_status, reason)
     except (ValueError, TypeError, KeyError):
         raise ProviderError('malformed_response') from None
 
@@ -109,7 +115,8 @@ class MetaProvider:
                 if key in decoded:
                     raise ProviderError('credential_echo')
                 value = parse_json(decoded)
-            return parse_reply(value, self.model, time.monotonic()-start)
+                http_status = response.status
+            return parse_reply(value, self.model, time.monotonic()-start, http_status)
         except urllib.error.HTTPError as exc:
             # Provider error bodies can echo untrusted arguments/headers: never retain them.
             code = exc.code

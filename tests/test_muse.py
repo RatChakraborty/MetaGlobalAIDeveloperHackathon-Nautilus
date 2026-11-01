@@ -217,3 +217,143 @@ def test_strict_schema_objects_declare_all_required_properties():
         elif type(value) is list:
             for item in value:walk(item)
     walk(function_tools())
+
+
+def test_compact_context_lossless_observations_registry_controller_and_limits():
+    from nautilus.muse_investigator import initial_context
+    from nautilus.controller_context import build_investigator_context
+    l=lab('Untrusted operator note');full=build_investigator_context(l);c=initial_context(l)
+    assert c['schema_version']=='nautilus.muse-context.v1'
+    observation=full['history'][0]
+    recovered=[dict(zip(c['observation_channels'],sample)) for sample in c['observations'][0]['samples']]
+    assert recovered==observation['observations']
+    assert c['observations'][0]['evidence_ref']==observation['event_hash']
+    registry=[{**c['hypothesis_defaults'],**row} for row in c['hypothesis_registry']]
+    assert registry==full['hypothesis_registry']
+    for key in ('remaining','safety_constraints','method','scope','experiment_menu','fits','numerical_summary','evidence_refs'):
+        assert c[key]==full[key]
+    controller=full['controller_context']
+    for key in ('controller_id','implementation_version','context_hash','declared_configuration','interface','properties','unknowns','trust'):
+        assert c['controller'][key]==controller[key]
+    assert c['controller']['source_sha256']==controller['source']['sha256']
+    assert '"excerpts":' not in canonical(c) and 'history' not in c and 'schemas' not in c
+    assert len(canonical(c))<len(canonical(full))
+    assert c['operator_notes'][0]['text']=='Untrusted operator note'
+    assert l.get_fit_report()['history']==full['history'] # authoritative host history is unchanged
+
+
+def test_compact_context_cannot_access_private_backend_and_keeps_adverse_data():
+    from nautilus.muse_investigator import initial_context
+    l=lab();before=deepcopy(l.ledger)
+    l._backend.private_results.append({'truth':'NEVER_SERIALIZE_PRIVATE_SENTINEL'})
+    c=initial_context(l)
+    assert 'NEVER_SERIALIZE_PRIVATE_SENTINEL' not in canonical(c)
+    assert l.ledger==before
+    assert c['public_supervisor_summary']['scope'].startswith('Derived interpretations')
+    assert any('unknown' in p['status'] for p in c['controller']['properties'])
+    assert c['controller']['unknowns']
+
+
+@pytest.mark.parametrize('details,expected',[(None,None),({},None),({'reason':'max_output_tokens'},'max_output_tokens'),({'reason':'content_filter'},'content_filter'),({'reason':'untrusted-secret-like-data'},'other')])
+def test_incomplete_details_allowlist_and_http_status(details,expected):
+    value={'id':'response','model':'test','status':'incomplete','output':[], 'usage':{'output_tokens':4096},'incomplete_details':details}
+    r=parse_reply(value,'test',.5,http_status=200)
+    assert r.incomplete_reason==expected and r.http_status==200
+    assert 'untrusted-secret-like-data' not in str(r)
+
+
+def test_forwarding_4096_limit_and_continuation_ids_with_real_transport(monkeypatch):
+    import io
+    monkeypatch.setenv('MODEL_API_KEY','offline-test-credential')
+    requests=[]
+    class Response(io.BytesIO):
+        status=200
+        def __enter__(self):return self
+        def __exit__(self,*args):self.close()
+    class Opener:
+        def open(self,request,timeout):
+            p=json.loads(request.data);requests.append(p)
+            assert p['max_output_tokens']==4096 and p['tool_choice']=='auto' and p['parallel_tool_calls'] is False
+            assert 'reasoning' not in p # no invented reasoning-control parameter
+            if len(requests)==1:
+                output=[call('get_fit_report',{},'meta-call')]
+            else:
+                assert p['previous_response_id']=='meta-1'
+                assert p['input'][0]['call_id']=='meta-call'
+                assert json.loads(p['input'][0]['output'])['result']['evidence_refs']==l.evidence_refs()
+                output=[finish(l)]
+            response={'id':'meta-'+str(len(requests)),'model':'muse-wonder-1.0','status':'completed','output':output,'usage':{'input_tokens':10,'output_tokens':10,'total_tokens':20}}
+            return Response(json.dumps(response).encode())
+    monkeypatch.setattr('urllib.request.build_opener',lambda *args:Opener())
+    l=lab();r=run(l,MetaProvider(),limits=Limits(output_tokens_per_call=4096))
+    b=body(r);assert len(requests)==2 and b['finalization_origin']=='model'
+    assert b['model_requests'][0]['response_kind']=='tool_call'
+    assert b['model_requests'][1]['submitted_call_ids']==['meta-call']
+    assert all(x['http_status']==200 for x in b['model_requests'])
+
+
+def test_usage_aware_total_output_reservation_never_exceeds_ceiling():
+    l=lab();f=Fake([[call('get_fit_report',{},str(i))] for i in range(3)]+[[finish(l)]])
+    r=run(l,f,limits=Limits(output_tokens_per_call=4096,output_tokens_total=4106))
+    assert [x['max_output_tokens'] for x in f.requests]==[4096,4096,4096,4091]
+    assert body(r)['output_tokens_reserved']==20
+    # Missing measurements consume the full allocation and cannot be reclaimed.
+    class UnknownUsage(Fake):
+        def generate(self,**kw):
+            r=super().generate(**kw);return Reply(r.response_id,r.model,r.output,{},r.latency_s,r.status)
+    l=lab();f=UnknownUsage([[call('get_fit_report',{})]])
+    r=run(l,f,limits=Limits(output_tokens_per_call=4096,output_tokens_total=4096))
+    assert len(f.requests)==1 and body(r)['output_tokens_reserved']==4096
+    assert body(r)['termination_reason']=='output_token_limit'
+
+
+def test_old_incomplete_provenance_still_valid_and_new_diagnostics_are_bounded():
+    from nautilus.muse_investigator import validate_provenance
+    l=lab();r=run(l,Fake([[finish(l)]]));p=r['provenance'];b=body(r)
+    b['model_requests'][0]['incomplete_reason']='arbitrary-secret-like-string'
+    p={**p,'body_canonical':canonical(b),'hash':fingerprint(b)}
+    with pytest.raises(ValueError):validate_provenance(p,r['public_record'])
+
+
+def test_malformed_arguments_are_distinct_from_lab_rejection():
+    l=lab();c=call('get_fit_report',{});c['arguments']='{'
+    r=run(l,Fake([[c],lambda k:[finish(l)]]))
+    assert body(r)['actions'][0]['rejection_code']=='malformed_arguments'
+
+
+def test_all_existing_optional_argument_shapes_remain_representable():
+    from itertools import combinations
+    from nautilus.v2_experiments import PARAMETERS,Trial
+    from nautilus.v2_models import REGISTRY
+    tools={t['name']:t['parameters']['properties'] for t in function_tools()}
+    def represents(field, value):
+        return any(set(value)==set(v['properties']) for v in field['anyOf'])
+    for name,spec in REGISTRY.items():
+        for populated in (False,True):
+            knobs={spec.parameter:spec.nominal} if spec.parameter and populated else {}
+            bounds={spec.parameter:list(spec.bounds)} if spec.parameter and populated else {}
+            validate_call('propose_hypothesis',canonical({'template':name,'knobs':knobs,'bounds':bounds,'rationale':'Schema regression'}))
+            assert represents(tools['propose_hypothesis']['knobs'],knobs)
+            assert represents(tools['propose_hypothesis']['bounds'],bounds)
+    for name,keys in PARAMETERS.items():
+        defaults=Trial(name).params()
+        for count in range(len(keys)+1):
+            for subset in combinations(keys,count):
+                params={key:defaults[key] for key in subset}
+                validate_call('request_experiment',canonical({'name':name,'params':params}))
+                assert represents(tools['request_experiment']['params'],params)
+
+
+def test_cli_forwards_selected_allowance_without_network(tmp_path,monkeypatch):
+    import run_muse
+    scenario=tmp_path/'development.json';scenario.write_text(json.dumps({'purpose':'development-only','faults':{},'seed':7}))
+    output=tmp_path/'run'
+    captured=[]
+    def offline_run(laboratory,provider,*,limits):
+        captured.append(limits)
+        return run(laboratory,Fake([[finish(laboratory)]]),limits=limits)
+    monkeypatch.setattr(run_muse,'run',offline_run)
+    monkeypatch.setattr('sys.argv',['run_muse.py','--authorize-api','--scenario',str(scenario),'--output',str(output),'--max-output-tokens','4096'])
+    run_muse.main()
+    assert captured[0].output_tokens_per_call==4096 and captured[0].output_tokens_total==16000 and captured[0].retries==0
+    assert (output/'muse-provenance.json').exists()

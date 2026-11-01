@@ -1,6 +1,8 @@
 # Muse Phase B integration
 
-## Outcome
+## Initial attempt (retained development history)
+
+See the recovery addendum below for the latest measured result.
 
 The source integration and offline validation are complete. **The live end-to-end
 definition of done is not met.** The one authorized development investigation
@@ -118,3 +120,134 @@ and valid model finalization or labeled host abstention after those actions. Do
 not promote this single failed development run to an accuracy result. Comparative
 work needs a predeclared protocol and separate authorization; no benchmarks,
 parameter search, tuning claims, repair claims or held-out evaluations were run.
+
+## Recovery addendum — context and budget review
+
+The original incomplete attempt above is retained unchanged as development history.
+The following source changes address its narrow context/output blocker, without
+changing physics, numerical fitting, experiment protocols, safety or tool signatures.
+
+Canonical UTF-8 serialization measurements for the same approved development setup:
+
+| Component | Original bytes | Recovery bytes |
+| --- | ---: | ---: |
+| System instructions | 1,367 | 1,367 |
+| Four strict function declarations | 14,427 | 14,427 |
+| Initial Muse context | 48,874 | 14,911 |
+| Context plus function declarations | 63,301 | 29,338 |
+
+Original context components included 21,384 bytes of history (including an 11,847-byte
+controller event), another 10,511-byte controller context, 8,565 bytes of duplicated
+capability schemas, 6,781 bytes of registry entries and a duplicated registry ID
+list. Raw initial observations occupied 8,981 bytes and raw controller excerpts
+3,390 bytes; those figures overlap enclosing components and must not be summed.
+Supervisor summary was 241 bytes, menu 388 bytes and safety/budgets 179 bytes.
+The only measured provider count for the original request was 18,241 input tokens;
+component byte counts are **not** exact component token counts or billing estimates.
+
+`nautilus.muse-context.v1` preserves every public observation value without rounding
+or downsampling, in explicitly ordered six-channel arrays tied to original evidence
+references. Observation episodes/metadata now occupy 4,534 bytes. Shared registry
+fields are factored into defaults and reconstruct exactly; identifiers, parameter
+bounds, units, mechanisms and confounders remain available (3,113 bytes of entries
+plus 263 bytes of shared defaults). Controller identity, approved structural facts,
+declared settings, interface, unknowns and context/source hashes remain (3,865
+bytes), while raw source/comments and duplicated controller ledger serialization
+are omitted from the model-facing view. The complete authoritative history/source
+context remains on the trusted host. Supervisor summaries, operator notes, numerical
+caveats, all experiment defaults/bounds, coupled constraints, safety and budgets
+are retained. Selection is deterministic and independent of private injected faults.
+Subsequent `get_fit_report` results still use the original full laboratory outcome.
+
+Strict schema unions remain unchanged: 14 knob variants, 14 bound variants and 32
+experiment-parameter variants. Optional-map subsets are already deduplicated;
+replacing them with mandatory nullable keys would change accepted argument shapes.
+Provider support for factoring these via references was not verified, so no new
+schema feature or weakened semantic validation was introduced. Focused regression
+tests cover every existing optional subset and per-template proposal shape.
+
+Recovery policy: 4,096 output tokens per request, at most 16,000 overall, ten model
+requests, zero automatic retries, unchanged eight-fit/sixteen-start/one-experiment/
+sixteen-simulated-second laboratory limits and disabled configuration evaluation.
+The CLI forwards the selected allowance and now defaults to 4,096. The host reserves
+each request's maximum before dispatch, then releases only explicitly measured
+unused output tokens; missing usage and failed requests remain fully charged.
+The 120,000 measured-input-token stop threshold is checked between requests and
+cannot guarantee the next provider input charge. Existing timeout, byte and wall
+limits remain. The available-credit figure is not a spending authorization or a
+verified tariff. Public documentation/pricing requests were unavailable through
+the current restricted network; no precise dollar cost or reasoning-control
+parameter is invented.
+
+Optional allowlisted provenance diagnostics now include actual HTTP status,
+completed tool/text versus incomplete/error classification, explicitly reported
+incomplete-reason codes, provider response/previous-response IDs and submitted
+function-call IDs. Unrecognized incomplete reasons map to `other`; absent reasons
+remain null. Malformed JSON/argument rejection and laboratory rejection are
+classified separately. No raw provider body or hidden reasoning is persisted.
+Old provenance companions and public v1/v2 records still validate unchanged.
+
+### Recovery live outcome and acceptance
+
+One additional real development investigation was attempted, with **one actual
+Meta API request and zero retries**. The model remained `muse-wonder-1.0` at the
+approved Responses endpoint. Meta returned **HTTP 200**, `status: incomplete`, and
+explicit `incomplete_details.reason: max_output_tokens`. This reason is now
+retained as an allowlisted diagnostic, not inferred from token counts.
+
+Measured usage: **10,175 input tokens, 4,096 output tokens, 14,271 total**.
+Provider request latency was **33.123 seconds**; total host duration was
+**33.135 seconds**. Input usage fell by about **44%** from the earlier measured
+18,241 tokens, but the doubled output allowance was still exhausted before a
+function call. Output reservation accounting charged 4,096 of the 16,000-token
+ceiling. No provider pricing was verified; there is no precise dollar-spend claim.
+
+| Live acceptance step | Recovery observation |
+| --- | --- |
+| Completed Meta response | No: incomplete, explicitly output-token exhausted |
+| Structured laboratory call | None returned |
+| Trusted dispatcher validated a model action | Not reached |
+| Actual model-requested laboratory execution | None |
+| Actual tool result sent with matching call ID | Not reached |
+| Meta accepted a continuation request | Not attempted |
+| Subsequent Muse decision | Not reached |
+| Valid finalization or host stop | Explicit host-enforced abstention |
+
+Actual sequence: send compact approved context and four strict tool declarations;
+receive incomplete response; host calls unchanged `finalize` with a null hypothesis,
+initial evidence reference and `HOST-ENFORCED ABSTENTION: incomplete_response`.
+This is neither voluntary model caution nor a numerical fitting failure: **zero
+fits and zero experiments were attempted**, despite the laboratory's empty-fit
+summary using its existing `OPTIMIZATION_FAILURE` label. Eight fit calls, sixteen
+optimization starts, one experiment and sixteen simulated seconds remained.
+Configuration evaluation stayed disabled. No second recovery investigation or
+higher-token retry was attempted.
+
+Both real attempts remain separately preserved outside the checkout, in
+`/workspace/nautilus-local/muse-phase-b/` and
+`/workspace/nautilus-local/muse-phase-b-recovery/`. The recovery original ledger,
+allowlisted public export and provenance were validated; both old and new
+provenance import successfully. The recovery record and explicit incomplete reason
+loaded through the existing TypeScript importer/report builder and generated a
+local `investigation_report.md`. Private settings, seeds, raw provider bodies,
+credentials and generated data were not committed or published.
+
+Final regression results: **312 Python tests passed**, all **9 frontend test files
+passed**, **5 exporter unittest cases passed**, TypeScript and Vite production
+build passed, and `git diff --check` passed. Thirteen focused new Python cases
+cover compact-context reconstruction, every allowed optional argument shape,
+private isolation, explicit/absent/unknown incomplete reasons, real-transport
+output-limit forwarding and matched continuation IDs using fake responses,
+usage-aware output reservation, CLI forwarding, old provenance compatibility and
+malformed-argument diagnostics. Offline tests execute the real laboratory; they
+are not live model successes. The existing replay chunk-size warning remains.
+
+**Recovery and full live Phase B acceptance remain unmet.** Another real run
+requires separate authorization; the available free credits do not extend the
+single-investigation permission. The next narrow step is to verify supported
+reasoning controls or review an explicit output allowance (up to 8,192 only after
+review), while preserving the overall limits and avoiding prompt searches. No
+reasoning-control parameter was guessed. Live laboratory dispatch and real
+`function_call_output` continuation still need direct evidence before integration
+can be called end-to-end verified. No diagnostic accuracy, repair or configuration
+improvement is claimed.

@@ -14,7 +14,7 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output',required=True)
     parser.add_argument('--scenario',required=True,help='Trusted private development settings outside the checkout')
-    parser.add_argument('--max-output-tokens',type=int,default=2048,help='Per-request output allowance including reasoning; review cost before increasing')
+    parser.add_argument('--max-output-tokens',type=int,default=4096,help='Per-request output allowance including reasoning; review cost before increasing')
     parser.add_argument('--authorize-api',action='store_true',help='Permit one bounded real investigation')
     args=parser.parse_args()
     if not args.authorize_api: parser.error('Explicit API authorization required')

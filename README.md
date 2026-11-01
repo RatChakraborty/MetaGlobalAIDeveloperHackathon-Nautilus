@@ -62,8 +62,8 @@ development simulations. Results are not verified repairs. See
 
 The bounded Responses adapter and linked provenance importer are implemented;
 see [the Phase B report](MUSE_PHASE_B_REPORT.md). Live text/function smoke tests
-succeeded previously, but the first complete investigation stopped on an incomplete
-model response before any laboratory action. Live end-to-end continuation is still
+succeeded previously, but both controlled investigation attempts stopped on incomplete
+model responses before any laboratory action. Live end-to-end continuation is still
 unverified. This is a development integration, not an accuracy or repair claim.
 
 Offline validation uses `python -m pytest -q` and the existing frontend commands.
@@ -79,8 +79,8 @@ The trusted settings file must remain outside the checkout and contain exactly
 and an integer `seed`. Never provide this file to the model or public exporter.
 `MODEL_API_KEY` must already be configured as a network secret scoped to
 `api.meta.ai`; do not put its value in files. `NAUTILUS_MUSE_MODEL` is a nonsecret
-model override. `--max-output-tokens` defaults to 2048 including reasoning; the
-first full run exhausted that allowance. Review cost before increasing it. The
+model override. `--max-output-tokens` defaults to 4096 including reasoning; the
+first full run exhausted its former 2048-token allowance, and the recovery exhausted 4096. Review cost and supported reasoning controls before authorizing another run. The
 runner never retries API requests or enables configuration evaluation.
 
 Open `public-investigation.json` (or the runner's public `investigation.json`) in
