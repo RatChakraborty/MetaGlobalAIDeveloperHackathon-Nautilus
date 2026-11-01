@@ -49,3 +49,11 @@ A manual Pages workflow is prepared with publication disabled by default. Neithe
 a hosted site nor a public demonstration dataset is enabled by this milestone.
 See [the completed-investigation replay contract](PRE_MUSE_INTERFACE_CONTRACT.md)
 for existing interfaces and the metadata still needed before Muse integration.
+
+## Controller context
+
+Trusted hosts can attach approved classical-controller source and declared settings
+using `nautilus.controller_context`; hidden backend settings remain separate.
+`nautilus.configuration_evaluation` compares bounded configurations in matched
+development simulations. Results are not verified repairs. See
+[the controller report](CONTROLLER_AWARE_REPORT.md) for contracts and measured limits.

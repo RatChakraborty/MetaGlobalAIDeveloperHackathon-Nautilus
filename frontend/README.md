@@ -104,3 +104,20 @@ The nominal reference is not a repaired run. Fit reports and agent conclusions
 are unavailable. Exact publication hashes remain in the separate private review
 package; do not copy its source configurations or raw CSVs into this repository.
 See [the future replay contract](../PRE_MUSE_INTERFACE_CONTRACT.md).
+
+Controller-aware public exports use `nautilus.public-investigation.v2`; separate
+trajectory exports use `nautilus.visualization-only.v2`. Historical v1 records
+remain supported. The controller provenance inspector shows approved identities,
+configuration values and differences; old records show `Controller not recorded`.
+New visualization metadata must match the public context event. The renderer still
+only interpolates recorded samples. `export_configuration_evaluation` in the
+exporter writes matched evaluation records outside the repository; it does not
+claim repairs or publish data. Private comparison records require separate review.
+
+After loading a finalized investigation, **Open configuration evaluation** accepts
+a separately exported `nautilus.post-investigation.v1` sidecar. Its hash and final
+ledger anchor must match. It shows real host-side outcomes and simulation-only
+metrics, not diagnosis evidence or verified repairs. `export_host_evaluation` writes
+the public investigation, sidecar and genuine comparison files outside the source
+tree. Use candidate as primary and baseline as reference in the existing Trajectory
+imports. Absent, skipped, rejected and failed evaluations contain no invented metrics.

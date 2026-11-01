@@ -59,3 +59,20 @@ Experimental nuisance/discrepancy reports currently add `experimental` and
 `warning` keys outside the exporter's report allowlist. Their export is therefore
 unsupported without a future explicit schema change. Do not strip those caveats
 to force a record through the current exporter.
+
+## Controller-context extension
+
+The controller-aware milestone adds an opt-in initialization event and v2 replay
+exports. The trusted host calls `initialize_controller_context` with approved
+declared settings, then `build_investigator_context` to combine that context with
+the existing snapshot and public registries. The four laboratory tools are unchanged.
+See [CONTROLLER_AWARE_REPORT.md](CONTROLLER_AWARE_REPORT.md). Historical v1 records
+are not rewritten. This extension does not add the unsupported Muse usage fields
+or make experimental numerical reports exportable.
+
+Post-finalization configuration results use a separate
+`nautilus.post-investigation.v1` sidecar, linked to the retained finalized event.
+The host validates the response envelope independently and calls the existing
+finalize arguments unchanged. Simulation metrics stay outside public observations
+and future investigator snapshots. The sidecar has a manual dashboard importer;
+its run/file references use the existing Trajectory imports without automatic fetching.

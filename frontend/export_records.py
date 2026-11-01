@@ -1,5 +1,6 @@
 import argparse,csv,hashlib,json,math
 from pathlib import Path
+from nautilus.controller_context import controller_event, validate_controller_event
 
 FIELDS=('time_s','observed_y_m','observed_heading_rad','observed_yaw_rate_radps','port_command_n','starboard_command_n')
 EVENTS={
@@ -8,6 +9,7 @@ EVENTS={
 'operator_note':{'text','trust'},'safety':{'request','screen'},
 'finalized':{'diagnosis','confidence','stop_reason','numerical_summary','interpretation','ambiguity_statement','scope'},
 'rejected':{'reason'},'fit_failure':{'template','method','reason'},'request':{'request'}}
+CONTEXT_FIELDS={'schema_version','context_hash','approved_source_id','source_sha256','controller_id','context_ref','context_canonical'}
 REPORT={'hypothesis','parameters','bounds','converged','status','weighted_sse','weighted_rmse','penalized_score','physical_wrms','command_wrms','evaluations','optimization_attempts','elapsed_s','warnings','episode_lengths','sensitivity_scaled_norm','residual_diagnostics','identifiability','bound_hits','method','evidence_refs','interpretation','physical_finding','healthy_range','relative_score'}
 
 
@@ -43,10 +45,15 @@ def public_record(source):
         ledger=state.get('history',state.get('ledger'))
         if not isinstance(ledger,list) or not ledger:raise ValueError('Recorded public history is required')
         origin='recorded_laboratory_history';conclusion=record.get('final')
-    previous=None;refs=set();out=[]
+    previous=None;refs=set();out=[];has_context=False
     for i,event in enumerate(ledger):
         kind=event.get('type')
-        if kind not in EVENTS or set(event)-EVENTS[kind]-{'index','type','previous_hash','event_hash'}:raise ValueError('Unexpected event fields; refusing lossy hash rewriting')
+        allowed=CONTEXT_FIELDS if kind=='controller_context' else EVENTS.get(kind)
+        if allowed is None or set(event)-allowed-{'index','type','previous_hash','event_hash'}:raise ValueError('Unexpected event fields; refusing lossy hash rewriting')
+        if kind=='controller_context':
+            if has_context or any(e['type'] not in ('observation','operator_note') for e in ledger[:i]):raise ValueError('Controller context must be initialization provenance')
+            validate_controller_event({k:v for k,v in event.items() if k not in ('index','type','previous_hash','event_hash')})
+            has_context=True
         reject_private(event)
         body={k:v for k,v in event.items() if k!='event_hash'}
         if event['index']!=i or event['previous_hash']!=previous or digest(body)!=event['event_hash']:raise ValueError('Invalid evidence hash chain')
@@ -62,7 +69,7 @@ def public_record(source):
     if conclusion is not None:
         reject_private(conclusion)
         if set(conclusion)-EVENTS['finalized'] or not set(conclusion.get('diagnosis',{}).get('evidence_refs',[]))<=refs:raise ValueError('Invalid recorded conclusion')
-    return {'recorded_conclusion':conclusion,'schema_version':'nautilus.public-investigation.v1','run_id':hashlib.sha256(source.read_bytes()).hexdigest(),
+    return {'recorded_conclusion':conclusion,'schema_version':'nautilus.public-investigation.v2' if has_context else 'nautilus.public-investigation.v1','run_id':hashlib.sha256(source.read_bytes()).hexdigest(),
             'source_kind':origin,'ledger':out,'disclosure':'Public evidence export. Publication requires separate dataset approval.'}
 
 
@@ -88,6 +95,71 @@ def write(path,data):
     if path==root or root in path.parents:raise ValueError('Generated data must remain outside the source repository')
     path.parent.mkdir(parents=True,exist_ok=True)
     with path.open('x') as f:json.dump(data,f,indent=2,allow_nan=False)
+
+
+def export_configuration_evaluation(evaluation, directory):
+    from nautilus.configuration_evaluation import ConfigurationEvaluation
+    from nautilus.controller_context import fingerprint
+    if type(evaluation) is not ConfigurationEvaluation:
+        raise ValueError('Trusted configuration evaluation required')
+    directory=Path(directory)
+    references={}
+    for name,run in (('baseline',evaluation.baseline),('candidate',evaluation.candidate)):
+        provenance=controller_event(run.context)
+        first={'index':0,'type':'controller_context','previous_hash':None,**provenance}
+        first_hash=digest(first)
+        observation={'index':1,'type':'observation','previous_hash':first_hash,
+                     'observations':run.result.observations,'origin':'Matched development simulation; approved evaluated controller'}
+        validate_rows(observation['observations'])
+        if fingerprint({'observations':run.result.observations,'context_hash':run.context['context_hash']})!=run.run_id:
+            raise ValueError('Evaluation observations changed after simulation')
+        public={'schema_version':'nautilus.public-investigation.v2','run_id':run.run_id,
+                'source_kind':'recorded_configuration_evaluation','disclosure':'Synthetic development simulation. Publication requires separate approval.',
+                'recorded_conclusion':None,'ledger':[{'hash':first_hash,'body_canonical':canonical(first)},
+                {'hash':digest(observation),'body_canonical':canonical(observation)}]}
+        samples=[{k:r[k] for k in ('time_s','x_m','y_m','heading_rad')} for r in run.result.truth]
+        if fingerprint(samples)!=run.trajectory_sha256:raise ValueError('Evaluation trajectory changed after simulation')
+        if [r['time_s'] for r in samples]!=[r['time_s'] for r in run.result.observations]:
+            raise ValueError('Evaluation trajectory alignment mismatch')
+        visual={'schema_version':'nautilus.visualization-only.v2','run_id':run.run_id,
+                'label':name+' controller configuration; simulation truth; not a verified repair',
+                'reference':evaluation.reference,'samples':samples,
+                'controller':{'controller_id':run.context['controller_id'],
+                              'implementation_version':run.context['implementation_version'],
+                              'source_sha256':run.context['source']['sha256'],
+                              'context_hash':run.context['context_hash'],'configuration_id':run.configuration_id,
+                              'configuration':{k:v['value'] for k,v in run.context['declared_configuration'].items()},
+                              'differences':evaluation.differences if name=='candidate' else {},
+                              'scope':'Approved evaluated configuration; not hidden actual settings.'}}
+        public_name=name+'.public.json';visual_name=name+'.visualization.json'
+        write(directory/public_name,public);write(directory/visual_name,visual)
+        references[name]={'public':public_name,'visualization':visual_name,'run_id':run.run_id,'observation_ref':digest(observation)}
+    summary={**evaluation.summary(),'records':references}
+    write(directory/'comparison.json',summary)
+    return summary
+
+
+def export_host_evaluation(result, finalized_source, directory):
+    from nautilus.host_evaluation import HostEvaluationResult, validate_post_record
+    if type(result) is not HostEvaluationResult:
+        raise ValueError('Trusted host result required')
+    public=public_record(Path(finalized_source))
+    ledger=[{**json.loads(e['body_canonical']),'event_hash':e['hash']} for e in public['ledger']]
+    validate_post_record(result.record,ledger)
+    conclusion={k:v for k,v in ledger[-1].items() if k not in ('index','type','previous_hash','event_hash')}
+    if public['recorded_conclusion'] is not None and public['recorded_conclusion']!=conclusion:
+        raise ValueError('Recorded conclusion differs from finalized ledger')
+    public['recorded_conclusion']=conclusion
+    body=json.loads(result.record['events'][0]['body_canonical'])
+    complete=body['status'].startswith('completed_')
+    if complete != (result.evaluation is not None) or (complete and result.evaluation.summary()!=body['comparison']):
+        raise ValueError('Host result differs from recorded comparison')
+    directory=Path(directory)
+    if complete:export_configuration_evaluation(result.evaluation,directory)
+    write(directory/'investigation.json',public)
+    write(directory/'configuration-evaluation.json',result.record)
+    return {'investigation':'investigation.json','post_investigation':'configuration-evaluation.json',
+            'run_references':body['run_references']}
 
 
 if __name__=='__main__':
