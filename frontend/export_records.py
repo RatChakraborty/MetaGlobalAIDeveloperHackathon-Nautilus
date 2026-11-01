@@ -162,11 +162,26 @@ def export_host_evaluation(result, finalized_source, directory):
             'run_references':body['run_references']}
 
 
+def export_supervisor_records(record, directory, *, visual=None, episode_ref=None):
+    from nautilus.supervisor import derive_public_events, derive_visual_events
+    directory=Path(directory)
+    events=derive_public_events(record)
+    write(directory/'supervisor-events.json',events)
+    if visual is not None:write(directory/'visualization-events.json',derive_visual_events(record,visual,episode_ref))
+    return events
+
+
 if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('source',type=Path);p.add_argument('--output',required=True,type=Path)
-    p.add_argument('--visualization-source',type=Path);p.add_argument('--visualization-output',type=Path);a=p.parse_args()
+    p.add_argument('--supervisor-directory',type=Path);p.add_argument('--episode-ref');p.add_argument('--visualization-source',type=Path);p.add_argument('--visualization-output',type=Path);a=p.parse_args()
     if bool(a.visualization_source)!=bool(a.visualization_output):p.error('Both visualization arguments required')
+    if a.episode_ref and not a.visualization_source:p.error('Episode binding requires a visualization source')
     record=public_record(a.source)
     visual=visualization(a.visualization_source,a.source,record['run_id']) if a.visualization_source else None
     write(a.output,record)
+    if visual and a.episode_ref:
+        from nautilus.supervisor import match_episode
+        match_episode(record,visual,a.episode_ref)
+        visual={**visual,'schema_version':'nautilus.visualization-only.v3','episode_ref':a.episode_ref}
     if visual:write(a.visualization_output,visual)
+    if a.supervisor_directory:export_supervisor_records(record,a.supervisor_directory,visual=visual,episode_ref=a.episode_ref)

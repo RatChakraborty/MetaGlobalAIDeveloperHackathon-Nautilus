@@ -6,7 +6,7 @@ export type Event={index:number;type:string;previous_hash:string|null;observatio
 export type Fit={hypothesis:string;parameters:Record<string,number>;weighted_rmse?:number;physical_wrms?:number;command_wrms?:number;penalized_score?:number;converged:boolean;warnings?:string[];evidence_refs?:string[];[key:string]:unknown};
 export type RecordFile={schema_version:'nautilus.public-investigation.v1'|'nautilus.public-investigation.v2';run_id:string;source_kind:string;disclosure:string;recorded_conclusion?:{diagnosis?:{hypothesis?:string|null;evidence_refs?:string[]};confidence?:string;stop_reason?:string}|null;ledger:{hash:string;body_canonical:string}[]};
 export type Investigation={file:RecordFile;events:(Event&{hash:string})[]};
-export type Visual={schema_version:'nautilus.visualization-only.v1'|'nautilus.visualization-only.v2';controller?:ControllerMetadata;run_id:string;label:string;reference?:{cable_length_m:number;cable_half_width_m:number;source:string}|null;samples:{time_s:number;x_m:number;y_m:number;heading_rad:number}[]};
+export type Visual={schema_version:'nautilus.visualization-only.v1'|'nautilus.visualization-only.v2'|'nautilus.visualization-only.v3';episode_ref?:string;controller?:ControllerMetadata;run_id:string;label:string;reference?:{cable_length_m:number;cable_half_width_m:number;source:string}|null;samples:{time_s:number;x_m:number;y_m:number;heading_rad:number}[]};
 const hex=(bytes:Uint8Array)=>Array.from(bytes).map(b=>b.toString(16).padStart(2,'0')).join('');
 const object=(x:unknown):x is Record<string,unknown>=>typeof x==='object'&&x!==null&&!Array.isArray(x);
 export async function readRecord(input:unknown):Promise<Investigation>{
@@ -41,10 +41,11 @@ export async function readRecord(input:unknown):Promise<Investigation>{
  return {file:input as unknown as RecordFile,events};
 }
 export function readVisual(input:unknown,runId:string):Visual{
- if(!object(input)||!['nautilus.visualization-only.v1','nautilus.visualization-only.v2'].includes(String(input.schema_version))||input.run_id!==runId||!Array.isArray(input.samples)||input.samples.length<2)throw Error('Visualization file does not match this run');
- if(Object.keys(input).some(k=>!['schema_version','run_id','label','samples','reference',...(input.schema_version==='nautilus.visualization-only.v2'?['controller']:[])].includes(k)))throw Error('Unexpected visualization fields');
+ if(!object(input)||!['nautilus.visualization-only.v1','nautilus.visualization-only.v2','nautilus.visualization-only.v3'].includes(String(input.schema_version))||input.run_id!==runId||!Array.isArray(input.samples)||input.samples.length<2)throw Error('Visualization file does not match this run');
+ if(Object.keys(input).some(k=>!['schema_version','run_id','label','samples','reference',...(input.schema_version==='nautilus.visualization-only.v2'?['controller']:input.schema_version==='nautilus.visualization-only.v3'?['controller','episode_ref']:[])].includes(k)))throw Error('Unexpected visualization fields');
  if(input.reference!=null){const ref=input.reference;if(!object(ref)||Object.keys(ref).sort().join()!==['cable_length_m','cable_half_width_m','source'].sort().join()||typeof ref.source!=='string'||![ref.cable_length_m,ref.cable_half_width_m].every(v=>typeof v==='number'&&Number.isFinite(v)&&v>0))throw Error('Invalid recorded reference dimensions');}
- if(input.schema_version==='nautilus.visualization-only.v2')readController(input.controller);
+ if(input.schema_version==='nautilus.visualization-only.v2'||input.schema_version==='nautilus.visualization-only.v3'&&input.controller!==undefined)readController(input.controller);
+ if(input.schema_version==='nautilus.visualization-only.v3'&&(typeof input.episode_ref!=='string'||!input.episode_ref))throw Error('Explicit episode reference required');
  let previous=-Infinity;
  for(const row of input.samples){if(!object(row)||Object.keys(row).sort().join()!==['heading_rad','time_s','x_m','y_m'].sort().join()||!['time_s','x_m','y_m','heading_rad'].every(k=>typeof row[k]==='number'&&Number.isFinite(row[k]))||Number(row.time_s)<=previous)throw Error('Invalid planar trajectory');previous=Number(row.time_s);}
  return input as unknown as Visual;

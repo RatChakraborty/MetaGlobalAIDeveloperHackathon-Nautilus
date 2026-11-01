@@ -1,4 +1,4 @@
-import type {Visual} from './records.ts';
+import type {Visual,Investigation,Observation} from './records.ts';
 export type CameraMode='chase'|'onboard'|'top'|'free';
 export const CAMERA_MODES:CameraMode[]=['chase','onboard','top','free'];
 export function cameraMode(value:string):CameraMode{if(!CAMERA_MODES.includes(value as CameraMode))throw Error('Unknown camera mode');return value as CameraMode;}
@@ -18,3 +18,14 @@ export function synchronizedPoses(primary:Visual,reference:Visual,time:number){r
 export function breach(pose:Visual['samples'][number],reference:Visual['reference']){return reference?Math.abs(pose.y_m)>reference.cable_half_width_m:null;}
 
 export function compatibleReference(primary:Visual,reference:Visual){if(!primary.reference||!reference.reference||primary.reference.cable_length_m!==reference.reference.cable_length_m||primary.reference.cable_half_width_m!==reference.reference.cable_half_width_m)throw Error('Comparison requires matching recorded cable and corridor dimensions');return reference;}
+
+export function matchingEpisode(record:Investigation,visual:Visual){
+ if(record.file.run_id!==visual.run_id)throw Error('Public command run mismatch');
+ const episodes=record.events.filter(e=>e.type==='observation');
+ const episode=visual.episode_ref?episodes.find(e=>e.hash===visual.episode_ref):episodes.length===1?episodes[0]:null;
+ if(!episode){if(visual.episode_ref)throw Error('Unknown visualization episode');return null;}
+ alignVisualization(visual,episode.observations!);return episode;
+}
+export type CommandSource={run_id:string;episode_ref:string;rows:Observation[]};
+export function commandSource(record:Investigation,visual:Visual):CommandSource|null{const e=matchingEpisode(record,visual);return e?{run_id:record.file.run_id,episode_ref:e.hash,rows:e.observations!}:null;}
+export function commandsAt(source:CommandSource|null,time:number){if(!source||!Number.isFinite(time)||time<source.rows[0].time_s||time>source.rows.at(-1)!.time_s)return null;let lo=0,hi=source.rows.length-1;while(lo<hi){const mid=Math.ceil((lo+hi)/2);if(source.rows[mid].time_s<=time)lo=mid;else hi=mid-1;}return source.rows[lo];}
