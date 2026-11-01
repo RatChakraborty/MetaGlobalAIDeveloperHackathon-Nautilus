@@ -26,7 +26,7 @@ python run_day1.py
   risks are warnings. Optional `simulation_enforced` retains screening and guards.
   Advisory mode is for offline research, not robotic hardware deployment.
 - Separates laboratory tools, deterministic investigators and private evaluation.
-  The Muse adapter is experimental; live end-to-end continuation and repair verification are not established.
+  The Muse adapter remains experimental; diagnostic accuracy and repair verification are not established.
 
 See [the tool contract](MUSE_LABORATORY_CONTRACT.md),
 [numerical assumptions](DIAGNOSIS_METHOD.md), and
@@ -65,8 +65,9 @@ see [the Phase B report](MUSE_PHASE_B_REPORT.md). Live text/function smoke tests
 succeeded previously, but both controlled investigation attempts stopped on incomplete
 model responses before any laboratory action. The isolated read-only
 `get_fit_report` diagnostic now verifies real dispatch and continuation. Full
-four-tool investigation completion remains unverified. This is a development
-integration, not an accuracy or repair claim.
+four-tool low-effort investigation has since executed a real experiment and four
+fits with accepted continuations, ending in a valid input-budget host abstention.
+A voluntary model diagnosis, accuracy and repairs are not established.
 
 Offline validation uses `python -m pytest -q` and the existing frontend commands.
 An explicitly authorized live development run can use:
@@ -81,8 +82,12 @@ The trusted settings file must remain outside the checkout and contain exactly
 and an integer `seed`. Never provide this file to the model or public exporter.
 `MODEL_API_KEY` must already be configured as a network secret scoped to
 `api.meta.ai`; do not put its value in files. `NAUTILUS_MUSE_MODEL` is a nonsecret
-model override. `--max-output-tokens` defaults to 4096 including reasoning; the
-first full run exhausted its former 2048-token allowance, and the recovery exhausted 4096. Review cost and supported reasoning controls before authorizing another run. The
+model override. The full-investigation runner selects documented low reasoning
+effort by default (`--reasoning-effort low`); its live acceptance is now verified.
+`--max-output-tokens` defaults to 4096 including reasoning; the
+first full run exhausted its former 2048-token allowance, and the recovery exhausted
+4096. The low-effort run stopped at the measured-input threshold instead; review
+cost and context growth before authorizing another run. The
 runner never retries API requests or enables configuration evaluation.
 
 Open `public-investigation.json` (or the runner's public `investigation.json`) in
@@ -95,6 +100,7 @@ The separate development-only `run_muse_diagnostic.py --authorize-api --output
 /private/new-dispatch-run` command permits at most two requests, 4,096 output
 tokens each, one real `get_fit_report` action and zero experiments/retries. Do not
 run it without separate API authorization. The optional `--reasoning-effort low`
-(and nonsecret `NAUTILUS_MUSE_REASONING_EFFORT` provider setting) must only be used
-after account/model support is verified; the successful live diagnostic omitted
-this override. It is not a scientific investigation or accuracy benchmark.
+(and nonsecret `NAUTILUS_MUSE_REASONING_EFFORT` provider setting) uses the
+Meta syntax subsequently confirmed by the user from official documentation.
+The successful live diagnostic omitted this override; a new live test still
+requires explicit authorization. It is not a scientific investigation or accuracy benchmark.

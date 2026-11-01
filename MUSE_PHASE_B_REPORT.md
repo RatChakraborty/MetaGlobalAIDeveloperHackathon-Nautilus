@@ -353,3 +353,182 @@ The next step is a separately authorized concise first-action run with the full
 four-tool interface and approved public evidence; use low effort only after support
 is verified. That future full investigation was **not** run here. For later evaluation,
 report completion over all attempts separately from accuracy conditional on completion.
+
+## Offline preparation for a future four-tool run (not executed)
+
+No authenticated requests were made in this preparation. The successful isolated
+`get_fit_report` diagnostic above and both earlier incomplete attempts are preserved.
+The user subsequently confirmed Meta's documentation for nested `reasoning.effort`
+and the accepted `low` value for `muse-wonder-1.0`, citing
+<https://dev.meta.ai/docs/reasoning>,
+<https://dev.meta.ai/docs/protocols/responses>, and
+<https://dev.meta.ai/docs/overview>. This establishes the documented format;
+**live acceptance of low effort remains unverified in this environment**.
+
+The production interface already retained all four tools. Its strict declarations,
+validation, public context and numerical/safety behavior remain unchanged. The
+full-investigation CLI now explicitly selects `low` by default (also exposed as
+`--reasoning-effort low`). Initial instructions are shortened from 1,367 to 1,051
+bytes and ask for the first useful, model-selected laboratory action before a full
+case solution, retaining numerical caveats, untrusted-text handling and valid
+finalization requirements. Offline transport tests exercise the real laboratory
+with all four declarations, low-effort serialization, matched continuation IDs and
+an unsupported-setting HTTP 400 that stops without retry/fallback.
+
+For the existing approved development setup, the complete initial JSON payload is
+**33,244 UTF-8 bytes**: 1,051 instruction bytes, 14,911 canonical public-context
+bytes and 14,427 canonical tool-schema bytes, plus host notice, fields and JSON
+encoding overhead. All 41 initial observation samples remain unchanged. These are
+serialization measurements, not exact provider input-token estimates.
+
+Proposed configuration, pending separate explicit live authorization:
+
+| Setting | Proposed value |
+| --- | --- |
+| Model/endpoint | `muse-wonder-1.0`, `https://api.meta.ai/v1/responses` |
+| Reasoning/tool policy | `reasoning.effort: low`, `tool_choice: auto`, `parallel_tool_calls: false` |
+| Requests / model action attempts | At most 10 / 10 |
+| Output tokens | At most 4,096 per request, 16,000 aggregate; reasoning included |
+| Input stop threshold | 120,000 measured cumulative tokens, checked between requests; not a guaranteed input-charge cap |
+| Outbound context/tool bytes | 1 MB cumulative host-accounted bytes |
+| Transport retries / timeout / wall deadline | 0 / 60 seconds per request / 600 seconds checked between actions |
+| Numerical budget | 8 fits, 16 optimization starts |
+| Simulation budget | 1 experiment, at most 16 simulated seconds; existing advisory safety semantics |
+| Configuration evaluation | Disabled |
+
+Unsupported-parameter/authentication errors, network/provider errors and incomplete
+or malformed responses stop without an alternate-parameter retry. Invalid model
+actions receive sanitized correction results within the existing three-error and
+host action/request bounds. Repeated call IDs reuse cached outcomes; collisions
+stop. Exhaustion produces an explicitly labeled host-enforced abstention, never an
+invented model diagnosis. No benchmark, prompt search, additional isolated diagnostic
+or automatic allowance increase is proposed. Monetary cost is unavailable without a
+verified tariff. Full low-effort autonomous tool selection/finalization remains the
+unverified live step; it was not attempted during this offline task.
+
+Offline preparation validation: **340 Python tests passed**, all **9 frontend test
+files passed**, **5 exporter unittest cases passed**, TypeScript/Vite production
+build and `git diff --check` passed. The existing large replay-chunk warning remains.
+Changes are local and uncommitted for review; no authenticated request, commit,
+push or merge was performed for this preparation.
+
+## Authorized full four-tool low-effort run — latest result
+
+**The real engineering end-to-end acceptance criteria were met with a valid
+host-enforced termination after genuine model actions and continuations.** A
+model-initiated scientific finalization remains unverified. One full development
+investigation was run under the newly authorized limits, using the same approved
+external development settings, never a frozen evaluation case. Single-agent,
+sequential execution and all four original tool declarations were preserved.
+No controller changes, parallel model calls, new product features, configuration
+evaluations or additional live runs were introduced.
+
+Meta accepted and reported `reasoning.effort: low` on **all five** actual requests
+for `muse-wonder-1.0` at `https://api.meta.ai/v1/responses`. Every response was
+HTTP 200 and `completed`, with no incomplete reason, transport retry, provider
+error or rejected model action. This is direct live confirmation of the documented
+low setting; earlier claims of unverified low effort above are retained history.
+
+### Genuine model-selected actions and scientific outcomes
+
+| Action | Actual laboratory outcome |
+| --- | --- |
+| 1. `request_experiment` | Executed `differential_step`, 12 s, differential 4 N, cruise 8 N, phase 3 s. These are resolved execution settings, not a reconstructed complete original argument transcript. |
+| 2. `propose_hypothesis`: `nominal` | Converged; weighted RMSE 1.016091; penalized score 870.348136; no free parameters. |
+| 3. `propose_hypothesis`: `port_degradation` | Converged; fitted port efficiency 0.785410; weighted RMSE 0.985521; score 826.013740. |
+| 4. `propose_hypothesis`: `starboard_degradation` | Converged; fitted starboard efficiency approximately 1.0, upper-bound hit; weighted RMSE 1.016091; score 877.595929. |
+| 5. `propose_hypothesis`: `heading_bias` | Converged; fitted bias 0.00423083 rad; weighted RMSE 1.014783; score 875.356534. |
+
+The actual tool results for actions 1–4 were returned using their matching original
+provider call IDs. Requests 2–5 used the corresponding `previous_response_id` and
+were accepted with completed subsequent model decisions. The last heading-bias
+fit was executed and recorded but **was not returned to Muse**: the host's next
+iteration stopped before request 6. Muse never requested `get_fit_report` or
+`finalize` in this run, although both were available. No model conclusion is inferred
+from free text or from the laboratory's conditional ranking.
+
+The experiment's predictive screen marked `would_reject_enforced: true`, elevated
+risk, and predictive acceptance false. Existing `simulation_advisory` semantics
+permitted the bounded offline execution; no safety behavior was weakened.
+The measured public observed maximum lateral displacement was **6.512357 m**, beyond
+the 1.5 m corridor. A hypothetical guard trigger was recorded at 4.95 s, but no
+intervention occurred; the requested waveform continued to 12 s as designed.
+`observed_corridor_excursion` is retained in execution metadata. This is an adverse
+experimental outcome, not safe containment or physical stopping evidence.
+
+All four fits used the original 41-row initial episode and 240 actual pre-endpoint
+experiment rows. Command residual WRMS was 0; physical WRMS equals the reported
+weighted RMSE in these fits. Port, starboard and bias fits had one-dimensional local
+sensitivity ranks of 1, explicitly **not** model-identity guarantees. The nominal
+fit has no fitted parameter. Recorded warnings preserve conditional measured-state
+innovations, missing longitudinal/speed channels, known-reset assumptions and the
+starboard bound hit. No private evaluator or answer-key correctness check was run.
+The numerical summary selected port degradation among these requested fits; that
+is **not** a Muse final diagnosis, physical attribution or measured accuracy claim.
+
+### Measured usage and exact stopping point
+
+| Request | Input tokens | Output tokens | Reasoning tokens (within output) | Provider latency |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 10,125 | 620 | 482 | 7.190 s |
+| 2 | 26,890 | 342 | 185 | 9.586 s |
+| 3 | 27,592 | 154 | 14 | 8.288 s |
+| 4 | 28,322 | 133 | 0 | 8.318 s |
+| 5 | 29,066 | 232 | 54 | 7.853 s |
+| Total | **121,995** | **1,481** | **735** | **41.235 s** |
+
+Total provider tokens were **123,476**; reported cached input tokens were 0 on all
+requests. Overall host duration was **42.850 s**. Output remained within 4,096 per
+request and 16,000 overall, including reasoning. No precise monetary cost is
+claimed without verified pricing.
+
+The existing 120,000 **measured-input-token threshold** is checked between requests;
+request 5 crossed it to 121,995. This was an acknowledged soft stop threshold, not
+an exact provider input-charge cap. The host recorded `termination_reason:
+input_token_limit` and finalized a null-hypothesis abstention citing both genuine
+observation references, with an explicit `HOST-ENFORCED ABSTENTION` label. That is
+not voluntary Muse scientific caution. The pending last fit result was not sent
+because no sixth request was authorized by the active host policy.
+
+Actual consumption was five of ten request/action attempts, four of eight fits,
+three of sixteen optimization starts, and one 12-second experiment. Remaining
+budgets: four fit calls, thirteen optimization starts, zero experiments and four
+simulated seconds. The experiment-count ceiling prevents a second experiment
+regardless of unused seconds. Configuration evaluation remained disabled.
+
+### Acceptance, validation and remaining limitations
+
+| Real end-to-end requirement | Result |
+| --- | --- |
+| Muse generated structured laboratory calls | Passed: five actual calls, all validated and accepted |
+| Existing laboratory executed actual actions | Passed: one experiment and four recorded fits |
+| Actual tool output returned and accepted | Passed: four matched call-ID/response-ID continuations |
+| Valid finalization or explicit host termination | Passed: input-budget host-enforced abstention |
+| Original laboratory constraints/privacy retained | Passed: original bounds/safety/budgets and public-only export checks |
+| Public evidence and model provenance import | Passed: Python export, TypeScript importer and report generation |
+| Autonomous model finalization or scientific accuracy | Not established; no such claim |
+
+The original ledger/hash chain, action anchors, numerical evidence references,
+four actual continuation links, allowlisted public export and linked provenance
+were validated. The actual record loaded through the existing dashboard importer,
+and an investigation report was generated. Local review files remain outside the
+checkout in `/workspace/nautilus-local/muse-phase-b-low-full/`; no private settings,
+raw provider responses, hidden reasoning or generated datasets are committed or
+published. Earlier failed and successful diagnostic attempts remain unchanged.
+
+The full public experiment output and accumulated conversation increased measured
+input usage substantially. Before another authorized investigation, review this
+input growth and any proposed lossless presentation/budget change offline. No such
+runtime change or additional live run was made here. The differing prompts, context
+and reasoning setting across historical attempts prevent an isolated causal claim
+about why earlier attempts exhausted output. A useful voluntary diagnosis still
+needs separate evidence; the present result establishes bounded integration only.
+
+Post-run regression validation: **342 Python tests passed**, all **9 frontend test
+files passed**, **5 exporter unittest cases passed**, and TypeScript/Vite production
+build passed. New offline boundary tests verify that reaching or crossing the input
+threshold preserves the last executed fit while sending no further model request,
+and records a host rather than voluntary model abstention. `git diff --check` passed;
+the existing replay chunk-size warning remains. Source-only changes and this report
+are prepared for normal commit/push to the same feature branch; no generated run
+records, private configuration, source-controller changes or deployment are included.

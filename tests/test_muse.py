@@ -350,6 +350,7 @@ def test_cli_forwards_selected_allowance_without_network(tmp_path,monkeypatch):
     output=tmp_path/'run'
     captured=[]
     def offline_run(laboratory,provider,*,limits):
+        assert provider.reasoning_effort=='low'
         captured.append(limits)
         return run(laboratory,Fake([[finish(laboratory)]]),limits=limits)
     monkeypatch.setattr(run_muse,'run',offline_run)
@@ -357,3 +358,78 @@ def test_cli_forwards_selected_allowance_without_network(tmp_path,monkeypatch):
     run_muse.main()
     assert captured[0].output_tokens_per_call==4096 and captured[0].output_tokens_total==16000 and captured[0].retries==0
     assert (output/'muse-provenance.json').exists()
+
+
+def test_production_low_effort_payload_four_tools_and_real_lab_continuation(monkeypatch):
+    """Offline transport fixture: actual host/laboratory, no authenticated request."""
+    import io
+    monkeypatch.setenv('MODEL_API_KEY','offline-fixture-only')
+    l=lab();payloads=[]
+    class Response(io.BytesIO):
+        status=200
+        def __enter__(self):return self
+        def __exit__(self,*args):self.close()
+    class Opener:
+        def open(self,request,timeout):
+            p=json.loads(request.data);payloads.append(p)
+            assert p['model']=='muse-wonder-1.0'
+            assert p['reasoning']=={'effort':'low'}
+            assert p['tool_choice']=='auto' and p['parallel_tool_calls'] is False
+            assert p['max_output_tokens']==4096
+            assert p['tools']==function_tools() and len(p['tools'])==4
+            assert 'first useful laboratory action' in p['instructions']
+            if len(payloads)==1:
+                context=json.loads(p['input'][0]['content'][0]['text'])
+                assert context['evidence_refs']==l.evidence_refs()
+                assert context['observations'] and context['hypothesis_registry'] and context['controller']
+                output=[call('propose_hypothesis',{'template':'nominal','knobs':{},'bounds':{},'rationale':'Offline fixture: inspect public evidence'},'fit-call')]
+            else:
+                assert p['previous_response_id']=='offline-response-1'
+                assert p['input'][0]['call_id']=='fit-call'
+                returned=json.loads(p['input'][0]['output'])
+                assert returned['ok'] and returned['result']['hypothesis']=='nominal'
+                assert returned['remaining']['fit_calls']==3
+                output=[finish(l)]
+            return Response(json.dumps({'model':'muse-wonder-1.0','id':'offline-response-'+str(len(payloads)),
+                'status':'completed','output':output,'reasoning':{'effort':'low'},
+                'usage':{'input_tokens':100,'output_tokens':30,'total_tokens':130,
+                         'output_tokens_details':{'reasoning_tokens':20},'input_tokens_details':{'cached_tokens':0}}}).encode())
+    monkeypatch.setattr('urllib.request.build_opener',lambda *args:Opener())
+    r=run(l,MetaProvider(reasoning_effort='low'),limits=Limits(output_tokens_per_call=4096))
+    assert len(payloads)==2 and l.fit_calls==1 and l.tests==0
+    assert body(r)['finalization_origin']=='model'
+    assert all(x['reasoning_effort_requested']=='low' and x['reasoning_effort_reported']=='low' for x in body(r)['model_requests'])
+    assert all(x['usage']['reasoning_tokens']==20 for x in body(r)['model_requests'])
+
+
+def test_full_investigator_rejected_low_setting_never_retries_without_it(monkeypatch):
+    import urllib.error
+    from io import BytesIO
+    monkeypatch.setenv('MODEL_API_KEY','offline-fixture-only')
+    captured=[]
+    class Opener:
+        def open(self,request,timeout):
+            p=json.loads(request.data);captured.append(p)
+            assert p['reasoning']=={'effort':'low'}
+            raise urllib.error.HTTPError(request.full_url,400,'unsupported parameter',{},BytesIO(b'withheld offline fixture'))
+    monkeypatch.setattr('urllib.request.build_opener',lambda *args:Opener())
+    r=run(lab(),MetaProvider(reasoning_effort='low'),limits=Limits(output_tokens_per_call=4096))
+    assert len(captured)==1 and body(r)['errors']==['http_400']
+    assert body(r)['termination_reason']=='provider_error' and body(r)['finalization_origin']=='host'
+
+
+@pytest.mark.parametrize('measured_input',[120000,121995])
+def test_input_threshold_preserves_last_executed_fit_without_sending_another_request(measured_input):
+    """Offline regression for the genuine run's between-request stop boundary."""
+    l=lab()
+    class InputLimited(Fake):
+        def generate(self,**kwargs):
+            r=super().generate(**kwargs)
+            return Reply(r.response_id,r.model,r.output,{'input_tokens':measured_input,'output_tokens':5,'total_tokens':measured_input+5},r.latency_s,r.status)
+    f=InputLimited([[call('propose_hypothesis',{'template':'nominal','knobs':{},'bounds':{},'rationale':'Offline boundary test'},'last-fit')]])
+    r=run(l,f)
+    assert len(f.requests)==1 and l.fit_calls==1
+    assert body(r)['termination_reason']=='input_token_limit' and body(r)['finalization_origin']=='host'
+    assert len(body(r)['actions'])==1 and body(r)['actions'][0]['accepted']
+    assert any(e['type']=='fit' and e['report']['hypothesis']=='nominal' and e['report']['converged'] for e in l.ledger)
+    assert l.ledger[-1]['confidence']=='abstain' and 'HOST-ENFORCED' in l.ledger[-1]['stop_reason']

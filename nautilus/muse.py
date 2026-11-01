@@ -121,7 +121,7 @@ class MetaProvider:
         # Empty string explicitly omits the override, including environment defaults.
         effort = os.environ.get('NAUTILUS_MUSE_REASONING_EFFORT') if reasoning_effort is None else reasoning_effort
         if effort not in (None, '', 'low') or (effort is not None and type(effort) is not str):
-            raise ValueError('Only the reviewed low reasoning candidate or omission is permitted')
+            raise ValueError('Only documented low reasoning effort or omission is permitted')
         self.reasoning_effort = effort or None
         if type(self.model) is not str or not self.model or len(self.model) > 100:
             raise ValueError('Invalid nonsecret model setting')

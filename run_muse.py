@@ -15,6 +15,7 @@ def main():
     parser.add_argument('--output',required=True)
     parser.add_argument('--scenario',required=True,help='Trusted private development settings outside the checkout')
     parser.add_argument('--max-output-tokens',type=int,default=4096,help='Per-request output allowance including reasoning; review cost before increasing')
+    parser.add_argument('--reasoning-effort',choices=['low'],default='low',help='Documented low effort; actual provider setting/usage is recorded')
     parser.add_argument('--authorize-api',action='store_true',help='Permit one bounded real investigation')
     args=parser.parse_args()
     if not args.authorize_api: parser.error('Explicit API authorization required')
@@ -35,7 +36,7 @@ def main():
                    fit_budget=8,optimization_budget=16,experiment_budget=1,time_budget_s=16.,
                    note='Development-only investigation. Determine what the public telemetry supports; abstain when confounded.')
     initialize_controller_context(lab,build_controller_context())
-    result=run(lab,MetaProvider(),limits=limits)
+    result=run(lab,MetaProvider(reasoning_effort=args.reasoning_effort),limits=limits)
     for name,value in [('investigation.json',result['public_record']),('muse-provenance.json',result['provenance'])]:
         (output/name).write_text(canonical(value)+'\n')
     print('Completed bounded investigation; review public export and linked provenance outside the checkout.')
