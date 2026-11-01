@@ -27,6 +27,13 @@ class Reply:
     status: str
     http_status: int | None = None
     incomplete_reason: str | None = None
+    reasoning_effort: str | None = None
+
+    @property
+    def has_text(self):
+        return any(item.get('type') == 'message' and any(
+            c.get('type') == 'output_text' and isinstance(c.get('text'), str) and bool(c['text'].strip())
+            for c in (item.get('content') or []) if isinstance(c, dict)) for item in self.output)
 
     @property
     def calls(self):
@@ -46,6 +53,11 @@ def parse_reply(value, model, latency_s, http_status=None):
         for item in output:
             if type(item) is not dict or item.get('type') not in ('function_call', 'message', 'reasoning'):
                 raise ValueError()
+            if item['type'] == 'message':
+                if type(item.get('content')) is not list or any(type(c) is not dict for c in item['content']):
+                    raise ValueError()
+                if any(c.get('type') == 'output_text' and type(c.get('text')) is not str for c in item['content']):
+                    raise ValueError()
             if item['type'] == 'function_call':
                 for key in ('name', 'arguments', 'call_id'):
                     if type(item.get(key)) is not str or not 0 < len(item[key]) <= 20000:
@@ -63,11 +75,29 @@ def parse_reply(value, model, latency_s, http_status=None):
                 if type(usage[key]) is not int or usage[key] < 0:
                     raise ValueError()
                 safe[key] = usage[key]
+        for detail_key, source_key, counter in (
+                ('reasoning_tokens', 'output_tokens_details', 'reasoning_tokens'),
+                ('cached_input_tokens', 'input_tokens_details', 'cached_tokens')):
+            detail = usage.get(source_key)
+            if detail is not None:
+                if type(detail) is not dict:
+                    raise ValueError()
+                if counter in detail:
+                    count = detail[counter]
+                    if type(count) is not int or count < 0:
+                        raise ValueError()
+                    safe[detail_key] = count
+        if safe.get('reasoning_tokens', 0) > safe.get('output_tokens', float('inf')) or safe.get('cached_input_tokens', 0) > safe.get('input_tokens', float('inf')):
+            raise ValueError()
+        reported = value.get('reasoning')
+        effort = None
+        if type(reported) is dict and reported.get('effort') is not None:
+            effort = reported['effort'] if reported['effort'] in ('low','medium','high','max') else 'other'
         details = value.get('incomplete_details')
         reason = None
         if value['status'] == 'incomplete' and type(details) is dict and details.get('reason') is not None:
             reason = details['reason'] if details['reason'] in ('max_output_tokens','max_tokens','content_filter') else 'other'
-        return Reply(value['id'], model, output, safe, latency_s, value['status'], http_status, reason)
+        return Reply(value['id'], model, output, safe, latency_s, value['status'], http_status, reason, effort)
     except (ValueError, TypeError, KeyError):
         raise ProviderError('malformed_response') from None
 
@@ -86,8 +116,13 @@ class MetaProvider:
     """
     provider = 'meta'
 
-    def __init__(self, model=None):
+    def __init__(self, model=None, *, reasoning_effort=None):
         self.model = model or os.environ.get('NAUTILUS_MUSE_MODEL', DEFAULT_MODEL)
+        # Empty string explicitly omits the override, including environment defaults.
+        effort = os.environ.get('NAUTILUS_MUSE_REASONING_EFFORT') if reasoning_effort is None else reasoning_effort
+        if effort not in (None, '', 'low') or (effort is not None and type(effort) is not str):
+            raise ValueError('Only the reviewed low reasoning candidate or omission is permitted')
+        self.reasoning_effort = effort or None
         if type(self.model) is not str or not self.model or len(self.model) > 100:
             raise ValueError('Invalid nonsecret model setting')
 
@@ -98,6 +133,8 @@ class MetaProvider:
         payload = dict(model=self.model, instructions=instructions, input=input, tools=tools,
                        stream=False, store=True, tool_choice='auto', parallel_tool_calls=False,
                        max_output_tokens=max_output_tokens)
+        if self.reasoning_effort is not None:
+            payload['reasoning'] = {'effort':self.reasoning_effort}
         if previous_response_id:
             payload['previous_response_id'] = previous_response_id
         body = json.dumps(payload, allow_nan=False).encode()

@@ -229,7 +229,8 @@ def run(laboratory, provider, *, limits=Limits()):
         request_start = time.monotonic(); entry={'latency_s':0.,'usage':{},'status':'error','function_calls':0,
             'http_status':None,'response_kind':'error','incomplete_reason':None,
             'response_id':None,'previous_response_id':previous,
-            'submitted_call_ids':[x['call_id'] for x in pending if x.get('type')=='function_call_output']}; requests.append(entry)
+            'submitted_call_ids':[x['call_id'] for x in pending if x.get('type')=='function_call_output'],
+            'reasoning_effort_requested':getattr(provider,'reasoning_effort',None),'reasoning_effort_reported':None,'has_text':False}; requests.append(entry)
         try:
             reply = provider.generate(instructions=PROMPT+host_notice,input=deepcopy(pending),tools=deepcopy(tools),
                 previous_response_id=previous,max_output_tokens=allowance,timeout=min(limits.timeout_s,remaining_time))
@@ -244,7 +245,8 @@ def run(laboratory, provider, *, limits=Limits()):
             reason='provider_error'; break
         entry.update(latency_s=reply.latency_s,usage=reply.usage,status=reply.status,function_calls=len(reply.calls),
             http_status=reply.http_status,incomplete_reason=reply.incomplete_reason,response_id=reply.response_id,
-            response_kind='incomplete' if reply.status=='incomplete' else 'tool_call' if reply.calls else 'text_only')
+            response_kind='incomplete' if reply.status=='incomplete' else 'tool_call' if reply.calls else 'text_only' if reply.has_text else 'empty',
+            reasoning_effort_reported=reply.reasoning_effort,has_text=reply.has_text)
         # Reserve the full allowance before dispatch. Release only tokens the
         # provider explicitly reports as unused; missing usage stays fully charged.
         measured_output=reply.usage.get('output_tokens')
@@ -326,16 +328,30 @@ def validate_provenance(value, source):
         raise ValueError('Invalid provenance hash')
     keys={'provider','model','initial_observation_ref','ledger_anchor','model_requests','actions','errors','retries',
           'termination_reason','finalization_origin','elapsed_s','output_tokens_reserved','request_bytes','remaining','configuration_evaluation','cost'}
-    if set(body) != keys or body['provider'] != 'meta' or type(body['model']) is not str or not 0 < len(body['model']) <= 100:
+    if not keys <= set(body) or set(body)-keys-{'diagnostic'} or body['provider'] != 'meta' or type(body['model']) is not str or not 0 < len(body['model']) <= 100:
         raise ValueError('Invalid provenance fields')
+    if 'diagnostic' in body:
+        d=body['diagnostic']
+        if type(d) is not dict or set(d)!={'schema_version','model_request_limit','output_token_limit','tool_names','tool_result_hash','followup_text'} or d['schema_version']!='nautilus.muse-tool-dispatch.v1' or d['model_request_limit']!=2 or d['output_token_limit']!=8192 or d['tool_names']!=['get_fit_report']:
+            raise ValueError('Invalid diagnostic protocol')
+        if len(body['model_requests'])>2 or len(body['actions'])>1 or body['retries']!=0 or body['output_tokens_reserved']>8192 or any(a['accepted'] and a['name']!='get_fit_report' for a in body['actions']): raise ValueError('Diagnostic limits exceeded')
+        if d['tool_result_hash'] is not None and (type(d['tool_result_hash']) is not str or len(d['tool_result_hash'])!=64 or any(c not in '0123456789abcdef' for c in d['tool_result_hash'])): raise ValueError('Invalid tool result hash')
+        if d['followup_text'] is not None and (type(d['followup_text']) is not str or not 0<len(d['followup_text'])<=1000): raise ValueError('Invalid follow-up text')
     ledger=source['ledger']; hashes=[e['hash'] for e in ledger]; final=json.loads(ledger[-1]['body_canonical'])
     if body['initial_observation_ref'] != hashes[0] or body['ledger_anchor'] != hashes[-1] or final['type'] != 'finalized':
         raise ValueError('Unlinked provenance')
     if body['finalization_origin'] not in ('host','model') or body['configuration_evaluation'] != 'disabled':
         raise ValueError('Invalid finalization provenance')
-    reasons={'model_finalized','model_call_limit','wall_deadline','action_limit','output_token_limit','request_byte_limit','provider_error','model_mismatch','incomplete_response','provider_token_overrun','input_token_limit','no_tool_call','parallel_calls_rejected','call_id_collision','invalid_call_limit'}
+    reasons={'model_finalized','model_call_limit','wall_deadline','action_limit','output_token_limit','request_byte_limit','provider_error','model_mismatch','incomplete_response','provider_token_overrun','input_token_limit','no_tool_call','parallel_calls_rejected','call_id_collision','invalid_call_limit','diagnostic_completed','diagnostic_unexpected_followup','diagnostic_multiple_calls','diagnostic_no_call','diagnostic_invalid_call'}
     if body['termination_reason'] not in reasons or (body['finalization_origin']=='model') != (body['termination_reason']=='model_finalized'):
         raise ValueError('Inconsistent termination')
+    if body['termination_reason'].startswith('diagnostic_') and 'diagnostic' not in body: raise ValueError('Diagnostic must be explicitly labeled')
+    if 'diagnostic' in body:
+        if body['finalization_origin']!='host' or body['remaining']['experiments']!=0 or body['remaining']['time_s']!=0: raise ValueError('Invalid diagnostic finalization or budgets')
+        if body['termination_reason']=='diagnostic_completed':
+            requests=body['model_requests']; actions=body['actions']
+            if len(requests)!=2 or any(r['status']!='completed' for r in requests) or len(actions)!=1 or not actions[0]['accepted'] or actions[0]['name']!='get_fit_report' or requests[0]['function_calls']!=1 or requests[1]['function_calls']!=0 or not requests[1].get('has_text') or requests[1].get('submitted_call_ids')!=[actions[0]['call_id']] or requests[1].get('previous_response_id')!=requests[0].get('response_id') or body['diagnostic']['tool_result_hash'] is None:
+                raise ValueError('Diagnostic success lacks continuation evidence')
     if body['finalization_origin']=='host' and (final['confidence'] != 'abstain' or not final['stop_reason'].startswith('HOST-ENFORCED ABSTENTION:')):
         raise ValueError('Host abstention not labeled')
     def nonnegative(x, integer=False):
@@ -343,16 +359,18 @@ def validate_provenance(value, source):
     for k in ('elapsed_s','output_tokens_reserved','request_bytes','retries'): nonnegative(body[k], k!='elapsed_s')
     if not isinstance(body['model_requests'],list) or len(body['model_requests'])>32 or not isinstance(body['actions'],list) or len(body['actions'])>128: raise ValueError('Unbounded provenance')
     for request in body['model_requests']:
-        if not {'latency_s','usage','status','function_calls'} <= set(request) or set(request)-{'latency_s','usage','status','function_calls','http_status','response_kind','incomplete_reason','response_id','previous_response_id','submitted_call_ids'} or request['status'] not in ('error','completed','incomplete'): raise ValueError('Invalid request record')
+        if not {'latency_s','usage','status','function_calls'} <= set(request) or set(request)-{'latency_s','usage','status','function_calls','http_status','response_kind','incomplete_reason','response_id','previous_response_id','submitted_call_ids','reasoning_effort_requested','reasoning_effort_reported','has_text'} or request['status'] not in ('error','completed','incomplete'): raise ValueError('Invalid request record')
         nonnegative(request['latency_s']); nonnegative(request['function_calls'],True)
         if 'http_status' in request and request['http_status'] is not None and (type(request['http_status']) is not int or not 100<=request['http_status']<=599): raise ValueError('Invalid HTTP status')
-        if 'response_kind' in request and request['response_kind'] not in ('error','incomplete','tool_call','text_only'): raise ValueError('Invalid response kind')
+        if 'response_kind' in request and request['response_kind'] not in ('error','incomplete','tool_call','text_only','empty'): raise ValueError('Invalid response kind')
         if request.get('incomplete_reason') not in (None,'max_output_tokens','max_tokens','content_filter','other'): raise ValueError('Invalid incomplete code')
         for key in ('response_id','previous_response_id'):
             if request.get(key) is not None and (type(request[key]) is not str or not 0<len(request[key])<=20000): raise ValueError('Invalid provider identifier')
         if 'submitted_call_ids' in request and (type(request['submitted_call_ids']) is not list or len(request['submitted_call_ids'])>16 or any(type(x) is not str or not 0<len(x)<=20000 for x in request['submitted_call_ids'])): raise ValueError('Invalid submitted call IDs')
 
-        if type(request['usage']) is not dict or set(request['usage'])-{'input_tokens','output_tokens','total_tokens'}: raise ValueError('Invalid usage')
+        if request.get('reasoning_effort_requested') not in (None,'low') or request.get('reasoning_effort_reported') not in (None,'low','medium','high','max','other'): raise ValueError('Invalid reasoning setting')
+        if 'has_text' in request and type(request['has_text']) is not bool: raise ValueError('Invalid output presence')
+        if type(request['usage']) is not dict or set(request['usage'])-{'input_tokens','output_tokens','total_tokens','reasoning_tokens','cached_input_tokens'}: raise ValueError('Invalid usage')
         for v in request['usage'].values(): nonnegative(v,True)
     names={t['name'] for t in function_tools()}|{'unknown'}; ids=set(); last=0
     for action in body['actions']:
