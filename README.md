@@ -63,8 +63,10 @@ development simulations. Results are not verified repairs. See
 The bounded Responses adapter and linked provenance importer are implemented;
 see [the Phase B report](MUSE_PHASE_B_REPORT.md). Live text/function smoke tests
 succeeded previously, but both controlled investigation attempts stopped on incomplete
-model responses before any laboratory action. Live end-to-end continuation is still
-unverified. This is a development integration, not an accuracy or repair claim.
+model responses before any laboratory action. The isolated read-only
+`get_fit_report` diagnostic now verifies real dispatch and continuation. Full
+four-tool investigation completion remains unverified. This is a development
+integration, not an accuracy or repair claim.
 
 Offline validation uses `python -m pytest -q` and the existing frontend commands.
 An explicitly authorized live development run can use:
@@ -88,3 +90,11 @@ the existing dashboard, then **Open Muse provenance** with its matching sidecar.
 The investigation report includes validated model provenance. Keep generated
 records outside the repository and out of `public/` and `dist/`; publication is
 not part of this workflow.
+
+The separate development-only `run_muse_diagnostic.py --authorize-api --output
+/private/new-dispatch-run` command permits at most two requests, 4,096 output
+tokens each, one real `get_fit_report` action and zero experiments/retries. Do not
+run it without separate API authorization. The optional `--reasoning-effort low`
+(and nonsecret `NAUTILUS_MUSE_REASONING_EFFORT` provider setting) must only be used
+after account/model support is verified; the successful live diagnostic omitted
+this override. It is not a scientific investigation or accuracy benchmark.

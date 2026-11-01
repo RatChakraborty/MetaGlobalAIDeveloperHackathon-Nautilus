@@ -251,3 +251,105 @@ reasoning-control parameter was guessed. Live laboratory dispatch and real
 `function_call_output` continuation still need direct evidence before integration
 can be called end-to-end verified. No diagnostic accuracy, repair or configuration
 improvement is claimed.
+
+## Read-only tool-dispatch diagnostic — latest result
+
+**The isolated live dispatch/continuation milestone passed; full autonomous Phase B
+remains unverified.** Branch: `feature/muse-investigator`. Base commit:
+`2f4238375711ce8432b999a15c44f14238111b77`. The tested runtime source used for this
+diagnostic is captured unchanged in `0e01f85c0b62e4adc25efb22334ae39c8489004d`.
+Earlier failed attempts above remain infrastructure failures, not voluntary abstentions.
+
+Changes are limited to a separate `muse_diagnostic` harness/runner, safe reasoning
+usage/configuration instrumentation, compatible provenance validation and tests.
+The diagnostic exposes only the existing strict `get_fit_report()` declaration and
+uses actual `Laboratory.call()`; production still exposes the original four tools.
+Only one model-requested read is allowed. Request 2 is conditional on a valid first
+call and returns its exact result, original `call_id` and `previous_response_id`.
+Failures stop immediately; there is no third request, automatic retry, additional
+experiment, configuration comparison or full-investigator run.
+
+Official reasoning/tool documentation remained unreachable. No confirming account
+excerpt was available, so **no reasoning override was sent**. Both actual responses
+reported `reasoning.effort: max`. Support for the proposed `reasoning.effort: low`
+remains **unverified**; the nonsecret low-only candidate option is tested offline
+but must not be described as account-verified. No `none`, forced tool choice or
+undocumented thinking-budget field was used.
+
+Canonical UTF-8 component bytes (not per-component provider tokens):
+
+| Component | Minimal diagnostic | Production presentation with same short telemetry |
+| --- | ---: | ---: |
+| Instructions | 330 | 1,367 |
+| Tool declarations | 223 | 14,427 |
+| Initial observations/episode wrapper | 1,654 | 914 (columnar) |
+| Approved controller context | Not needed for read-only diagnostic | 3,865 |
+| Public supervisor summary | Not included | 241 |
+| Hypothesis registry/defaults | Not included | 3,376 |
+| Experiment menu | Not exposed | 388 |
+| Remaining budgets | 70 | 70 |
+| Safety constraints | 107 | 107 |
+| Redundant schema/history | 0 | 0 |
+
+Total diagnostic initial context: 2,263 bytes. Both columns use fresh 0.3-second
+public telemetry, not the earlier full-investigation scenario. Production context
+compaction and strict union representation were not rewritten in this milestone.
+Full authoritative evidence stays on the host; the diagnostic's actual tool output
+returns the original public report, including its history and capability schemas.
+
+Exactly **two authenticated requests** were made to the unchanged Responses endpoint
+using `muse-wonder-1.0`, `tool_choice: auto`, `parallel_tool_calls: false`, and
+`store: true`. Each allowed at most 4,096 output tokens; the diagnostic reserved
+8,192 total. Zero retries, numerical fits, experiments or evaluations occurred.
+The input-token stop threshold, byte, timeout and wall limits remained separate.
+
+| Actual request | HTTP/status | Input | Output | Reasoning output | Cached input | Provider latency |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| 1: retrieve public state | 200/completed | 1,273 | 226 | 161 | 0 | 2.825 s |
+| 2: return actual report | 200/completed | 4,433 | 291 | 230 | 0 | 7.936 s |
+
+Total: **5,706 input + 517 output = 6,223 tokens**, including **391 reported
+reasoning tokens**. Overall host duration: **10.766 s**. Reasoning tokens are included
+within output, not added again. Pricing remains unverified; no dollar-spend claim.
+Only allowlisted counters/settings/statuses are retained, never hidden reasoning.
+
+| Acceptance check | Classification and actual evidence |
+| --- | --- |
+| Authentication | Passed: both real HTTP 200 responses |
+| Low-effort request support | Unverified: omitted, documentation unavailable |
+| Effective reasoning setting | Passed observation: both responses reported `max` |
+| Completed first response | Passed: `completed` |
+| Structured request | Passed: `get_fit_report`, validated arguments `{}` |
+| Real execution | Passed: existing laboratory returned its actual public report |
+| Continuation linkage | Passed: original provider call ID and response ID preserved |
+| Meta continuation | Passed: second HTTP 200, `completed` |
+| Follow-up decision | Passed: genuine acknowledgement, no further tool call |
+| Reasoning usage | Passed: provider-reported 161 and 230 tokens |
+
+Muse acknowledged one evidence reference, no fits, the actual remaining budgets,
+and the report's existing empty-fit `OPTIMIZATION_FAILURE` label. That label does
+not indicate an attempted numerical failure: no fits were requested. The read
+changes no evidence ledger entries. The host subsequently closed the diagnostic
+with an explicit **host-enforced abstention**, labeled `diagnostic_completed`, not
+a voluntary Muse scientific conclusion. No diagnosis or experiment was invented.
+
+The real report's hash matches the retained actual tool result; original ledger,
+public exporter, old/new provenance and TypeScript importer/report generation all
+passed. Local review artifacts are outside the checkout at
+`/workspace/nautilus-local/muse-tool-dispatch-diagnostic/`. No raw API bodies,
+credentials, private scenario settings or generated records are committed/published.
+Regressions: **338 Python tests passed**, all **9 frontend test files passed**,
+**5 exporter tests passed**, production TypeScript/Vite build and diff checks passed.
+The existing replay chunk-size warning remains. Fake-provider tests exercise real
+laboratories and are explicitly separate from the two live responses above.
+
+This proves one real tool dispatch and stored-response continuation. It does not
+prove informative experiment selection, cause identification, autonomous finalization
+or repairs. Success at the observed default `max` effort shows that this setting
+alone does not universally prevent tool calling. It does **not** establish the
+reasoning-token breakdown of earlier runs, which was not retained, or isolate the
+causal effect of context, schema complexity and first-turn task demands.
+The next step is a separately authorized concise first-action run with the full
+four-tool interface and approved public evidence; use low effort only after support
+is verified. That future full investigation was **not** run here. For later evaluation,
+report completion over all attempts separately from accuracy conditional on completion.
