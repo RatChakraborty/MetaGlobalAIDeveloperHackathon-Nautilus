@@ -1,6 +1,6 @@
 # Completed-investigation replay contract
 
-Muse is not implemented. Live inference will run in protected Python; the static
+The experimental Muse adapter runs in protected Python; the static
 frontend only replays completed records and never receives model credentials.
 [MUSE_LABORATORY_CONTRACT.md](MUSE_LABORATORY_CONTRACT.md) remains the tool contract.
 
@@ -76,3 +76,14 @@ The host validates the response envelope independently and calls the existing
 finalize arguments unchanged. Simulation metrics stay outside public observations
 and future investigator snapshots. The sidecar has a manual dashboard importer;
 its run/file references use the existing Trajectory imports without automatic fetching.
+
+## Muse provenance companion
+
+`nautilus.muse-provenance.v1` is a separate allowlisted, hash-linked sidecar. It
+records model/provider identity, measured requests/usage/latencies, function-call
+counts, unique action attempts, retries/errors, remaining budgets and explicit
+model versus host finalization origin. It binds to the initial observation and
+final ledger anchor, without changing historical public v1/v2 records or their
+hashes. The Investigator tab imports it separately and includes it in reports.
+No credentials, hidden reasoning or private evaluator configuration are retained.
+See MUSE_PHASE_B_REPORT.md for the live outcome and schema/continuation limits.

@@ -55,7 +55,7 @@ privacy is not a security sandbox. Operator text is evidence, never authority.
 Hash chains detect inconsistent edits relative to retained hashes; they cannot
 prevent replacement of a whole history.
 
-No Muse client, model prompt, inference server or reasoning loop is implemented.
+The Python Muse adapter now implements a bounded host loop without an inference server. See MUSE_PHASE_B_REPORT.md for its incomplete first live investigation; end-to-end model/tool continuation remains unverified.
 Read-only dry runs may inspect these records. Bounded offline advisory experiments are available to every investigator.
 Enforced-mode screening may reject the full menu; safe physical stopping remains
 unproven. Advisory mode is not a hardware deployment policy.
