@@ -59,3 +59,14 @@ No Muse client, model prompt, inference server or reasoning loop is implemented.
 Read-only dry runs may inspect these records. Bounded offline advisory experiments are available to every investigator.
 Enforced-mode screening may reject the full menu; safe physical stopping remains
 unproven. Advisory mode is not a hardware deployment policy.
+
+An opt-in controller-aware host may initialize approved declared controller context
+and call `build_investigator_context` for a combined JSON snapshot. This is trusted
+host preparation, not a fifth investigator tool. Configuration evaluation is a
+separate privileged development API and does not consume or change baseline tool budgets.
+
+A future host can receive a final-response envelope with an optional bounded
+configuration proposal and call `ConfigurationEvaluationHost.finish`. It uses the
+unchanged finalize contract, then a separately authorized/budgeted development
+comparison. Its hash-linked sidecar never extends the closed laboratory ledger or
+becomes investigator evidence. Abstention does not automatically evaluate a change.
