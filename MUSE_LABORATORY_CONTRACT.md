@@ -70,3 +70,9 @@ configuration proposal and call `ConfigurationEvaluationHost.finish`. It uses th
 unchanged finalize contract, then a separately authorized/budgeted development
 comparison. Its hash-linked sidecar never extends the closed laboratory ledger or
 becomes investigator evidence. Abstention does not automatically evaluate a change.
+
+A trusted host may use `supervisor.public_event_summary` on a validated public
+companion and source record. These are deterministic interpretations of existing
+observations, not independent evidence or extra experimental budget. Truth-based
+visualization companions must never enter investigator context. No model integration
+or additional laboratory capability is introduced.

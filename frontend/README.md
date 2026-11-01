@@ -121,3 +121,20 @@ metrics, not diagnosis evidence or verified repairs. `export_host_evaluation` wr
 the public investigation, sidecar and genuine comparison files outside the source
 tree. Use candidate as primary and baseline as reference in the existing Trajectory
 imports. Absent, skipped, rejected and failed evaluations contain no invented metrics.
+
+## Supervisor events and downloads
+
+Add `--supervisor-directory /private/companions` to the existing exporter to write
+Python-derived public events and, when visual data is supplied, separate truth
+markers. `--episode-ref OBSERVATION_HASH` explicitly binds a new visualization v3
+file to one reset-aligned episode. Legacy multi-episode files still load, but
+ambiguous command overlays remain unavailable. Never append these companions to
+the laboratory ledger. See [the milestone report](../SUPERVISOR_AND_EXPORT_REPORT.md).
+
+The Investigator tab imports public supervisor events and offers validated
+`investigation_report.md` and, with an accepted recorded proposal, `config_diff.json`
+downloads. Reports omit controller source and raw truth trajectories; narratives
+are encoded as data. Diffs require operator review and are not deployment-ready.
+The Trajectory tab separately imports visualization-only markers and has an opt-in
+command-arrow overlay. Commands are held between logged samples and hidden beyond
+each run's interval; they are requested newtons, never measured force or RPM.

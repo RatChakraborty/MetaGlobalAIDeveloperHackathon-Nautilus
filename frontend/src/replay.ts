@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import {commandedArrows} from './command-arrows.ts';
+import {alignVisualization,type CommandSource} from './replay-math.ts';
 import {SVGRenderer} from 'three/examples/jsm/renderers/SVGRenderer.js';
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js';
 import type {Visual} from './records.ts';
@@ -6,8 +8,9 @@ import {interpolatePose,displayPose,breach,compatibleReference,type CameraMode} 
 import {underwaterEnvironment,type Decorations} from './environment.ts';
 import {researchVehicle} from './vehicle.ts';
 import {disposeScene,selectRenderer} from './scene-resources.ts';
-export type ReplaySettings={mode:CameraMode;distance:number;exaggeration:number;trail:boolean;overlays:boolean;comparison:boolean};
+export type ReplaySettings={mode:CameraMode;distance:number;exaggeration:number;trail:boolean;overlays:boolean;comparison:boolean;commands?:boolean};
 export class Replay{
+ private commandSource:CommandSource|null=null;private referenceCommands:CommandSource|null=null;private commandArrows=commandedArrows();private referenceArrows=commandedArrows();
  readonly backend:'webgl'|'svg';private renderer:THREE.WebGLRenderer|SVGRenderer;private scene=new THREE.Scene();private camera=new THREE.PerspectiveCamera(52,1,.08,2000);private controls:OrbitControls;private observer:ResizeObserver;private environment:ReturnType<typeof underwaterEnvironment>;private vehicle:ReturnType<typeof researchVehicle>;private referenceVehicle:ReturnType<typeof researchVehicle>;private trail:THREE.Line;private referenceTrail:THREE.Line;private excursions:THREE.LineSegments;private excursionTimes:number[]=[];private connector:THREE.Line;private corridor=new THREE.Group();private reference:Visual|null=null;private center:THREE.Vector3;private span:number;private orbitOffset=.38;private interacting=false;private time=0;private last=0;private dirty=true;private disposed=false;private snap=true;private reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;private decorations:Decorations={particles:true,details:true,fish:false};
  private settings:ReplaySettings={mode:'chase',distance:6,exaggeration:1,trail:true,overlays:true,comparison:true};
  constructor(private host:HTMLElement,private visual:Visual){
@@ -17,7 +20,7 @@ export class Replay{
   const points=visual.samples.map(s=>new THREE.Vector3(s.x_m,0,-s.y_m)),box=new THREE.Box3().setFromPoints(points);this.center=box.getCenter(new THREE.Vector3());const size=box.getSize(new THREE.Vector3());this.span=Math.max(size.x,size.z,15);
   this.scene.add(new THREE.AmbientLight(0xb8d0c8,selected.software?1.1:.18));this.scene.add(new THREE.HemisphereLight(0xaacbcc,0x34473b,selected.software?2.1:1.6));const sun=new THREE.DirectionalLight(0xb5d8c9,selected.software?1.4:2.7);sun.position.set(this.center.x-15,25,-10);this.scene.add(sun);
   this.environment=underwaterEnvironment(this.scene,this.center,this.span,selected.software);
-  this.vehicle=researchVehicle(selected.software);this.referenceVehicle=researchVehicle(selected.software,true);this.referenceVehicle.group.visible=false;this.scene.add(this.vehicle.group,this.referenceVehicle.group);
+  this.vehicle=researchVehicle(selected.software);this.referenceVehicle=researchVehicle(selected.software,true);this.referenceVehicle.group.visible=false;this.scene.add(this.vehicle.group,this.referenceVehicle.group);this.vehicle.group.add(this.commandArrows.group);this.referenceVehicle.group.add(this.referenceArrows.group);
   this.trail=new THREE.Line(new THREE.BufferGeometry(),new THREE.LineBasicMaterial({color:selected.software?0x83bdb6:0xffffff,vertexColors:!selected.software,fog:false}));this.referenceTrail=new THREE.Line(new THREE.BufferGeometry(),new THREE.LineDashedMaterial({color:0xa4b8c6,dashSize:.8,gapSize:.5,fog:false}));this.excursions=new THREE.LineSegments(new THREE.BufferGeometry(),new THREE.LineBasicMaterial({color:0xd6957e,fog:false}));this.scene.add(this.trail,this.referenceTrail,this.excursions);
   this.connector=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3()]),new THREE.LineDashedMaterial({color:0xd0c28e,dashSize:.2,gapSize:.15,fog:false}));this.scene.add(this.connector,this.corridor);
   if(visual.reference){const length=visual.reference.cable_length_m;const cable=new THREE.Mesh(new THREE.CylinderGeometry(.075,.075,length,selected.software?6:12),selected.software?new THREE.MeshBasicMaterial({color:0xbca275}):new THREE.MeshStandardMaterial({color:0x81776b,roughness:.65,metalness:.35}));cable.rotation.z=-Math.PI/2;cable.position.set(length/2,-1.91,0);cable.receiveShadow=true;this.scene.add(cable);}
@@ -29,7 +32,8 @@ export class Replay{
  setDecorations(settings:Decorations){this.decorations={...settings};this.environment.set(settings);this.seek(this.time);}
  configure(settings:Partial<ReplaySettings>){if(settings.mode&&settings.mode!==this.settings.mode)this.snap=false;this.settings={...this.settings,...settings};this.controls.enabled=this.settings.mode==='free'||this.settings.mode==='chase';this.controls.enableZoom=this.settings.mode==='free';this.controls.enablePan=this.settings.mode==='free';this.controls.enableRotate=this.controls.enabled;if(settings.exaggeration!==undefined)this.rebuild();this.seek(this.time);this.dirty=true;}
  resetCamera(){this.snap=true;this.orbitOffset=.38;this.controls.reset();this.seek(this.time);this.dirty=true;}
- setReference(reference:Visual|null){this.reference=reference?compatibleReference(this.visual,reference):null;this.rebuild();this.seek(this.time);}
+ setCommands(source:CommandSource|null,reference:CommandSource|null=null){for(const [s,v] of [[source,this.visual],[reference,this.reference]] as const)if(s){if(!v||s.run_id!==v.run_id||(v.episode_ref&&s.episode_ref!==v.episode_ref))throw Error('Command overlay run mismatch');alignVisualization(v,s.rows);}this.commandSource=source;this.referenceCommands=reference;this.seek(this.time);}
+ setReference(reference:Visual|null){this.referenceCommands=null;this.reference=reference?compatibleReference(this.visual,reference):null;this.rebuild();this.seek(this.time);}
  private rebuild(){
   const points=this.visual.samples.map(s=>new THREE.Vector3(s.x_m,.025,-s.y_m*this.settings.exaggeration)),colors:number[]=[];for(const s of this.visual.samples){const c=new THREE.Color(breach(s,this.visual.reference)?0xd6957e:0x83bdb6);colors.push(c.r,c.g,c.b);}this.trail.geometry.dispose();this.trail.geometry=new THREE.BufferGeometry().setFromPoints(points);this.trail.geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
   const outside:THREE.Vector3[]=[];this.excursionTimes=[];for(let i=1;i<points.length;i++)if(breach(this.visual.samples[i],this.visual.reference)||breach(this.visual.samples[i-1],this.visual.reference)){outside.push(points[i-1],points[i]);this.excursionTimes.push(this.visual.samples[i].time_s);}this.excursions.geometry.dispose();this.excursions.geometry=new THREE.BufferGeometry().setFromPoints(outside);
@@ -37,6 +41,7 @@ export class Replay{
   disposeScene(this.corridor);if(this.visual.reference)for(const side of [-1,1]){const width=this.visual.reference.cable_half_width_m*this.settings.exaggeration;const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,-.03,side*width),new THREE.Vector3(this.visual.reference.cable_length_m,-.03,side*width)]),new THREE.LineDashedMaterial({color:0xa49772,dashSize:1,gapSize:.6,fog:false,transparent:true,opacity:.7}));line.computeLineDistances();this.corridor.add(line);}
  }
  seek(time:number){
+  this.commandArrows.update(this.commandSource,time,!!this.settings.commands);this.referenceArrows.update(this.referenceCommands,time,!!this.settings.commands&&this.settings.comparison);
   this.time=time;const pose=displayPose(interpolatePose(this.visual.samples,time),this.settings.exaggeration);this.vehicle.group.position.set(pose.x,0,pose.z);this.vehicle.group.rotation.y=pose.heading;this.vehicle.group.visible=true;
   const displayTime=this.reducedMotion?0:time;this.vehicle.update(displayTime,this.decorations.particles);this.environment.update(displayTime,{position:this.vehicle.group.position,heading:pose.heading});
   this.excursions.visible=this.settings.trail;this.excursions.geometry.setDrawRange(0,this.excursionTimes.filter(t=>t<=time).length*2);this.trail.visible=this.settings.trail;this.trail.geometry.setDrawRange(0,this.visual.samples.findIndex(s=>s.time_s>time)<0?this.visual.samples.length:this.visual.samples.findIndex(s=>s.time_s>time));
