@@ -356,7 +356,9 @@ def test_cli_forwards_selected_allowance_without_network(tmp_path,monkeypatch):
     monkeypatch.setattr(run_muse,'run',offline_run)
     monkeypatch.setattr('sys.argv',['run_muse.py','--authorize-api','--scenario',str(scenario),'--output',str(output),'--max-output-tokens','4096'])
     run_muse.main()
-    assert captured[0].output_tokens_per_call==4096 and captured[0].output_tokens_total==16000 and captured[0].retries==0
+    assert captured[0].output_tokens_per_call==4096 and captured[0].output_tokens_total==32768 and captured[0].retries==0
+    assert captured[0].model_calls==12 and captured[0].actions==12 and captured[0].input_tokens_total==350000
+    assert captured[0].timeout_s==60 and captured[0].wall_s==600 and captured[0].request_bytes_total==1_000_000
     assert (output/'muse-provenance.json').exists()
 
 

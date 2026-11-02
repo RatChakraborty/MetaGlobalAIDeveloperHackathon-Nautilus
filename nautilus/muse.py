@@ -11,6 +11,17 @@ ENDPOINT = 'https://api.meta.ai/v1/responses'
 DEFAULT_MODEL = 'muse-wonder-1.0'
 
 
+def encode_request(*, model, reasoning_effort, instructions, input, tools,
+                   previous_response_id, max_output_tokens):
+    """Exact JSON request serialization shared by byte admission and transport."""
+    payload = dict(model=model, instructions=instructions, input=input, tools=tools,
+                   stream=False, store=True, tool_choice='auto', parallel_tool_calls=False,
+                   max_output_tokens=max_output_tokens)
+    if reasoning_effort is not None: payload['reasoning'] = {'effort':reasoning_effort}
+    if previous_response_id: payload['previous_response_id'] = previous_response_id
+    return json.dumps(payload, allow_nan=False).encode()
+
+
 class ProviderError(Exception):
     def __init__(self, code, *, retryable=False):
         super().__init__(code)
@@ -126,18 +137,18 @@ class MetaProvider:
         if type(self.model) is not str or not self.model or len(self.model) > 100:
             raise ValueError('Invalid nonsecret model setting')
 
+    def request_size(self, *, instructions, input, tools, previous_response_id, max_output_tokens, timeout):
+        return len(encode_request(model=self.model, reasoning_effort=self.reasoning_effort,
+            instructions=instructions, input=input, tools=tools, previous_response_id=previous_response_id,
+            max_output_tokens=max_output_tokens))
+
     def generate(self, *, instructions, input, tools, previous_response_id, max_output_tokens, timeout):
         key = os.environ.get('MODEL_API_KEY')
         if not key:
             raise ProviderError('credential_unavailable')
-        payload = dict(model=self.model, instructions=instructions, input=input, tools=tools,
-                       stream=False, store=True, tool_choice='auto', parallel_tool_calls=False,
-                       max_output_tokens=max_output_tokens)
-        if self.reasoning_effort is not None:
-            payload['reasoning'] = {'effort':self.reasoning_effort}
-        if previous_response_id:
-            payload['previous_response_id'] = previous_response_id
-        body = json.dumps(payload, allow_nan=False).encode()
+        body = encode_request(model=self.model, reasoning_effort=self.reasoning_effort,
+            instructions=instructions, input=input, tools=tools, previous_response_id=previous_response_id,
+            max_output_tokens=max_output_tokens)
         if len(body) > 2_000_000:
             raise ProviderError('request_size_limit')
         request = urllib.request.Request(ENDPOINT, data=body, method='POST',

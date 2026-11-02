@@ -532,3 +532,195 @@ and records a host rather than voluntary model abstention. `git diff --check` pa
 the existing replay chunk-size warning remains. Source-only changes and this report
 are prepared for normal commit/push to the same feature branch; no generated run
 records, private configuration, source-controller changes or deployment are included.
+
+## Phase C — model-initiated autonomous finalization
+
+**Phase C's autonomous-finalization criterion was met.** One newly authorized
+full development run of `muse-wonder-1.0`, reasoning effort `low`, completed ten
+real HTTP 200 responses and nine accepted tool-result continuations. Muse itself
+called `finalize` with a valid **tentative lateral-current diagnosis**, citing the
+initial and experiment observation references. Provenance records
+`finalization_origin: model` and `termination_reason: model_finalized`; no host
+fallback or free-text inference supplied the ending. This establishes completion
+of this bounded development investigation, not causal correctness, benchmark
+accuracy, safe physical control or a verified repair. All earlier attempts remain
+unchanged in the development history.
+
+### Input-growth diagnosis and bounded changes
+
+The preceding run's reported input was 10,125 → 26,890 → 27,592 → 28,322 → 29,066
+per request, with zero cached input. Its 241-row experiment result was the largest
+identified conversation addition: reconstructing that public result from its
+retained ledger gives 47,403 canonical bytes, versus 1,519–1,712 bytes per later
+fit report excluding unretained timing fields. Stored conversation, the complete
+experiment telemetry and subsequent fit outputs remain available through
+`previous_response_id`; that identifier does not eliminate accumulated input
+charges. Instructions and the 14,427-byte strict declarations are resent each turn.
+They add wire overhead, but component bytes cannot establish exact provider token
+allocation, internal deduplication or billing behavior.
+
+`nautilus/muse_context.py` now factors only repeated six-channel observation row
+keys into an explicit versioned channel/sample-array representation with the
+original row hash. An independent decoder verifies field sets, channel order,
+finite values and hashes, and the host requires an exact canonical round trip
+before sending. No measurements are rounded/downsampled; fit values, units in the
+retained initial registry, scores, residuals, identifiability, saturation, safety,
+execution metadata, status, stale-fit flags, evidence references and budgets are
+not filtered or summarized. Small/non-observation results stay unchanged.
+The complete original tool results, including numerical timing, are saved in
+external `tool-results.json`; the original laboratory ledger stays authoritative.
+
+For the prior experiment, this encoding reduces 47,403 to 20,678 bytes. In the new
+live experiment it reduced **47,458 to 20,733 bytes**. This is a byte measurement,
+not an isolated experimental estimate of token savings: model-selected action order
+and experiment parameters also differed. No provider context reset/checkpoint was
+used. Function-call and stored-response linkage remains continuous.
+
+The unchanged transport now shares its exact JSON serializer with pre-request byte
+admission. Real request JSON bytes and new-input bytes are recorded separately
+from reported input tokens. Per-action presentation hashes/byte counts and runtime
+limits/safety mode are optional, allowlisted provenance additions; historical
+public records and sidecars still validate without rewriting. Public investigation
+file formats and ledger event schemas are unchanged. No fifth tool, subagent,
+parallel laboratory dispatch, numerical-method change or controller patch was added.
+
+### Safety-mode decision and runtime policy
+
+Offline inspection/testing confirmed that enforced mode rejects the prior maneuver
+without execution and reserves a two-second monitoring/drift tail for accepted
+experiments. Switching to it would change available evidence and experiment/time
+semantics. This run explicitly retained the approved `simulation_advisory` mode
+and its zero tail reserve. Predictive screening and actuation bounds were not
+weakened; mode and all runtime limits are recorded in provenance.
+
+Policy: 12 model requests and 12 unique action attempts; 4,096 output tokens per
+request; 32,768 aggregate output tokens including reasoning; 350,000 cumulative
+measured input tokens as a **between-request soft stop**; 1,000,000 cumulative
+serialized request-JSON bytes; zero automatic retries; 60-second request timeout;
+600-second wall limit checked between actions. Numerical limits stayed at eight
+fits, sixteen optimization starts, one experiment and sixteen simulated seconds.
+Configuration evaluation remained disabled. The prompt encourages comparison of
+collected evidence and finalization when further permitted work is unlikely to
+help, without selecting a cause or forcing a confidence category.
+
+### Exact model-selected sequence and numerical evidence
+
+A = initial observation only (41 rows). B = initial plus experiment fitting samples
+(41 + 240 rows). Scores across A and B have different evidence sizes and **must not
+be compared directly**. The experiment invalidated all previous fits.
+
+| Action | Evidence | Actual result / fitted parameter | Weighted RMSE | Penalized score |
+| --- | --- | --- | ---: | ---: |
+| 1. Fit `nominal` | A | No free parameter | 1.103768 | 149.851378 |
+| 2. Fit `lateral_current` | A | `current_y = 0.199693328 m/s` | 0.960897 | 118.891819 |
+| 3. Fit `heading_bias` | A | `heading_bias_rad = 0.007084171 rad` | 1.092153 | 152.037164 |
+| 4. Fit `port_degradation` | A | `port_efficiency = 0.794264606` | 0.979465 | 123.323307 |
+| 5. Fit `starboard_degradation` | A | `starboard_efficiency ≈ 1.0`, upper-bound hit | 1.103768 | 155.174388 |
+| 6. `request_experiment` | New B episode | `differential_step`, 12 s, differential 6 N, cruise 8 N, phase 3 s | — | — |
+| 7. Refit `lateral_current` | B | `current_y = 0.200099967 m/s` | 0.949571 | 767.368319 |
+| 8. Refit `port_degradation` | B | `port_efficiency = 0.792579083` | 0.961553 | 786.672915 |
+| 9. Fit `drag_sway` | B | `drag_sway_scale = 1.003972650` | 0.990633 | 834.528576 |
+| 10. `finalize` | Both references | `lateral_current`, confidence `tentative`, model-initiated | — | — |
+
+All eight fits converged and retain full residual and identifiability diagnostics.
+The starboard bound hit belongs to A and was not refitted after the experiment.
+The B fits retain one-dimensional local sensitivity qualifications; none establishes
+model-identity certainty. Lateral-current residual lag-1 correlations span roughly
+−0.469 to −0.615 across public channels/episodes. Warnings retain missing x/surge-speed
+channels, known-reset/measured-state assumptions and nonprobabilistic scores.
+Current and port B scores differ by about 19.305 under those same assumptions.
+No private ground-truth correctness check or benchmark accuracy score was computed.
+
+The exact validated conclusion has `diagnosis.hypothesis: lateral_current`,
+`confidence: tentative`, and these two genuine observation references:
+
+- `a47851ee54b06b41aa4e3d8f9d850fb1ad89689e8e8582b7e10df98efde980df`
+- `f5b9dab8eada062f143bc9e9d925cbcdfca2416b47ed83d9f5c48b8dc718a75e`
+
+Its recorded ambiguity statement is:
+
+> Lateral current was the best singleton fit on combined evidence (current_y≈0.200 m/s, penalized score 767.37), ahead of port degradation (efficiency≈0.793, 786.67), sway drag (≈1.004, 834.53), heading bias and starboard degradation/no improvement at its healthy bound. However the margin over port degradation is modest, residuals remain structured (episode lag-1 roughly -0.47 to -0.62, WRMS≈0.95), and fits warn of public-only y/heading/yaw-rate innovations with no surge-speed or x channel, one-dimensional sensitivity and unmodeled-dynamics confounding. Scores are conditional numerical evidence, not cause probabilities. Thus lateral current is tentatively supported but port thrust loss and other unmodeled dynamics cannot be excluded; no experiments or fit calls remain to discriminate further.
+
+Independent qualification: the model's heading-bias/starboard comparison in that
+narrative uses A-only historical evidence, not matched B refits. The valid current
+B comparison contains only lateral current, port degradation and sway drag; nominal,
+heading bias and starboard were not refitted on B. The diagnosis therefore remains
+a qualified model claim over incomplete registry coverage, not proof that those or
+unmodeled alternatives are excluded. The final tool received actual B results
+through action 9 before choosing its conclusion.
+
+### Actual API usage, wire bytes and cost availability
+
+All rows below are real completed HTTP 200 Responses requests reporting low effort.
+No provider errors, incomplete responses, action rejections or retries occurred.
+
+| Request | Input | Cached input (within input) | Output | Reasoning (within output) | Exact outgoing JSON bytes | Provider latency |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 10,171 | 0 | 271 | 120 | 33,510 | 2.827 s |
+| 2 | 10,841 | 0 | 320 | 166 | 19,365 | 10.021 s |
+| 3 | 11,559 | 0 | 258 | 112 | 19,481 | 7.553 s |
+| 4 | 12,271 | 0 | 224 | 106 | 19,488 | 7.748 s |
+| 5 | 12,964 | 0 | 319 | 163 | 19,491 | 9.108 s |
+| 6 | 13,711 | 0 | 347 | 198 | 19,561 | 7.966 s |
+| 7 | 24,195 | 0 | 332 | 185 | 38,914 | 7.478 s |
+| 8 | 25,057 | 116 | 115 | 0 | 19,817 | 8.710 s |
+| 9 | 25,898 | 116 | 852 | 671 | 19,833 | 13.471 s |
+| 10 | 26,800 | 0 | 702 | 348 | 19,814 | 13.074 s |
+| Total | **173,467** | **232** | **3,740** | **2,069** | **229,274** | **87.956 s** |
+
+Total tokens: **177,207**. Overall host duration: **90.478 s**. Cached input and
+reasoning are subsets, not additional tokens. The continuation after the experiment
+(request 7) shows the distinction between 38,914 outgoing bytes and 24,195 reported
+input tokens. Accumulated history still affects later input even when new outgoing
+messages are smaller. No exact per-component token attribution is inferred.
+
+Official pricing/account-endpoint tariff could not be verified: public pricing and
+overview documentation requests were unavailable. Under the user's explicit fallback,
+strict request/byte/token ceilings governed the run. Monetary cost and a prospective
+next-request dollar charge are **unavailable**, not zero. No tariff, cached-token
+discount, inferred balance delta or reasoning surcharge was invented. Consequently
+the $5 estimate target was not calculable or enforced, and no provider-enforced
+monetary guarantee is claimed. Before each request the host checked measured input,
+remaining output reservation, bytes, actions, elapsed time and request capacity.
+No additional live request was made after model finalization.
+
+### Safety and acceptance
+
+The model-selected 6 N differential remained within the original ±6 N actuation
+bound; the host did not search or expand parameters. Predictive screening reported
+elevated risk and `would_reject_enforced: true`. Advisory execution continued for
+the full requested 12 seconds and recorded **6.302290 m observed lateral displacement**,
+beyond the 1.5 m corridor. A hypothetical guard trigger occurred at 4.85 seconds;
+`guard_intervened: false` and `failure: observed_corridor_excursion` remain in the
+record. This experiment was not safely contained. No hardware control occurred.
+
+| Phase C criterion | Actual evidence |
+| --- | --- |
+| Genuine model-chosen actions | Ten accepted structured calls; no scripted selection |
+| Last tool-result review opportunity | Nine matching call-ID/previous-response continuations; final B fit returned before finalization |
+| Autonomous ending | Model called valid `finalize`; tentative diagnosis, not host abstention |
+| Bounds preserved | 10/12 requests/actions, 8/8 fits, 14/16 optimization starts, 1/1 experiments, 12/16 simulated seconds |
+| Evidence/provenance integrity | Original hash chain, all ten result hashes/round trips, both final evidence references and model origin validated |
+| Public replay/report | Existing public export and TS importer accepted; deterministic Markdown report generated with model origin distinct from host termination |
+| Scientific correctness/repair/evaluation | Not established; no private benchmark, answer-key comparison or repair evaluation |
+
+The complete original tool outputs, ledger, public export, provenance and generated
+report remain outside the repository at `/workspace/nautilus-local/muse-phase-c/`.
+No raw provider response bodies, hidden reasoning content, credentials, private
+settings or seeds are committed or published. All historical sidecars still validate.
+The remaining steps are separately authorized comparative evaluation with predeclared
+completion/conditional-accuracy reporting, verified account pricing if dollar estimates
+are needed, and independent review before any demonstration dataset release. This
+single successful development run does not establish general scientific reliability.
+
+Phase C pre-run and post-run verification both passed: **355 Python tests**, all
+**9 frontend test files**, **5 exporter unittest cases**, TypeScript checks and
+Vite production build. New tests cover reversible adverse telemetry, unchanged
+fit diagnostics, decoder tampering, pending multi-fit results under sufficient and
+insufficient input budgets, exact transport bytes/admission, deduplication, old
+provenance and private-backend isolation. Actual run validation additionally checked
+all ten original result hashes, nine real continuation links, final evidence refs,
+serialized-byte/output limits, original ledger/public exporter, historical records,
+and deterministic TS report generation. Source diff checks passed; the existing
+replay bundle-size warning remains. Report table numbers are abbreviated for
+readability; original numerical results and measurements retain full precision.

@@ -21,7 +21,7 @@ def main():
     if not args.authorize_api: parser.error('Explicit API authorization required')
     output=Path(args.output).resolve(); root=Path(__file__).resolve().parent
     if output==root or root in output.parents: parser.error('Output must be outside the repository')
-    limits=Limits(model_calls=10,actions=10,output_tokens_per_call=args.max_output_tokens,output_tokens_total=16000,retries=0)
+    limits=Limits(model_calls=12,actions=12,output_tokens_per_call=args.max_output_tokens,output_tokens_total=32768,input_tokens_total=350000,retries=0)
     output.mkdir(parents=True,exist_ok=False)
     # Trusted reproducible development selection; never included in model context/export.
     # This is not a frozen evaluation case and no hidden labels guide host actions.
@@ -37,7 +37,7 @@ def main():
                    note='Development-only investigation. Determine what the public telemetry supports; abstain when confounded.')
     initialize_controller_context(lab,build_controller_context())
     result=run(lab,MetaProvider(reasoning_effort=args.reasoning_effort),limits=limits)
-    for name,value in [('investigation.json',result['public_record']),('muse-provenance.json',result['provenance'])]:
+    for name,value in [('investigation.json',result['public_record']),('muse-provenance.json',result['provenance']),('tool-results.json',result['tool_results'])]:
         (output/name).write_text(canonical(value)+'\n')
     print('Completed bounded investigation; review public export and linked provenance outside the checkout.')
 

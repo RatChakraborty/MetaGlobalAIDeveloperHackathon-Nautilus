@@ -67,7 +67,9 @@ model responses before any laboratory action. The isolated read-only
 `get_fit_report` diagnostic now verifies real dispatch and continuation. Full
 four-tool low-effort investigation has since executed a real experiment and four
 fits with accepted continuations, ending in a valid input-budget host abstention.
-A voluntary model diagnosis, accuracy and repairs are not established.
+Phase C subsequently reached a model-initiated tentative diagnosis after eight
+fits and an experiment. This is one bounded development result; diagnostic
+accuracy, physical safety and repairs are not established.
 
 Offline validation uses `python -m pytest -q` and the existing frontend commands.
 An explicitly authorized live development run can use:
@@ -86,8 +88,9 @@ model override. The full-investigation runner selects documented low reasoning
 effort by default (`--reasoning-effort low`); its live acceptance is now verified.
 `--max-output-tokens` defaults to 4096 including reasoning; the
 first full run exhausted its former 2048-token allowance, and the recovery exhausted
-4096. The low-effort run stopped at the measured-input threshold instead; review
-cost and context growth before authorizing another run. The
+4096. The first low-effort run stopped at its measured-input threshold. Phase C uses
+lossless observation-array tool results and reviewed larger model budgets;
+pricing remains unverified and each new live run requires authorization. The
 runner never retries API requests or enables configuration evaluation.
 
 Open `public-investigation.json` (or the runner's public `investigation.json`) in
@@ -104,3 +107,12 @@ run it without separate API authorization. The optional `--reasoning-effort low`
 Meta syntax subsequently confirmed by the user from official documentation.
 The successful live diagnostic omitted this override; a new live test still
 requires explicit authorization. It is not a scientific investigation or accuracy benchmark.
+
+The current full-run preset allows at most 12 requests/actions, 4096 output tokens
+per request, 32768 total output tokens, a 350000 measured-input-token stop threshold,
+and 1 MB cumulative outgoing JSON bytes. Numerical budgets remain eight fits,
+sixteen starts and one experiment of at most sixteen simulated seconds. Retries
+and configuration evaluation remain disabled. `tool-results.json` retains the
+original public tool outcomes outside the checkout; only their reversible
+observation-array presentation is sent to the model. It does not restart the
+provider conversation or change the public investigation file format.

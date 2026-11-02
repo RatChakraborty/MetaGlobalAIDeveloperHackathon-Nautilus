@@ -76,3 +76,9 @@ companion and source record. These are deterministic interpretations of existing
 observations, not independent evidence or extra experimental budget. Truth-based
 visualization companions must never enter investigator context. No model integration
 or additional laboratory capability is introduced.
+
+Phase C additionally records a genuine model-initiated tentative finalization after
+real fits and an experiment. Scientific correctness is not established by that
+integration result. Provider-facing observation arrays are a versioned, independently
+verified lossless presentation only; original laboratory results and evidence hashes
+remain authoritative, and all four accepted tool argument signatures are unchanged.
