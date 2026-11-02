@@ -108,6 +108,25 @@ Meta syntax subsequently confirmed by the user from official documentation.
 The successful live diagnostic omitted this override; a new live test still
 requires explicit authorization. It is not a scientific investigation or accuracy benchmark.
 
+## V6 verified control laboratory
+
+`nautilus/v6/` adds a versioned control-policy contract, matched candidate/baseline
+evaluation with actuation-effort and stability instrumentation, a fixed seven-case
+development suite with a predeclared acceptance rule, bounded coordinate search on
+development-only screening cases, a host-owned model phase, a validated recommendation
+artifact and an optional, flag-gated controller patch lab. `V6_CONTROL_LAB_REPORT.md`
+records the measured results. The simulator, safety envelope, evaluator and frozen V4/V5
+schemas are unchanged; no change is deployed and no live model request is included.
+
+```bash
+.venv/bin/python -m pytest tests/test_v6_policy.py tests/test_v6_evaluation.py tests/test_v6_robustness.py \
+  tests/test_v6_proposal.py tests/test_v6_host.py tests/test_v6_artifact.py tests/test_v6_patch.py
+```
+
+Patch execution stays disabled unless `NAUTILUS_CONTROLLER_PATCH_LAB=1` and the sandbox
+self-test confirms denial; it is uncertified process isolation and never replaces the
+trusted controller.
+
 The current full-run preset allows at most 12 requests/actions, 4096 output tokens
 per request, 32768 total output tokens, a 350000 measured-input-token stop threshold,
 and 1 MB cumulative outgoing JSON bytes. Numerical budgets remain eight fits,

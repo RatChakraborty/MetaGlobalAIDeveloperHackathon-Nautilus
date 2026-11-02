@@ -52,7 +52,7 @@ async function comparison(host:HostEvaluation,docs:Doc[]):Promise<{value:Compari
 export async function loadWorkbench(files:Iterable<SourceFile>):Promise<Workbench>{
  const selected=[...files];if(!selected.length||selected.length>25||selected.reduce((n,f)=>n+f.size,0)>120_000_000||selected.some(f=>f.size>50_000_000||!safeName(f.name))||new Set(selected.map(f=>f.name)).size!==selected.length)throw Error('Choose up to 25 uniquely named exported JSON files (50 MB each, 120 MB total).');
  const docs=await Promise.all(selected.map(async f=>{const text=await f.text();return {name:f.name,text,value:JSON.parse(text)};}));
- const allowed=['nautilus.workbench.v1','nautilus.public-investigation.v1','nautilus.public-investigation.v2','nautilus.visualization-only.v1','nautilus.visualization-only.v2','nautilus.visualization-only.v3','nautilus.post-investigation.v1','nautilus.muse-provenance.v1','nautilus.v3-provenance.v1','nautilus.v4-provenance.v1','nautilus.supervisor-events.v1','nautilus.visualization-events.v1','nautilus.evaluation-summary.v4','nautilus.configuration-evaluation.v1'];
+ const allowed=['nautilus.workbench.v1','nautilus.public-investigation.v1','nautilus.public-investigation.v2','nautilus.visualization-only.v1','nautilus.visualization-only.v2','nautilus.visualization-only.v3','nautilus.post-investigation.v1','nautilus.muse-provenance.v1','nautilus.v3-provenance.v1','nautilus.v4-provenance.v1','nautilus.supervisor-events.v1','nautilus.visualization-events.v1','nautilus.evaluation-summary.v4','nautilus.configuration-evaluation.v1','nautilus.control-lab-recommendation.v1'];
  for(const d of docs)if(!allowed.includes(schema(d)))throw Error('Unsupported or private artifact: '+d.name+'. Select public evidence exports only.');
  const manifests=docs.filter(d=>schema(d)==='nautilus.workbench.v1');if(manifests.length>1)throw Error('Choose one workbench manifest.');
  const plan=manifests[0]?manifest(manifests[0].value):null;
@@ -73,7 +73,7 @@ export async function loadWorkbench(files:Iterable<SourceFile>):Promise<Workbenc
    else if(!referenced.has(d.name))throw Error('Visualization belongs to another investigation.');
    continue;
   }
-  const role:Record<string,string>={'nautilus.post-investigation.v1':'host','nautilus.muse-provenance.v1':'muse','nautilus.v3-provenance.v1':'v3','nautilus.v4-provenance.v1':'v4','nautilus.supervisor-events.v1':'supervisor','nautilus.visualization-events.v1':'visualEvents','nautilus.evaluation-summary.v4':'evaluation','nautilus.configuration-evaluation.v1':'comparisonSummary'};
+  const role:Record<string,string>={'nautilus.post-investigation.v1':'host','nautilus.muse-provenance.v1':'muse','nautilus.v3-provenance.v1':'v3','nautilus.v4-provenance.v1':'v4','nautilus.supervisor-events.v1':'supervisor','nautilus.visualization-events.v1':'visualEvents','nautilus.evaluation-summary.v4':'evaluation','nautilus.configuration-evaluation.v1':'comparisonSummary','nautilus.control-lab-recommendation.v1':'controlLab'};
   if(!Object.hasOwn(role,s))throw Error('Unsupported or private artifact: '+d.name+'. Select public evidence exports only.');
   if(raw[role[s]])throw Error('Multiple '+role[s]+' companions selected.');raw[role[s]]=d.value;
  }
