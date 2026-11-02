@@ -94,3 +94,12 @@ def test_no_unattended_cli_approval(tmp_path,monkeypatch):
     l=lab(tmp_path);rid=request(l)['request_id']
     monkeypatch.setattr(os,'open',lambda *a,**k:(_ for _ in ()).throw(OSError('No controlling terminal')))
     with pytest.raises(OSError):l.authority.decide_interactive(rid)
+
+@pytest.mark.parametrize('terminal',['COMPLETED','FAILED'])
+def test_old_checkpoint_terminal_execution_is_failed_recovery_not_pending(tmp_path,terminal):
+    l=lab(tmp_path);rid=request(l)['request_id'];l.authority._decide(rid,'approve',source='test')
+    t=Trial('thrust_step',duration_s=4.,amplitude_n=0.,phase_s=2.)
+    l.authority.check(rid,l.session_id,l.epoch,t,screen(t),l.policy,l.budget(),consume=True)
+    l.authority.finish(rid,terminal=='COMPLETED')
+    with pytest.raises(AuthorizationDenied,match='uncertain'):l.resolve_operator(rid)
+    assert l.state=='FAILED' and l.tests==0 and len(l.evidence_refs())==1 and l.execution_backend.count==0

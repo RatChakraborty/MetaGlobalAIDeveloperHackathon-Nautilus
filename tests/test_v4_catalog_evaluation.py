@@ -85,3 +85,12 @@ def test_checkpoints_equal_initial_data_and_idempotent_completion(tmp_path):
 def test_uncertain_or_corrupt_source_never_retries(tmp_path):
     m=mini_manifest(tmp_path);(tmp_path/(m['plans'][0]['case_id']+'.started.json')).write_text('{}')
     with pytest.raises(ValueError,match='never'):run(tmp_path,limit=2)
+
+
+def test_partial_infrastructure_records_remain_reportable(tmp_path):
+    m=mini_manifest(tmp_path);case=generate(m['plans'][0]);l,result=run_policy(case,m['plans'][0],'passive')
+    from nautilus.v4.evaluation import aggregate
+    summary=aggregate([{'case_id':case['case_id'],'stratum':case['stratum'],'difficulty':case['difficulty'],'policies':{'passive':result}}],('passive','sequential_residual'),2)
+    assert summary['passive']['attempted']==2 and summary['passive']['infrastructure_or_unscored']==1
+    assert summary['sequential_residual']['attempted']==2 and summary['sequential_residual']['infrastructure_or_unscored']==2
+    assert summary['passive']['valid_completion']==1 # missing infrastructure outcomes never become scientific abstention

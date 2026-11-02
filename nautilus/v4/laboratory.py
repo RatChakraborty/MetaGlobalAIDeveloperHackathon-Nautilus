@@ -80,7 +80,9 @@ class V4Laboratory(Laboratory):
         if state=='EXECUTING':
             # Interrupted execution is uncertain: never replay it.
             self.authority.finish(request_id,False);self.state='FAILED';self.record('approval_decision',self.authority.get(request_id));raise AuthorizationDenied('Interrupted execution; no automatic replay')
-        if state!='APPROVED':raise AuthorizationDenied('Resolved or failed request cannot execute again')
+        if state!='APPROVED':
+            self.state='FAILED';self.record('approval_decision',row)
+            raise AuthorizationDenied('Terminal execution recovery is uncertain; no automatic replay or invented observations')
         b=row['binding'];trial=parse_trial(b['experiment']['name'],b['experiment']['params']);self._experiment_budget(trial);s=screen(trial)
         self.authority.check(request_id,self.session_id,self.epoch,trial,s,self.policy,self.budget()) # lab independent check
         self.record('approval_decision',row)

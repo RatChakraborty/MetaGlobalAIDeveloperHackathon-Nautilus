@@ -104,6 +104,8 @@ class Authority:
             row=self.get(request_id)
             with os.fdopen(os.dup(fd),'w') as out:
                 out.write(canonical(row)+'\nWARNING: approval is not safety certification; offline simulation only.\n')
+                risk=row['binding']['screen'];margin=risk['limit_m']-risk['ensemble_max_y_m']-risk['noise_allowance_m']
+                out.write('Signed predictive margin: '+str(margin)+' m. Original warning remains binding.\n')
                 out.write('Type approve '+request_id+', deny '+request_id+' or cancel '+request_id+': ');out.flush()
             with os.fdopen(os.dup(fd)) as inp:answer=inp.readline(160).strip()
             parts=answer.split()
