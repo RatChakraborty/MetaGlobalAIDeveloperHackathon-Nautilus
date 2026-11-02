@@ -49,9 +49,26 @@ out-of-bounds values, non-finite numbers and non-public evidence references are 
 
 Proposed, tested and accepted changes are separate records. Search is a bounded
 coordinate search over a predeclared 10-value grid with at most 14 candidates, screened
-on **two** development cases (`nominal`, `current_positive`) only. The other five
-robustness cases are never consulted during selection, so the reported suite is not a
-tuned set. Every attempt, including regressions, is retained.
+on **two** development cases (`nominal`, `current_positive`).
+
+**Selection exposure is partial, and is now disclosed by the code.** Those two cases
+are members of the reported seven-case suite (verified: `screened_case_ids ∩ suite` is
+exactly those two ids), so this is not held-out evaluation. Every evaluation records the
+split and states it, and `validate_robustness` refuses any record that claims
+`held_out: true` or fails to account for all seven cases. The five cases that never
+touched selection are reported separately below; their mean RMS improvement (−0.522 m)
+is essentially identical to the full-suite number (−0.529 m), so the conclusion does not
+depend on the leaked pair.
+
+**The selected value sits at the grid edge, not at the bounds edge.** Lookahead bounds
+are 2–20 m and the predeclared grid began at 3 m. Two exploratory points below the grid
+(never used for selection) were measured afterwards: lookahead 2.5 m gives a better
+mean (−0.577 m unscreened) and lookahead 2.0 m better still (−0.618 m), but model-
+mismatch regression grows to +0.053 m and +0.150 m respectively; 2.0 m fails the
+declared per-scenario limit outright. So the grid did not truncate a change the rule
+would accept — but the specific value 3.0 m is an artefact of a fixed grid, not a
+uniquely determined optimum, and 2.5 m would also have passed. Every attempt, including
+regressions and these exploratory points, is retained.
 
 Measured screening (mean cross-track RMS difference, negative is better):
 
@@ -121,7 +138,25 @@ seconds):
 Every declared gate passed (observed vs threshold): finite runs 0/0; mean RMS
 −0.5288/−0.05; worst scenario regression +0.0286/+0.10; worst-case cross-track
 −1.2077/+0.25; worst-case excursion −0.7930/+0.05; completions 7/4; saturation
-0.0000/+0.05; mean effort 373.00/434.40. Decision: **accept**.
+0.0000/+0.05; mean effort 373.00/434.40. Decision: **accept on the development suite**
+(the artifact carries that qualification verbatim; it is not a held-out result).
+
+Split by selection exposure (measured from the same runs):
+
+| Subset | Cases | Mean RMS base → cand | Δ | Worst-case max base → cand | Completed |
+|---|---:|---|---:|---|---|
+| Screened (used by search) | 2 | 0.9941 → 0.4486 | −0.5455 | 2.3669 → 1.1592 | 1 → 2 |
+| Unscreened (never consulted) | 5 | 0.9649 → 0.4428 | −0.5221 | 2.3616 → 1.1583 | 3 → 5 |
+
+The two summaries agree to within 3 mm of mean RMS, so the result is not an artefact of
+tuning on the screened pair.
+
+**Gate calibration check.** The per-scenario regression limit (0.10 m) is 6.7% of the
+1.5 m corridor half-width, which is generous as an absolute bound. The largest measured
+per-scenario regression is +0.0286 m, so re-applying the rule with a tightened 0.05 m
+limit (56% stricter) still accepts this candidate with no failed gate. Tightening to
+0.03 m would reject the model-mismatch case — the candidate is accepted on the declared
+rule, not on a wide margin.
 
 Two cases regress in absolute terms — nominal (2 mm → 6 mm) and model mismatch
 (4 mm → 32 mm) — both far inside the declared per-scenario limit. The candidate is not
@@ -156,40 +191,39 @@ use anywhere in the evaluation path; provenance through policy hash, source fing
 run IDs, configuration IDs and per-case simulator hash. The evaluation API is never
 registered as an investigator tool.
 
-## 8. Restricted source-patch lab (`nautilus/v6/patch.py`)
+## 8. Restricted source-patch review (`nautilus/v6/patch.py`, static only)
 
-Feature flag `NAUTILUS_CONTROLLER_PATCH_LAB`, disabled by default. One approved target
-only: `command` in `nautilus/v6/controller_variant.py`, an isolated module the trusted
-simulator never imports; its default law is unit-tested for exact numerical equivalence
-with `nautilus.simulator.command`. Diffs are rejected if they touch any other path, add
-a second region, exceed 40 added lines / 4,000 bytes, contain imports, sockets,
+An earlier draft of this milestone ran an approved diff in a subprocess with rlimits and
+an injected denial guard. That execution path has been **removed**, because it added
+attack surface and contradicted the project's no-arbitrary-code-execution claim without
+ever providing certified isolation (it had no kernel namespace). The module now imports
+only `ast`, `pathlib` and `re`, and a test parses the module to assert exactly that, that
+no `eval`/`exec`/`compile` call exists, and that no runner attribute exists to call.
+
+What remains is static review of one approved target: `command` in
+`nautilus/v6/controller_variant.py`, a module the trusted simulator never imports and
+whose default law is unit-tested for exact numerical equivalence with
+`nautilus.simulator.command`. Diffs are rejected if they touch any other path, add a
+second region, exceed 40 added lines / 4,000 bytes, contain imports, sockets,
 subprocesses, `eval`/`exec`, dunder access or filesystem calls, or remove the actuator
 bound. Structural checks re-parse the patched module and verify the single target
-function, unchanged signature, retained `max_thrust` bound, bounded returned commands,
-triple return contract and unchanged imports.
+function, an unchanged fixed signature, the retained `max_thrust` bound, bounded
+returned commands, the triple return contract and unchanged imports. Nothing is written
+to disk and nothing is executed.
 
-Execution requires the flag **and** a passing sandbox self-test. The runner uses a fresh
-process, stripped environment, `RLIMIT_AS` 512 MiB, CPU 10 s, 64 descriptors, 1 MiB file
-writes, a wall-clock timeout, a temporary directory and an injected `sitecustomize`
-denial guard for sockets, `os.exec`, `os.fork` and `open` outside the evaluation
-directory. A harness re-runs the patched function on fixed samples, checks determinism
-and the ±45 N actuator bound, and must report that both network and filesystem probes
-were blocked.
-
-Measured on this host with the flag enabled: `status: executed`, `certified: false`, all
-nine checks passed, and the guard confirmed network and filesystem denial. This is
-**best-effort process isolation, not a kernel network namespace**; the artifact keeps
-`certified: false`, the patched module never replaces the trusted baseline, and matched
-suite regression plus human review are still required. With the flag off (the default)
-the lab returns `review_only` with the validated unapplied diff, which is the supported
-path.
+The artifact cannot represent an executed or certified patch: the allowed states are
+`not_attempted`, `review_only` and `unavailable`, and any `certified: true` is rejected
+by both the Python validator and the browser validator. Execution is reported as
+unavailable rather than claimed. The reviewable-diff path is therefore the only
+supported one, and it is not part of the demo narrative.
 
 ## 9. Workbench integration
 
 `frontend/src/control-lab.ts` validates `nautilus.control-lab-recommendation.v1`
 structurally and cross-field (scope wording, baseline-consistent differences inside
 declared bounds, proposal/difference agreement, decision equality with the host rule,
-required human review, certified-only executed patches) and renders the Control Lab
+required human review, impossible patch certification, and rejection of any executed
+patch state) and renders the Control Lab
 panel: current policy values, proposed change with reason and expected effect,
 baseline/candidate aggregates, per-scenario robustness, every declared gate, unresolved
 risks, human-review status, patch status and the configuration-diff download. The
@@ -211,12 +245,12 @@ fixed non-deployment scope. Hashes are canonical SHA-256; `export_artifact` writ
 `control-lab.json` and `configuration-diff.json` outside the source tree.
 
 Demo artifact for the run above:
-`4b7b36991fff466ae3a4f9f6ca33ac8f21182fa5b65616a32fadc241f252a0b2`
+`fbf36a9d4f6cfb98e1e420a992be080e22669ee1e6c066bf87032e14d3ec1578`
 (approved difference `lookahead_m 7.0 → 3.0 m`).
 
 ## 11. Testing
 
-- Full Python suite: **497 passed** (446 existing on V5 + 51 new V6 tests), 141.8 s.
+- Full Python suite: **497 passed** (446 existing on V5 + 51 V6 tests).
 - Frontend: **66 tests across 13 files passed**; `tsc --noEmit && vite build` succeeds
   (the pre-existing >500 kB replay-chunk advisory remains).
 - Simulator/evaluator diff against V5: empty.
@@ -226,22 +260,51 @@ NaN, infinity and unknown parameters; no-op equivalence; matched seeds/physics a
 direct `simulate` call; instrumentation arithmetic; paired differences; determinism;
 permanent regression retention; every acceptance gate individually rejecting; the
 mean-improves/worst-worsens anti-pattern; completion, saturation and effort regressions;
-failed-case accounting without invented metrics; screening restricted to two cases;
-bounded search and no-admissible-candidate behaviour; proposal schema closure and metric
-injection; host budget and authorization; model/host disagreement; privacy of truth and
-seeds; artifact tampering, scope, human review and certification rules; exporter
-round-trip; patch scope/token/size/context/signature/bound rejection; sandbox
-self-test, timeout, guard-failure and out-of-bound output paths; default variant
-equivalence with the trusted command law; frontend validation, markup and diff export.
+failed-case accounting without invented metrics; screening restricted to two cases and
+the exposure record accounting for all seven; bounded search and no-admissible-candidate
+behaviour; proposal schema closure and metric injection; host budget and authorization;
+out-of-order evaluation followed by `finish()`; model/host disagreement; privacy of truth
+and seeds; artifact tampering, scope, human review, held-out and certification rules;
+exporter round-trip; patch scope/token/size/context/signature/bound rejection; the
+absence of any execution machinery in the patch module; default variant equivalence with
+the trusted command law; frontend validation, markup, qualification display and diff
+export.
+
+## 12. Diagnosis-pool status (V4 catalog, not V6)
+
+The concern that the 60–100 case pool and multi-cause faults were never built does not
+hold, and the correction matters for planning. `nautilus/v4/catalog.py` already generates
+them and is covered by existing tests:
+
+- `reserve(..., full=False)` plans **60** cases (`full=True` plans 100, generating 88
+  after strata G and K are explicitly excluded as unsupported).
+- Eight strata exist (A, B, C, D, E, F, H, J); multi-cause faults are compositional
+  pairs via `PAIRS`/`compose`, not just concatenated settings.
+- Verified by direct generation: `V4D027` → truth `['lateral_current',
+  'port_degradation']`, `V4D045` → truth `['lateral_current', 'heading_bias']`, both
+  representable, gated and classified `operationally_distinguishable`.
+- Gate failures are retained, never resampled, and scoring uses exact cause sets with
+  paired statistics.
+
+What does not exist is the **executed end-to-end diagnostic study**: a 60-case run with
+two policy arms, checkpoints and aggregate statistics has not been performed, and V6 is
+about control-policy improvement, not diagnostic accuracy. It is also not feasible in the
+remaining time: each case runs a full bounded V4 laboratory loop per policy arm, so 60
+cases × 2 arms is an hours-scale private run, and its results would need their own
+review and report. Recommendation: keep it as the top roadmap item (run the 60-case
+study with both policy arms and publish the paired result), and do not claim diagnostic
+accuracy anywhere in this submission.
 
 ## What is not claimed
 
 - No physical repair, deployment, safety certificate or generalization beyond the seven
-  development cases.
+  development cases; the decision is accepted *on the development suite*.
+- No held-out evaluation: two of the seven cases screen selection, and both the artifact
+  and the UI now say so.
 - No live Muse request in this milestone; the model phase is orchestrated and tested
-  with fake responses only.
-- No held-out evaluation and no comparison against external controllers.
-- Source-patch isolation is process-level with a denial guard, not a kernel namespace;
-  it is reported as uncertified and is off by default.
+  with fake responses only. Running one needs a provider key and explicit authorization.
+- No comparison against external controllers.
+- No patch execution at all: the subprocess runner was removed, only static review
+  remains, and no patch can be recorded as executed or certified.
 - The frontend panel was validated by unit tests, TypeScript and the production build;
-  no browser session was run in this environment.
+  it was not exercised in a real browser session in this environment.

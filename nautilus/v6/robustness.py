@@ -44,8 +44,10 @@ SUITE_SPECS = (
     ('compound_current_bias_degradation', {'current_y': .40, 'heading_bias_rad': .22, 'starboard_efficiency': .55}, {}, 5206),
     ('model_mismatch', {}, {'actuator_tau_s': 1.2, 'thrust_deadzone_n': 4., 'drag_scale': 1.12}, 5207),
 )
+SCREENED_IDS = ('nominal', 'current_positive')
 LIMITATIONS = (
     'Fixed development suite; these are not benchmark or held-out evaluation cases.',
+    'Two declared cases screen candidate selection; the other five are never consulted, but no case is held out.',
     'No simulation result is a real-world controller safety certificate.',
     'Model mismatch is limited to actuator lag, dead zone and uniform drag scaling.',
 )
@@ -75,6 +77,31 @@ def suite_fingerprint(suite) -> str:
 
 def _worst(rows, key, name):
     return max(row[name][key] for row in rows)
+
+
+def _aggregate(rows) -> dict:
+    """Paired aggregate for any measured row subset."""
+    def mean(side, key):
+        return sum(row[side][key] for row in rows) / len(rows)
+
+    def worst(side, key):
+        return max(row[side][key] for row in rows)
+
+    def pair(base, cand):
+        return {'baseline': base, 'candidate': cand, 'difference': cand - base}
+
+    return {
+        'mean_rms_cross_track_m': pair(mean('baseline', 'rms_cross_track_m'), mean('candidate', 'rms_cross_track_m')),
+        'worst_case_max_abs_cross_track_m': pair(worst('baseline', 'max_abs_cross_track_m'),
+                                                 worst('candidate', 'max_abs_cross_track_m')),
+        'worst_case_fraction_outside_corridor': pair(worst('baseline', 'fraction_outside_corridor'),
+                                                     worst('candidate', 'fraction_outside_corridor')),
+        'worst_case_command_saturation_fraction': pair(worst('baseline', 'command_saturation_fraction'),
+                                                       worst('candidate', 'command_saturation_fraction')),
+        'completed_missions': pair(sum(bool(row['baseline']['mission_success']) for row in rows),
+                                   sum(bool(row['candidate']['mission_success']) for row in rows)),
+        'mean_effort_proxy_n_s': pair(mean('baseline', 'effort_proxy_n_s'), mean('candidate', 'effort_proxy_n_s')),
+    }
 
 
 def decide(rows, acceptance=ACCEPTANCE, *, failures=()) -> dict:
@@ -144,18 +171,7 @@ def decide(rows, acceptance=ACCEPTANCE, *, failures=()) -> dict:
     reasons = [gate['id'] for gate in gates if not gate['passed']]
     return {'decision': 'accept' if not reasons else 'reject', 'reasons': reasons, 'gates': gates,
             'failures': list(failures), 'acceptance': dict(acceptance),
-            'aggregate': {'mean_rms_cross_track_m': {'baseline': mean_base, 'candidate': mean_cand,
-                                                     'difference': mean_cand - mean_base},
-                          'worst_case_max_abs_cross_track_m': {'baseline': worst_base, 'candidate': worst_cand,
-                                                               'difference': worst_cand - worst_base},
-                          'worst_case_fraction_outside_corridor': {'baseline': outside_base, 'candidate': outside_cand,
-                                                                   'difference': outside_cand - outside_base},
-                          'worst_case_command_saturation_fraction': {'baseline': saturation_base, 'candidate': saturation_cand,
-                                                                     'difference': saturation_cand - saturation_base},
-                          'completed_missions': {'baseline': success_base, 'candidate': success_cand,
-                                                 'difference': success_cand - success_base},
-                          'mean_effort_proxy_n_s': {'baseline': effort_base, 'candidate': effort_cand,
-                                                    'difference': effort_cand - effort_base}},
+            'aggregate': _aggregate(rows),
             'per_case': per_case}
 
 
@@ -183,12 +199,22 @@ def evaluate_suite(baseline, changes: dict, *, suite=None, acceptance=ACCEPTANCE
                       'simulator_sha256': measured.evaluation.simulator_sha256})
     rows = [{'scenario_id': case['scenario_id'], 'baseline': case['baseline'], 'candidate': case['candidate']} for case in cases]
     outcome = decide(rows, acceptance, failures=failures)
+    screened = [row for row in rows if row['scenario_id'] in SCREENED_IDS]
+    unscreened = [row for row in rows if row['scenario_id'] not in SCREENED_IDS]
+    exposure = {'held_out': False,
+                'screened_case_ids': [row['scenario_id'] for row in screened],
+                'unscreened_case_ids': [row['scenario_id'] for row in unscreened],
+                'screened_aggregate': _aggregate(screened) if screened else None,
+                'unscreened_aggregate': _aggregate(unscreened) if unscreened else None,
+                'statement': ('Two declared development cases screen candidate selection; the other five are never '
+                              'consulted during selection. This suite is not held out.')}
     return {'schema_version': SCHEMA,
             'suite_id': 'nautilus.development-suite.v1',
             'suite_sha256': suite_fingerprint(suite),
             'suite': [case.identifier for case in suite],
             'cases': cases,
             'per_scenario': outcome['per_case'],
+            'screening_exposure': exposure,
             'gates': outcome['gates'],
             'acceptance': outcome['acceptance'],
             'aggregate': outcome['aggregate'],
@@ -209,8 +235,8 @@ def validate_robustness(value: dict) -> dict:
     if type(value) is not dict:
         raise ValueError('Robustness evaluation required')
     expected = {'schema_version', 'suite_id', 'suite_sha256', 'suite', 'cases', 'per_scenario', 'gates',
-                'acceptance', 'aggregate', 'decision', 'decision_reasons', 'failures', 'budget',
-                'conditions', 'limitations'}
+                'screening_exposure', 'acceptance', 'aggregate', 'decision', 'decision_reasons', 'failures',
+                'budget', 'conditions', 'limitations'}
     if set(value) != expected or value['schema_version'] != SCHEMA:
         raise ValueError('Unsupported robustness schema')
     if type(value['suite_sha256']) is not str or len(value['suite_sha256']) != 64:
@@ -228,4 +254,12 @@ def validate_robustness(value: dict) -> dict:
         raise ValueError('Rejection requires a recorded reason')
     if type(value['budget']) is not dict or value['budget'].get('equal_per_case_budget') is not True:
         raise ValueError('Equal evaluation budgets required')
+    exposure = value['screening_exposure']
+    if type(exposure) is not dict or set(exposure) != {'held_out', 'screened_case_ids', 'unscreened_case_ids',
+                                                       'screened_aggregate', 'unscreened_aggregate', 'statement'}:
+        raise ValueError('Invalid screening exposure record')
+    if exposure['held_out'] is not False:
+        raise ValueError('A development suite cannot be reported as held out')
+    if sorted(list(exposure['screened_case_ids']) + list(exposure['unscreened_case_ids'])) != sorted(value['suite']):
+        raise ValueError('Screening disclosure must account for every suite case')
     return deepcopy(value)

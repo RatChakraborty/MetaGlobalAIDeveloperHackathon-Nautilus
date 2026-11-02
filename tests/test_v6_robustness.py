@@ -99,6 +99,20 @@ def test_suite_evaluation_is_matched_and_budgeted():
     assert outcome['decision_reasons'] == failed
 
 
+def test_screening_exposure_is_disclosed_and_accounts_for_every_case():
+    outcome = evaluate_suite(Controller(), {'lookahead_m': 3.}, suite=build_suite(duration_s=6., cable_length_m=6.))
+    exposure = outcome['screening_exposure']
+    assert exposure['held_out'] is False
+    assert exposure['screened_case_ids'] == ['nominal', 'current_positive']
+    assert sorted(exposure['screened_case_ids'] + exposure['unscreened_case_ids']) == sorted(outcome['suite'])
+    assert set(exposure['unscreened_aggregate']) == set(outcome['aggregate'])
+    assert exposure['unscreened_aggregate']['mean_rms_cross_track_m']['baseline'] > 0
+    with pytest.raises(ValueError, match='held out'):
+        validate_robustness({**outcome, 'screening_exposure': {**exposure, 'held_out': True}})
+    with pytest.raises(ValueError, match='account for every suite case'):
+        validate_robustness({**outcome, 'screening_exposure': {**exposure, 'unscreened_case_ids': []}})
+
+
 def test_validation_rejects_inconsistent_acceptance():
     suite = build_suite(duration_s=6., cable_length_m=6.)
     outcome = evaluate_suite(Controller(), {'lookahead_m': 3.}, suite=suite)

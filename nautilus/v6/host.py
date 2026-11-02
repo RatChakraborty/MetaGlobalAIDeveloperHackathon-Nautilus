@@ -14,7 +14,7 @@ from ..controller_context import PARAMETERS, fingerprint
 from ..simulator import Controller
 from .artifact import build as build_artifact
 from .evaluation import LIMITATIONS as EVALUATION_LIMITATIONS
-from .patch import FEATURE_FLAG, enabled as patch_enabled, review as review_patch
+from .patch import EXECUTION, review as review_patch
 from .policy import TUNABLE, build_policy, candidate, differences, identity, validate_policy
 from .proposal import coordinate_search, validate_change
 from .robustness import DEFAULT_SUITE, build_suite, evaluate_suite
@@ -89,9 +89,9 @@ class ControlLabHost:
 
     @property
     def results(self) -> list:
-        return [{'proposal_index': index, 'changes': deepcopy(proposal['changes']),
+        return [{'proposal_index': index, 'changes': deepcopy(self._proposals[index]['changes']),
                  'decision': result['decision'], 'reasons': list(result['decision_reasons'])}
-                for index, (proposal, result) in enumerate(zip(self._proposals, self._results))]
+                for index, result in self._results]
 
     def context(self) -> dict:
         """Sanitized model-visible context. No truth, seeds, currents or measured trajectories."""
@@ -107,9 +107,9 @@ class ControlLabHost:
                                     'admissible': item['admissible']} for item in self._search['attempted']],
                     'best': deepcopy(self._search['best']), 'screening_cases': self._search['screening_cases'],
                     'limitations': list(self._search['limitations'])},
-                'budget': self.budget, 'patch_lab': {'available': patch_enabled() and self._patch_lab,
-                                                     'feature_flag': FEATURE_FLAG,
-                                                     'scope': 'Reviewable diffs by default; execution requires a passing sandbox self-test.'},
+                'budget': self.budget, 'patch_lab': {'available': self._patch_lab,
+                                                     'execution': EXECUTION,
+                                                     'scope': 'Static diff validation and structural checks only; patch execution is not implemented.'},
                 'tools': ['search_candidates', 'propose_change', 'evaluate_change', 'recommend', 'review_patch'],
                 'limitations': list(CONTEXT_LIMITATIONS)}
         if set(body) != {'schema_version', 'phase', 'investigation_id', 'policy', 'permitted_parameters',
@@ -159,7 +159,7 @@ class ControlLabHost:
         result = evaluate_suite(self._baseline, record['changes'], suite=self._suite)
         self._used_simulations += float(result['budget']['total_simulation_s'])
         record['status'] = 'evaluated'
-        self._results.append(result)
+        self._results.append((index, result))
         return deepcopy({**result, 'proposal_index': index})
 
     def recommend(self, decision: str, rationale: str, evidence_refs=None) -> dict:
@@ -187,8 +187,8 @@ class ControlLabHost:
             raise ValueError('Control lab already finalized')
         if not self._results:
             raise ValueError('At least one host evaluation is required')
-        proposal = self._proposals[len(self._results) - 1]
-        robustness = self._results[-1]
+        index, robustness = self._results[-1]
+        proposal = self._proposals[index]
         if robustness['decision'] == 'accept':
             change, evidence = proposal['proposal'], proposal['proposal']['evidence_refs']
         else:

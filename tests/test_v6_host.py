@@ -40,6 +40,7 @@ def test_context_withholds_truth_seeds_and_private_conditions():
     assert context['diagnosis_rubric'] == {'status': 'insufficient_diagnosis'}
     assert context['tools'] == ['search_candidates', 'propose_change', 'evaluate_change', 'recommend', 'review_patch']
     assert context['patch_lab']['available'] is False
+    assert context['patch_lab']['execution'] == 'unavailable'
 
 
 def test_model_cannot_inject_metrics_or_unpermitted_parameters():
@@ -67,8 +68,8 @@ def test_host_alone_runs_evaluations_and_enforces_budgets():
     unauthorized.propose(proposal())
     with pytest.raises(ValueError, match='not authorized'):
         unauthorized.evaluate(0)
-    with pytest.raises(ValueError):
-        host.evaluate(0) if not host.proposals else host.evaluate(5)
+    with pytest.raises(ValueError, match='Unknown proposal index'):
+        host.evaluate(5)
     result = host.evaluate(0)
     assert result['budget']['simulations'] == 2 and result['budget']['equal_per_case_budget'] is True
     assert result['cases'][0]['matched'] is True
@@ -137,3 +138,17 @@ def test_search_and_patch_lab_are_host_controlled():
     assert search['best'] is not None and search['screening_cases'] == ['nominal', 'current_positive']
     assert host.context()['screening']['best'] == search['best']
     assert host.review_patch('--- a/nautilus/v6/controller_variant.py\n+++ b/nautilus/v6/controller_variant.py\n')['status'] == 'unavailable'
+
+
+def test_finish_uses_the_last_evaluated_proposal_not_the_last_proposed():
+    host = lab(evaluation_limit=2)
+    host.propose(proposal())            # lookahead 3: improves under lateral current
+    host.propose(proposal(value=11.))   # lookahead 11: regresses under lateral current
+    host.evaluate(1)                    # evaluate the regressing candidate first
+    host.evaluate(0)                    # then the improving one
+    assert [item['proposal_index'] for item in host.results] == [1, 0]
+    assert host.budget['evaluations'] == 2
+    artifact = host.finish()
+    assert artifact['approved_differences'] == {'lookahead_m': {'baseline': 7., 'candidate': 3., 'unit': 'm'}}
+    assert artifact['proposal']['value'] == 3.
+    assert artifact['recommendation']['decision'] == 'accept'

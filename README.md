@@ -114,7 +114,7 @@ requires explicit authorization. It is not a scientific investigation or accurac
 evaluation with actuation-effort and stability instrumentation, a fixed seven-case
 development suite with a predeclared acceptance rule, bounded coordinate search on
 development-only screening cases, a host-owned model phase, a validated recommendation
-artifact and an optional, flag-gated controller patch lab. `V6_CONTROL_LAB_REPORT.md`
+artifact and an optional static controller-patch review. `V6_CONTROL_LAB_REPORT.md`
 records the measured results. The simulator, safety envelope, evaluator and frozen V4/V5
 schemas are unchanged; no change is deployed and no live model request is included.
 
@@ -123,9 +123,10 @@ schemas are unchanged; no change is deployed and no live model request is includ
   tests/test_v6_proposal.py tests/test_v6_host.py tests/test_v6_artifact.py tests/test_v6_patch.py
 ```
 
-Patch execution stays disabled unless `NAUTILUS_CONTROLLER_PATCH_LAB=1` and the sandbox
-self-test confirms denial; it is uncertified process isolation and never replaces the
-trusted controller.
+The controller-patch milestone is static review only: a diff is bounded to one module,
+applied in memory and structurally checked, and never executed. No trustworthy isolation
+exists in this project, so execution is reported unavailable rather than attempted, and a
+patch never replaces the trusted controller.
 
 The current full-run preset allows at most 12 requests/actions, 4096 output tokens
 per request, 32768 total output tokens, a 350000 measured-input-token stop threshold,

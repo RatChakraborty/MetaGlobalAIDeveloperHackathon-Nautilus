@@ -20,13 +20,17 @@ SCHEMA = 'nautilus.control-lab-recommendation.v1'
 DIFF_SCHEMA = 'nautilus.configuration-diff.v1'
 SCOPE = 'Engineering recommendation from matched offline simulation; not a deployed repair, safety certificate or diagnosis evidence.'
 HUMAN_REVIEW = 'required'
+QUALIFICATIONS = {
+    'accept': 'Accepted on a fixed development suite; not held-out evaluation and not a safety certificate.',
+    'reject': 'Rejected by the predeclared acceptance rule on a fixed development suite.',
+}
 CHECKLIST = (
     'Confirm the recorded diagnosis supports a controller change rather than a hardware repair.',
     'Review every development scenario and the worst-case corridor result.',
     'Confirm the approved differences match the intended configuration.',
     'Decide separately whether the change is deployed; this artifact grants no authority.',
 )
-PATCH_STATES = ('not_attempted', 'review_only', 'executed', 'unavailable')
+PATCH_STATES = ('not_attempted', 'review_only', 'unavailable')
 
 
 def _text(value, limit=1000):
@@ -88,8 +92,8 @@ def build(investigation_id, evidence_refs, policy, change, robustness, model_rec
                         'notes': list(patch.get('notes', []))}
         if patch_record['diff'] is not None:
             _text(patch_record['diff'], 20000)
-        if patch_record['status'] == 'executed' and patch_record['certified'] is not True:
-            raise ValueError('Executed patch requires a certified runner')
+        if patch_record['certified'] is not False:
+            raise ValueError('A controller patch cannot be certified by this project')
     body = {
         'schema_version': SCHEMA,
         'investigation_id': investigation_id,
@@ -103,7 +107,9 @@ def build(investigation_id, evidence_refs, policy, change, robustness, model_rec
             'suite_id': robustness['suite_id'], 'suite_sha256': robustness['suite_sha256'],
             'cases': list(robustness['suite']), 'matched_conditions': dict(robustness['conditions']),
             'budget': dict(robustness['budget']), 'acceptance_rule': dict(robustness['acceptance']),
-            'rubric': rubric,
+            'rubric': rubric, 'held_out': False,
+            'screening_exposure': deepcopy(robustness['screening_exposure']),
+            'decision_qualification': QUALIFICATIONS[robustness['decision']],
         },
         'baseline': {'aggregate': {name: values['baseline'] for name, values in robustness['aggregate'].items()}},
         'candidate': {'aggregate': {name: values['candidate'] for name, values in robustness['aggregate'].items()}},
@@ -177,6 +183,16 @@ def validate(value) -> dict:
                 raise ValueError('Proposal evidence reference is not public')
     elif proposal is not None:
         raise ValueError('Unexecuted proposal cannot carry a difference')
+    conditions = value['evaluation_conditions']
+    if type(conditions) is not dict or set(conditions) != {'suite_id', 'suite_sha256', 'cases', 'matched_conditions',
+                                                           'budget', 'acceptance_rule', 'rubric', 'held_out',
+                                                           'screening_exposure', 'decision_qualification'}:
+        raise ValueError('Invalid evaluation conditions')
+    if conditions['held_out'] is not False:
+        raise ValueError('A development suite cannot be reported as held out')
+    _text(conditions['decision_qualification'], 300)
+    if type(conditions['screening_exposure']) is not dict:
+        raise ValueError('Screening exposure record required')
     robustness = value['robustness']
     if type(robustness) is not dict or set(robustness) != {'cases', 'per_scenario', 'gates', 'decision',
                                                            'decision_reasons', 'failures', 'limitations'}:
@@ -202,8 +218,8 @@ def validate(value) -> dict:
         raise ValueError('Invalid patch record')
     if patch['status'] not in PATCH_STATES:
         raise ValueError('Invalid patch state')
-    if patch['status'] == 'executed' and patch['certified'] is not True:
-        raise ValueError('Executed patch requires a certified runner')
+    if patch['certified'] is not False:
+        raise ValueError('A controller patch cannot be certified by this project')
     if type(value['limitations']) is not list or not value['limitations']:
         raise ValueError('Limitations required')
     for item in value['limitations']:

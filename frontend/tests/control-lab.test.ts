@@ -28,6 +28,8 @@ test('panel renders the decision, proposal and qualifications', () => {
   assert.match(html,/not a deployed repair/);
   assert.match(html,/Declared gates/);
   assert.match(html,/Unresolved risks/);
+  assert.match(html,/Accepted on a fixed development suite|Rejected by the predeclared acceptance rule/);
+  assert.match(html,/screen candidate selection|never consulted/i);
   assert.match(html,/no pitch, roll|duration cap|completed/);
   assert.match(controlLabMarkup(null),/Open control-lab recommendation/);
 });
@@ -61,8 +63,10 @@ test('rejects a weakened scope or human-review claim', () => {
   assert.throws(()=>readControlLab(scope),/not a deployed repair/);
   const review = clone();review.human_review.performed = true;
   assert.throws(()=>readControlLab(review),/must remain required/);
-  const certified = clone();certified.patch = {...certified.patch,status:'executed',certified:false};
-  assert.throws(()=>readControlLab(certified),/certified runner/);
+  const executed = clone();executed.patch = {...executed.patch,status:'executed',certified:false};
+  assert.throws(()=>readControlLab(executed),/not implemented/);
+  const certified = clone();certified.patch = {...certified.patch,certified:true};
+  assert.throws(()=>readControlLab(certified),/cannot be certified/);
 });
 
 test('rejects unknown fields, unserialisable references and empty evidence', () => {

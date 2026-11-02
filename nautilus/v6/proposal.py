@@ -1,8 +1,9 @@
 """Bounded, evidence-grounded parameter proposals and coordinate search.
 
-Screening uses only the first two declared development cases. The remaining
-robustness cases are never consulted during search, so the reported suite is not
-tuned against. Every attempted candidate is retained, including regressions.
+Screening uses only two declared development cases. They are members of the
+reported development suite, so this is partial selection exposure and is disclosed
+in every evaluation; the other five cases are never consulted and no case is held
+out. Every attempted candidate is retained, including regressions.
 """
 from __future__ import annotations
 
@@ -11,9 +12,9 @@ import math
 from ..controller_context import PARAMETERS
 from .evaluation import evaluate_case
 from .policy import TUNABLE
-from .robustness import SUITE_SPECS, build_suite
+from .robustness import SCREENED_IDS, SUITE_SPECS, build_suite
 
-SCREENING_IDS = ('nominal', 'current_positive')
+SCREENING_IDS = SCREENED_IDS
 GRID = {'lookahead_m': (3., 5., 9., 11.), 'heading_kp': (30., 48.), 'heading_kd': (12., 26.),
         'cruise_thrust': (11.5, 15.)}
 MAX_CANDIDATES = 14
@@ -91,7 +92,7 @@ def screen(baseline, *, grid=GRID, screening=SCREENING, limit=MAX_CANDIDATES) ->
             'attempted': attempted, 'best': best['changes'] if best else None,
             'admissible': len(admissible), 'evaluations': len(attempted),
             'budget': {'candidates': len(attempted), 'limit': limit, 'simulation_seconds': budget},
-            'limitations': ('Screening uses two declared development cases only; the full robustness suite is not consulted here.',
+            'limitations': ('Screening uses two declared development cases that are also members of the reported suite; this is partial selection exposure, not held-out evaluation.',
                             'Every attempted candidate is retained, including regressions.')}
 
 
@@ -121,6 +122,6 @@ def coordinate_search(baseline, *, grid=GRID, screening=SCREENING, limit=MAX_CAN
             'best': best['changes'] if best else None, 'best_measured': best,
             'budget': {'candidates': first['evaluations'] + len(combinations), 'limit': limit,
                        'simulation_seconds': budget},
-            'limitations': ('Bounded coordinate search on development-only screening cases; not an optimizer and not a global optimum.',
-                            'Held-out and robustness cases are not used to select a candidate.',
+            'limitations': ('Bounded coordinate search on a predeclared grid; not an optimizer and not a global optimum.',
+                            'Two screening cases are members of the reported development suite; no case is held out.',
                             'Search improves tracking metrics only; it cannot repair a physical fault.')}

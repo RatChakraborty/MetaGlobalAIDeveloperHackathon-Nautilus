@@ -1,98 +1,28 @@
-"""Restricted controller-source patch lab (optional, disabled by default).
+"""Restricted controller-source patch review (static only).
 
-A generated diff is only ever *reviewed* unless the feature flag is set and a
-sandbox self-test confirms that the in-process guard actually blocks network and
-filesystem access. The runner uses a fresh process, stripped environment, rlimits,
-a wall-clock timeout and an injected `sitecustomize` denial guard. It is not a
-kernel namespace: `certified` stays false, and an executed patch never replaces
-the trusted baseline.
+A generated diff is validated, applied in memory and structurally checked. It is
+**never executed**: this project has no trustworthy isolation boundary, so the
+execution milestone is reported as unavailable rather than attempted. The module
+imports no process, network or temporary-directory machinery, and nothing here can
+run model-supplied code.
 """
 from __future__ import annotations
 
 import ast
-import json
-import os
 from pathlib import Path
 import re
-import subprocess
-import sys
-import tempfile
 
 TARGET_PATH = 'nautilus/v6/controller_variant.py'
 TARGET_FUNCTION = 'command'
-FEATURE_FLAG = 'NAUTILUS_CONTROLLER_PATCH_LAB'
 MAX_BYTES = 4000
 MAX_HUNKS = 2
 MAX_ADDED_LINES = 40
+EXECUTION = 'unavailable'
+SANDBOX_REASON = ('No trustworthy isolation boundary exists in this project, so a patch is '
+                  'validated statically and never executed.')
 FORBIDDEN = ('import ', '__', 'eval(', 'exec(', 'open(', 'socket', 'subprocess', 'os.system', 'os.environ',
              'os.remove', 'shutil', 'pathlib', 'urllib', 'requests', 'pickle', 'ctypes', 'sys.', 'globals(',
              'locals(', 'setattr(', 'while True', 'compile(', 'input(')
-GUARD = '''"""Injected denial guard for the isolated patch runner."""
-import builtins, os, socket
-
-class SandboxDenied(OSError):
-    pass
-
-def _deny(*args, **kwargs):
-    raise SandboxDenied('sandbox denies network and process access')
-
-socket.socket = _deny
-socket.create_connection = _deny
-socket.socketpair = _deny
-os.system = _deny
-os.execv = _deny
-os.fork = _deny
-_real_open = builtins.open
-
-def _open(file, mode='r', *args, **kwargs):
-    path = str(file)
-    if path.startswith(os.environ.get('NAUTILUS_SANDBOX_DIR', '\\0')) or path.startswith('<'):
-        return _real_open(file, mode, *args, **kwargs)
-    raise SandboxDenied('sandbox denies filesystem access outside the evaluation directory')
-
-builtins.open = _open
-'''
-HARNESS = '''import json, math, os, sys
-
-def probe():
-    import socket
-    try:
-        socket.socket()
-    except Exception:
-        network = 'blocked'
-    else:
-        network = 'open'
-    try:
-        open('/etc/passwd')
-    except Exception:
-        filesystem = 'blocked'
-    else:
-        filesystem = 'open'
-    return network, filesystem
-
-def main():
-    network, filesystem = probe()
-    payload = json.load(open(os.path.join(os.environ['NAUTILUS_SANDBOX_DIR'], 'samples.json')))
-    from controller_candidate import command
-    class Holder:
-        pass
-    vehicle = Holder(); vehicle.lever_arm = payload['lever_arm']; vehicle.max_thrust = payload['max_thrust']
-    controller = Holder()
-    for key, value in payload['controller'].items():
-        setattr(controller, key, value)
-    rows = []
-    for sample in payload['samples']:
-        first = command(sample['y'], sample['heading'], sample['rate'], vehicle, controller)
-        second = command(sample['y'], sample['heading'], sample['rate'], vehicle, controller)
-        rows.append({'inputs': sample, 'outputs': list(first), 'deterministic': list(first) == list(second)})
-    print(json.dumps({'network': network, 'filesystem': filesystem, 'rows': rows}))
-
-main()
-'''
-
-
-def enabled() -> bool:
-    return os.environ.get(FEATURE_FLAG, '').strip().lower() in ('1', 'true', 'yes')
 
 
 def _check_target(diff: str):
@@ -131,6 +61,7 @@ def validate_patch(diff: str) -> list:
 
 
 def apply_patch(diff: str, source: str | None = None) -> str:
+    """Apply a validated diff in memory. Nothing is written to disk or executed."""
     lines = _check_target(diff)
     source = Path(source).read_text() if isinstance(source, (str, Path)) and source else \
         Path(__file__).with_name('controller_variant.py').read_text()
@@ -176,6 +107,7 @@ def apply_patch(diff: str, source: str | None = None) -> str:
 
 
 def structural_checks(patched: str) -> list:
+    """Parse the patched module and confirm the fixed controller contract."""
     try:
         tree = ast.parse(patched)
     except SyntaxError as exc:
@@ -186,7 +118,7 @@ def structural_checks(patched: str) -> list:
     target = functions[-1]
     if [arg.arg for arg in target.args.args] != ['observed_y', 'observed_heading', 'observed_yaw_rate', 'vehicle', 'controller']:
         raise ValueError('Patched function signature changed')
-    if len(target.args.args) != len(target.args.args) or target.args.vararg or target.args.kwarg:
+    if target.args.vararg or target.args.kwarg or target.args.defaults or target.args.kwonlyargs:
         raise ValueError('Patched function must keep a fixed signature')
     text = ast.dump(target)
     if 'max_thrust' not in text:
@@ -196,6 +128,7 @@ def structural_checks(patched: str) -> list:
         raise ValueError('Patched function must return the documented triple')
     if 'limit' not in ast.dump(returns[-1].value):
         raise ValueError('Patched function must bound returned commands')
+
     def imports(parsed):
         return [ast.dump(node) for node in ast.walk(parsed) if isinstance(node, (ast.Import, ast.ImportFrom))]
 
@@ -207,117 +140,15 @@ def structural_checks(patched: str) -> list:
             {'check': 'return_contract', 'passed': True}, {'check': 'no_imports', 'passed': True}]
 
 
-def _limits():
-    import resource
-    resource.setrlimit(resource.RLIMIT_AS, (512 << 20, 512 << 20))
-    resource.setrlimit(resource.RLIMIT_CPU, (10, 10))
-    resource.setrlimit(resource.RLIMIT_NOFILE, (64, 64))
-    resource.setrlimit(resource.RLIMIT_FSIZE, (1 << 20, 1 << 20))
-    try:
-        resource.setrlimit(resource.RLIMIT_NPROC, (64, 64))
-    except (ValueError, OSError):
-        pass
-
-
-def sandbox_status(runner=subprocess.run) -> dict:
-    if not sys.platform.startswith('linux'):
-        return {'available': False, 'reason': 'process isolation with rlimits is only implemented on Linux'}
-    try:
-        import resource  # noqa: F401
-    except Exception:
-        return {'available': False, 'reason': 'resource limits unavailable'}
-    try:
-        with tempfile.TemporaryDirectory() as directory:
-            Path(directory, 'sitecustomize.py').write_text(GUARD)
-            script = Path(directory, 'probe.py')
-            script.write_text('import json\ntry:\n import socket\n socket.socket()\nexcept Exception:\n print(json.dumps({"blocked": True}))\nelse:\n print(json.dumps({"blocked": False}))\n')
-            completed = runner([sys.executable, '-s', str(script)], cwd=directory, timeout=20,
-                               env={'PATH': '/usr/bin:/bin', 'PYTHONPATH': directory, 'HOME': directory,
-                                    'TMPDIR': directory, 'NAUTILUS_SANDBOX_DIR': directory},
-                               capture_output=True, text=True, preexec_fn=_limits)
-            if completed.returncode != 0 or '"blocked": true' not in (completed.stdout or '').lower():
-                return {'available': False, 'reason': 'guard self-test did not confirm denial'}
-    except (OSError, subprocess.SubprocessError, ValueError) as exc:
-        return {'available': False, 'reason': 'sandbox self-test failed: ' + type(exc).__name__}
-    return {'available': True, 'guard': 'sitecustomize denial for socket, subprocess, os.exec and open',
-            'limits': 'RLIMIT_AS 512 MiB, CPU 10 s, 64 descriptors, 1 MiB file writes',
-            'network_namespace': False, 'certified': False,
-            'qualification': 'Best-effort process isolation with an in-process denial guard; not a kernel namespace.'}
-
-
-def _samples(rows):
-    return {'lever_arm': .32, 'max_thrust': 45., 'controller': {
-        'lookahead_m': 7., 'heading_kp': 39., 'heading_kd': 18., 'cruise_thrust': 13., 'max_heading_rad': .72},
-        'samples': rows}
-
-
-def review(diff: str, *, runner=subprocess.run, timeout_s: float = 20.) -> dict:
-    """Validate a diff; execute only behind the flag with a passing guard self-test."""
+def review(diff: str) -> dict:
+    """Validate, apply in memory and structurally check a diff. Never executes it."""
     lines = _check_target(diff)
     patched = apply_patch(diff)
     checks = structural_checks(patched)
-    record = {'status': 'review_only', 'diff': '\n'.join(lines) + '\n', 'certified': False,
-              'sandbox': None, 'checks': checks,
-              'notes': ['Diff validated but not executed; review required.',
-                        'A patch never replaces the trusted baseline.']}
-    if not enabled():
-        record['sandbox'] = {'available': False, 'reason': FEATURE_FLAG + ' is not enabled'}
-        record['notes'].append('Controller patch execution is disabled by default.')
-        return record
-    status = sandbox_status(runner)
-    record['sandbox'] = status
-    if not status.get('available'):
-        record['status'] = 'unavailable'
-        record['notes'].append('Source-patch execution unavailable: ' + str(status.get('reason')))
-        return record
-    samples = [{'y': y, 'heading': h, 'rate': r} for y, h, r in
-               ((0., 0., 0.), (.4, .05, .01), (-.9, -.2, .03), (1.2, .3, -.02))]
-    try:
-        with tempfile.TemporaryDirectory() as directory:
-            Path(directory, 'sitecustomize.py').write_text(GUARD)
-            Path(directory, 'controller_candidate.py').write_text(patched)
-            Path(directory, 'samples.json').write_text(json.dumps(_samples(samples)))
-            harness = Path(directory, 'harness.py')
-            harness.write_text(HARNESS)
-            completed = runner([sys.executable, '-s', str(harness)], cwd=directory, timeout=timeout_s,
-                               env={'PATH': '/usr/bin:/bin', 'PYTHONPATH': directory, 'HOME': directory,
-                                    'TMPDIR': directory, 'NAUTILUS_SANDBOX_DIR': directory},
-                               capture_output=True, text=True, preexec_fn=_limits)
-            if completed.returncode != 0:
-                record.update(status='unavailable', notes=['Sandboxed run failed: ' + (completed.stderr or '')[-400:]])
-                return record
-            payload = json.loads(completed.stdout.strip().splitlines()[-1])
-    except subprocess.TimeoutExpired:
-        record.update(status='unavailable', notes=['Sandboxed run timed out; no result accepted.'])
-        return record
-    except (OSError, ValueError, json.JSONDecodeError) as exc:
-        record.update(status='unavailable', notes=['Sandboxed run failed: ' + type(exc).__name__])
-        return record
-    if payload.get('network') != 'blocked' or payload.get('filesystem') != 'blocked':
-        record.update(status='unavailable', sandbox={**status, 'available': False},
-                      notes=['Sandbox guard did not block network and filesystem access; execution rejected.'])
-        return record
-    rows = payload.get('rows')
-    if type(rows) is not list or len(rows) != len(samples):
-        record.update(status='unavailable', notes=['Sandboxed output failed validation.'])
-        return record
-    bounded = True
-    for row in rows:
-        outputs = row.get('outputs')
-        if type(outputs) is not list or len(outputs) != 3 or not row.get('deterministic'):
-            bounded = False
-            break
-        if any(type(value) not in (int, float) or not (-45. - 1e-9 <= value <= 45. + 1e-9) for value in outputs[:2]):
-            bounded = False
-            break
-    if not bounded:
-        record.update(status='unavailable', notes=['Patched controller violated finiteness, determinism or actuator bounds.'])
-        return record
-    record.update(status='executed', certified=False,
-                  checks=checks + [{'check': 'sandbox_denial_guard', 'passed': True},
-                                   {'check': 'deterministic_outputs', 'passed': True},
-                                   {'check': 'actuator_bounds', 'passed': True}],
-                  notes=['Executed in best-effort process isolation; not certified isolation.',
-                         'Matched-suite regression is still required before any recommendation.',
-                         'The patched module is never installed as the trusted controller.'])
-    return record
+    return {'status': 'review_only', 'diff': '\n'.join(lines) + '\n', 'certified': False,
+            'sandbox': {'available': False, 'execution': EXECUTION, 'certified': False,
+                        'reason': SANDBOX_REASON},
+            'checks': checks,
+            'notes': ['Diff validated and structurally checked; it is not executed anywhere in this repository.',
+                      'Execution is reported unavailable rather than attempted because no isolation is trustworthy.',
+                      'A patch never replaces the trusted baseline; human review is required.']}

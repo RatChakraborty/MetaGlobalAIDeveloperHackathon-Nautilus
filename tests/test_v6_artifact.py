@@ -47,6 +47,9 @@ def test_recommendation_package_contains_every_required_field():
     assert value['human_review']['performed'] is False
     assert value['recommendation']['authority'].startswith('Host rule governs')
     assert value['patch']['status'] == 'not_attempted'
+    assert value['evaluation_conditions']['held_out'] is False
+    assert value['evaluation_conditions']['screening_exposure']['held_out'] is False
+    assert 'development suite' in value['evaluation_conditions']['decision_qualification']
     assert any('does not repair a physical fault' in risk for risk in value['unresolved_risks'])
     for private in ('"seed"', 'current_y', 'port_efficiency'):
         assert private not in json.dumps(value)
@@ -60,8 +63,12 @@ def test_artifact_rejects_tampering_and_unbacked_claims():
         validate_artifact({**value, 'scope': 'Verified repair, ready to deploy.'})
     with pytest.raises(ValueError, match='Human review'):
         validate_artifact({**value, 'human_review': {**value['human_review'], 'performed': True}})
-    with pytest.raises(ValueError, match='certified runner'):
+    with pytest.raises(ValueError, match='Invalid patch state'):
         validate_artifact({**value, 'patch': {**value['patch'], 'status': 'executed', 'certified': False}})
+    with pytest.raises(ValueError, match='cannot be certified'):
+        validate_artifact({**value, 'patch': {**value['patch'], 'certified': True}})
+    with pytest.raises(ValueError, match='held out'):
+        validate_artifact({**value, 'evaluation_conditions': {**value['evaluation_conditions'], 'held_out': True}})
     with pytest.raises(ValueError, match='host rule'):
         validate_artifact({**value, 'recommendation': {**value['recommendation'], 'decision': 'accept' if value['robustness']['decision'] == 'reject' else 'reject'}})
 

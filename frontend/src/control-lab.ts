@@ -59,8 +59,8 @@ export function readControlLab(value:unknown):ControlLab{
  if(human.status!=='required'||human.performed!==false)throw Error('Human review must remain required and unperformed');
  strings(human.checklist,'human review checklist');
  const patch=closed(v.patch,['status','diff','certified','sandbox','checks','notes'],'patch record');
- if(!['not_attempted','review_only','executed','unavailable'].includes(patch.status))throw Error('Invalid patch state');
- if(patch.status==='executed'&&patch.certified!==true)throw Error('Executed patch requires a certified runner');
+ if(!['not_attempted','review_only','unavailable'].includes(patch.status))throw Error('Patch execution is not implemented');
+ if(patch.certified!==false)throw Error('A controller patch cannot be certified here');
  strings(v.unresolved_risks,'unresolved risks');strings(v.limitations,'limitations');
  for(const side of ['baseline','candidate'] as const){const body=closed(v[side],['aggregate'],'aggregate metrics');if(!object(body.aggregate))throw Error('Invalid aggregate metrics');}
  return v;
@@ -74,8 +74,9 @@ export function controlLabMarkup(lab:ControlLab|null):string{
  const model=lab.recommendation.model_recommendation;
  const rows=[['mean_rms_cross_track_m','Mean cross-track RMS · m'],['worst_case_max_abs_cross_track_m','Worst-case maximum · m'],['worst_case_fraction_outside_corridor','Worst-case outside fraction'],['completed_missions','Completed missions'],['worst_case_command_saturation_fraction','Worst-case saturation'],['mean_effort_proxy_n_s','Mean effort proxy · N·s']];
  return `<section class="control-lab"><h3>V6 control lab · engineering recommendation</h3>
- <p>${esc(lab.robustness.decision==='accept'?'Accepted by the predeclared rule':'Rejected by the predeclared rule')} · ${esc(lab.recommendation.decision)} · human review ${esc(lab.human_review.status)}</p>
+ <p>${esc(lab.robustness.decision==='accept'?'Accepted on the development suite by the predeclared rule':'Rejected on the development suite by the predeclared rule')} · ${esc(lab.recommendation.decision)} · human review ${esc(lab.human_review.status)}</p>
  <p class="muted">${esc(lab.scope)}</p>
+ <p class="muted">${esc(lab.evaluation_conditions?.decision_qualification??'')} ${esc(lab.evaluation_conditions?.screening_exposure?.statement??'')}</p>
  <div class="table-wrap"><table><thead><tr><th>Policy</th><th>Value</th><th>Unit</th></tr></thead><tbody>${(Object.entries(lab.controller.baseline_configuration) as [string,number][]).map(([key,value])=>`<tr><td>${esc(key)}</td><td>${esc(String(value))}</td><td>${esc((PARAMETERS as any)[key]?.unit??'n/a')}</td></tr>`).join('')}</tbody></table></div>
  ${change?`<p><b>Proposed change:</b> ${esc(change[0])} ${esc(String(change[1].baseline))} → ${esc(String(change[1].candidate))} ${esc(change[1].unit)}</p><p><b>Reason:</b> ${esc(proposal.rationale)}</p><p><b>Expected effect:</b> ${esc(proposal.expected_effect)}</p>`:'<p>No controller change is recommended for this evaluation.</p>'}
  <div class="table-wrap"><table><thead><tr><th>Metric</th><th>Baseline</th><th>Candidate</th><th>Difference</th></tr></thead><tbody>${rows.map(([key,label])=>`<tr><td>${esc(label)}</td><td>${fmt(aggregate('baseline')[key],key==='completed_missions'?0:3)}</td><td>${fmt(aggregate('candidate')[key],key==='completed_missions'?0:3)}</td><td>${signed((aggregate('candidate')[key]??0)-(aggregate('baseline')[key]??0))}</td></tr>`).join('')}</tbody></table></div>
