@@ -138,3 +138,55 @@ are encoded as data. Diffs require operator review and are not deployment-ready.
 The Trajectory tab separately imports visualization-only markers and has an opt-in
 command-arrow overlay. Commands are held between logged samples and hidden beyond
 each run's interval; they are requested newtons, never measured force or RPM.
+
+### V5 workbench: one selection, one comparison
+
+Choose **Open investigation files** and select the investigation plus its available
+public companion JSON exports together. This loads atomically through the existing
+V1–V4 validators. It accepts the existing host export set (`investigation.json`,
+`configuration-evaluation.json`, `comparison.json`, and baseline/candidate public and
+visualization files), plus matching Muse/V3/V4/supervisor companions. Files stay local.
+Unknown/private artifacts, duplicate basenames, mismatched sidecars and changed poses
+fail without replacing the current investigation. Existing individual imports remain.
+
+When multiple investigation records need explicit disambiguation, optionally include:
+
+```json
+{
+  "schema_version": "nautilus.workbench.v1",
+  "investigation": "investigation.json",
+  "files": ["investigation.json", "v4-provenance.json"]
+}
+```
+
+The manifest only lists basenames; it does not embed data, use archives, or fetch local
+paths. Select exactly its listed files together with the manifest. Plain JSON names
+may contain letters, numbers, spaces, parentheses, underscores and hyphens; path/URL
+names are rejected. Limits: 25 selected files, 50 MB/file, 120 MB total.
+
+**Compare Runs** becomes available only after a completed anchored host evaluation
+and all four referenced baseline/candidate files are loaded. The loader checks run,
+controller context/configuration, observation and trajectory fingerprints and geometry.
+Keep original exporter files: the pose fingerprint preserves Python numeric spelling,
+so reserializing them with another JSON tool can invalidate comparison even when
+normalized coordinates look the same. Individual legacy visualization import remains
+available. Fingerprints establish consistency, not authenticated authorship or repair.
+
+Compare opens the existing Trajectory tab with candidate and baseline on the same
+elapsed-time clock. The shorter trace holds its last recorded pose; no samples are
+invented. The original investigation and its report/sidecars remain separate. **Back
+to investigation**, Investigator, or Analytics restores the previous evidence context.
+Manual trajectory replacement is disabled while the verified comparison is displayed.
+
+Report, configuration-diff JSON, and existing-schema numerical-comparison JSON downloads
+are now visible together above every tab. Missing artifacts stay disabled. The overview
+shows recorded multi-cause findings, policy, operator-request states and host/critic
+status with unverified-authority and offline-provider qualifications. Full original
+companions remain inspectable; replay never grants approval or executes a tool.
+
+No approved demo files are checked in. Demo loading remains disabled by default.
+After separate dataset approval, the existing four-file demo still works. An approved
+workbench demo can instead use `NAUTILUS_DEMO_ENABLED=true` and
+`NAUTILUS_WORKBENCH_DEMO_MANIFEST=workbench.json` with that manifest and its public
+files under `public/demo/`. Requests use the configured Pages base and safe basenames;
+there is no arbitrary-URL manifest fetch. No data or deployment is included here.
