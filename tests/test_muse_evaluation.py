@@ -10,7 +10,18 @@ from nautilus.muse import Reply,ProviderError
 from nautilus.muse_context import restore_result
 
 
-def manifest():return e.make_manifest(seed_base=2**40+404000,shuffle_seed=19)
+def manifest():
+    # V3 adds numerical modules; these OFFLINE fixtures exercise manifest mechanics
+    # on the current tree, not the frozen Phase D candidate identity. Production
+    # make_manifest still rejects this tree, and fixture purpose cannot run real API.
+    original=e.subprocess.check_output
+    def fixture_git(command,**kwargs):
+        if command[:2]==['git','show']:
+            return (e.ROOT/command[2].split(':',1)[1]).read_bytes()
+        return original(command,**kwargs)
+    with patch.object(e.subprocess,'check_output',side_effect=fixture_git):
+        return e.make_manifest(seed_base=2**40+404000,shuffle_seed=19)
+
 
 
 def install(tmp_path):
@@ -173,3 +184,8 @@ def test_partial_started_case_remains_in_reliability_denominator(tmp_path):
     assert public['summary']['muse']['end_to_end_completion_rate']==0
     assert public['summary']['muse']['unscored_started']==1
     assert public['summary']['paired_terminal_pairs']==0
+
+
+def test_v3_tree_cannot_refreeze_as_original_live_candidate():
+    with pytest.raises((ValueError,e.subprocess.CalledProcessError)):
+        e.make_manifest(seed_base=2**54+404000,shuffle_seed=19)

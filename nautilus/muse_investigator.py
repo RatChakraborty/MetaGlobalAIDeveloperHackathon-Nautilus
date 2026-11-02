@@ -209,23 +209,27 @@ class Limits:
             if type(v) not in (float,int) or not math.isfinite(v) or not 0 < v <= 1800: raise ValueError('Invalid time limit')
 
 
-def run(laboratory, provider, *, limits=Limits()):
+def run(laboratory, provider, *, limits=Limits(), extension=None):
     if laboratory._closed: raise ValueError('Fresh open laboratory required')
     start = time.monotonic(); state = initial_context(laboratory); tools = function_tools()
+    if extension is not None: state['v3'] = extension.context(laboratory)
     pending = [{'role':'user','content':[{'type':'input_text','text':canonical(state)}]}]
     previous = None; cache = {}; actions = []; requests = []; errors = []; invalid = 0; tool_results = []
     output_reserved = 0; request_bytes = 0; retries = 0; reason = 'model_call_limit'; origin = 'host'
     while len(requests) < limits.model_calls:
+        if extension is not None and not extension.request_allowed():
+            reason='model_call_limit'; break
         remaining_time = limits.wall_s-(time.monotonic()-start)
         if remaining_time <= 0: reason='wall_deadline'; break
         if len(actions) >= limits.actions: reason='action_limit'; break
         allowance = min(limits.output_tokens_per_call, limits.output_tokens_total-output_reserved)
         if allowance <= 0: reason='output_token_limit'; break
         host_notice = f'Host remaining model calls: {limits.model_calls-len(requests)}; actions: {limits.actions-len(actions)}. Finalize before exhaustion.'
-        request_arguments=dict(instructions=PROMPT+host_notice,input=deepcopy(pending),tools=deepcopy(tools),
+        instructions=PROMPT+host_notice+(extension.instructions if extension is not None else '')
+        request_arguments=dict(instructions=instructions,input=deepcopy(pending),tools=deepcopy(tools),
             previous_response_id=previous,max_output_tokens=allowance,timeout=min(limits.timeout_s,remaining_time))
         exact_size=callable(getattr(provider,'request_size',None))
-        size=provider.request_size(**request_arguments) if exact_size else len(canonical({'input':pending,'tools':tools,'instructions':PROMPT+host_notice}).encode())
+        size=provider.request_size(**request_arguments) if exact_size else len(canonical({'input':pending,'tools':tools,'instructions':instructions}).encode())
         if request_bytes+size > limits.request_bytes_total: reason='request_byte_limit'; break
         if sum(r['usage'].get('input_tokens',0) for r in requests) >= limits.input_tokens_total:
             reason='input_token_limit'; break
@@ -280,7 +284,7 @@ def run(laboratory, provider, *, limits=Limits()):
                 stage='validation'
                 payload=validate_call(c['name'],c['arguments'])
                 stage='laboratory'
-                value=laboratory.call(payload)
+                value=extension.call(laboratory,payload) if extension is not None else laboratory.call(payload)
                 remaining=laboratory.get_fit_report()['remaining']
                 tool_results.append({'call_id':cid,'name':c['name'],'result':deepcopy(value),'remaining':remaining})
                 projected, presentation=project_result(value)
@@ -310,6 +314,8 @@ def run(laboratory, provider, *, limits=Limits()):
         if laboratory._closed:
             reason='model_finalized'; origin='model'; break
         pending=[{'type':'function_call_output','call_id':cid,'output':canonical(outcome)}]
+        if extension is not None and extension.stop_requested:
+            reason='provider_error'; break
         if invalid >= limits.invalid_calls: reason='invalid_call_limit'; break
     if not laboratory._closed:
         laboratory.call({'op':'finalize','diagnosis':{'hypothesis':None,'evidence_refs':laboratory.evidence_refs()},
