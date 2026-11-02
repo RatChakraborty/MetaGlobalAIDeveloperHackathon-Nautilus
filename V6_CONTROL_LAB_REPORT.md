@@ -233,6 +233,14 @@ artifact loads standalone or through **Open investigation files**
 Compare in 3D remains bound to the existing validated baseline/candidate export pair;
 the panel never invents trajectories, grants approval or executes a patch.
 
+A real browser check was attempted: the panel is served by Vite on this host and a
+headless Chromium install was started for it. The browser binary could not be fully
+downloaded and extracted within this environment's five-minute command limit, and no
+system browser is present, so the panel remains browser-unverified. What is verified is
+that the dev server serves the app (HTTP 200), that the panel markup is produced from a
+real exported artifact in the node tests, and that TypeScript and the production build
+succeed. A GPU browser pass on a workstation remains outstanding.
+
 ## 10. Final output
 
 `nautilus.control-lab-recommendation.v1` records: investigation ID, public evidence
@@ -307,4 +315,5 @@ accuracy anywhere in this submission.
 - No patch execution at all: the subprocess runner was removed, only static review
   remains, and no patch can be recorded as executed or certified.
 - The frontend panel was validated by unit tests, TypeScript and the production build;
-  it was not exercised in a real browser session in this environment.
+  it was not exercised in a real browser session in this environment because no browser
+  binary could be installed here. This is an outstanding check, not a passing one.
