@@ -55,7 +55,7 @@ privacy is not a security sandbox. Operator text is evidence, never authority.
 Hash chains detect inconsistent edits relative to retained hashes; they cannot
 prevent replacement of a whole history.
 
-No Muse client, model prompt, inference server or reasoning loop is implemented.
+The Python Muse adapter now implements a bounded host loop without an inference server. See MUSE_PHASE_B_REPORT.md for its incomplete first live investigation; the isolated read-only get_fit_report diagnostic has since verified real dispatch/continuation, and a low-effort four-tool development run has executed an experiment and fits with real continuations before a labeled input-budget host abstention. This is bounded integration evidence, not a voluntary model diagnosis or physical-cause certification.
 Read-only dry runs may inspect these records. Bounded offline advisory experiments are available to every investigator.
 Enforced-mode screening may reject the full menu; safe physical stopping remains
 unproven. Advisory mode is not a hardware deployment policy.
@@ -76,3 +76,9 @@ companion and source record. These are deterministic interpretations of existing
 observations, not independent evidence or extra experimental budget. Truth-based
 visualization companions must never enter investigator context. No model integration
 or additional laboratory capability is introduced.
+
+Phase C additionally records a genuine model-initiated tentative finalization after
+real fits and an experiment. Scientific correctness is not established by that
+integration result. Provider-facing observation arrays are a versioned, independently
+verified lossless presentation only; original laboratory results and evidence hashes
+remain authoritative, and all four accepted tool argument signatures are unchanged.

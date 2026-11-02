@@ -1,3 +1,6 @@
+import {readV4,v4Summary} from './v4-provenance.ts';
+import {readV3,v3Summary} from './v3-provenance.ts';
+import {readMuseProvenance,museSummary,type MuseProvenance} from './muse-provenance.ts';
 import {readRecord,CHANNELS,parameterUnit,type Investigation} from './records.ts';
 import {readHostEvaluation,type HostEvaluation} from './post-evaluation.ts';
 import {readSupervisor,type SupervisorLog} from './supervisor.ts';
@@ -25,9 +28,10 @@ function residuals(value:unknown){
  if(!Array.isArray(value))return null;
  return value.map(episode=>{if(!Array.isArray(episode))throw Error('Invalid recorded residual diagnostics');return episode.map(channel=>{if(!channel||typeof channel!=='object')throw Error('Invalid residual channel');return Object.fromEntries(['mean','rms','lag1'].map(k=>{const n=channel[k];if(n!==null&&(typeof n!=='number'||!Number.isFinite(n)))throw Error('Invalid recorded residual value');return [k,n];}));});});
 }
-function markdown(record:Investigation,host:HostEvaluation|null,supervisor:SupervisorLog|null){
+function markdown(record:Investigation,host:HostEvaluation|null,supervisor:SupervisorLog|null,muse:MuseProvenance|null){
  const ctx=context(record),conclusion=record.file.recorded_conclusion??record.events.filter(e=>e.type==='finalized').at(-1);
  let out='# Nautilus investigation report\n\n';
+ out+=line('Model provenance',muse?museSummary(muse):null);
  out+=line('Investigation reference',record.events.at(-1)?.hash)+line('Run',record.file.run_id)+line('Observation source',record.file.source_kind)+line('Available public channels',CHANNELS);
  out+=line('Controller',ctx?{controller_id:ctx.controller_id,implementation_version:ctx.implementation_version,source_sha256:ctx.source.sha256,source_revision:ctx.source.revision,context_hash:record.events.find(e=>e.type==='controller_context')?.context_hash}:null);
  out+=line('Declared assumptions and unknowns',ctx?.unknowns)+ '\n## Recorded evidence\n\n';
@@ -57,10 +61,13 @@ function markdown(record:Investigation,host:HostEvaluation|null,supervisor:Super
  out+='\n## Scientific and deployment limitations\n\nNumerical fit is not proven physical cause. Investigator conclusions are claims, not private evaluator truth. Public observations differ from visualization-only simulator truth. Requested commands are not measured actuator force. Scenario-specific improvement is not a verified repair. Offline simulation advice does not guarantee hardware safety. Hash linkage does not establish authentic authorship. Operator review is required before any configuration use.\n';
  return out;
 }
-export async function buildInvestigationArtifacts(publicInput:unknown,hostInput:unknown=null,supervisorInput:unknown=null){
+export async function buildInvestigationArtifacts(publicInput:unknown,hostInput:unknown=null,supervisorInput:unknown=null,museInput:unknown=null,v3Input:unknown=null,v4Input:unknown=null){
  const record=await readRecord(publicInput),host=hostInput===null?null:readHostEvaluation(hostInput,record),supervisor=supervisorInput===null?null:readSupervisor(supervisorInput,record);
+ const muse=museInput===null?null:readMuseProvenance(museInput,record);
  const diff=configurationDiff(record,host);
- return {report:{filename:'investigation_report.md',mime:'text/plain;charset=utf-8',content:markdown(record,host,supervisor)},config:diff?{filename:'config_diff.json',mime:'application/json',content:JSON.stringify(diff,null,2)+'\n'}:null};
+ const v3=v3Input===null?null:readV3(v3Input,record,museInput);
+ const v4=v4Input===null?null:readV4(v4Input,record);
+ return {report:{filename:'investigation_report.md',mime:'text/plain;charset=utf-8',content:markdown(record,host,supervisor,muse)+(v3?'\n## V3 planning and critic records\n\nForecasts are not observations. Critic severity is a model judgment.\n\n'+line('Recorded V3 evidence',v3Summary(v3)):'')+(v4?'\n## V4 safety and multiple causes\n\nReplay data cannot grant operator approval. Numerical support is conditional.\n\n'+line('Recorded V4 evidence',v4Summary(v4)):'')},config:diff?{filename:'config_diff.json',mime:'application/json',content:JSON.stringify(diff,null,2)+'\n'}:null};
 }
 export function prepareArtifactLink(button:HTMLElement,artifact:{filename:string;mime:string;content:string},doc:Document=document,urls:Pick<typeof URL,'createObjectURL'|'revokeObjectURL'>=URL){
  const url=urls.createObjectURL(new Blob([artifact.content],{type:artifact.mime})),a=doc.createElement('a');a.href=url;a.download=artifact.filename;a.id=button.id;a.className=button.className;a.textContent=button.textContent;button.replaceWith(a);return ()=>urls.revokeObjectURL(url);

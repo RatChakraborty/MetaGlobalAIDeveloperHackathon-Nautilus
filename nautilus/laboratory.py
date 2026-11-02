@@ -114,7 +114,7 @@ class Laboratory(InvestigationSession):
             'schemas': capability_schema(),
             'scope': 'Only requested models were evaluated. Investigator may disagree or abstain.'})
 
-    def finalize(self, diagnosis, confidence, ambiguity_statement):
+    def validate_finalization(self, diagnosis, confidence, ambiguity_statement):
         if self._closed: raise ValueError('Session finalized')
         if type(diagnosis) is not dict: raise ValueError('Structured diagnosis required')
         fields(diagnosis, ('hypothesis', 'evidence_refs'))
@@ -127,6 +127,9 @@ class Laboratory(InvestigationSession):
             if name is not None: raise ValueError('Abstention cannot assert a cause')
         elif type(name) is not str or name not in self._reports or not self._reports[name]['converged']:
             raise ValueError('Current fitted evidence required')
+
+    def finalize(self, diagnosis, confidence, ambiguity_statement):
+        self.validate_finalization(diagnosis, confidence, ambiguity_statement)
         result = {'diagnosis': diagnosis, 'confidence': confidence, 'stop_reason': ambiguity_statement,
                   'numerical_summary': self.get_fit_report()['numerical_summary'],
                   'interpretation': 'Investigator claim; correctness is evaluated privately, not certified by this interface.'}
