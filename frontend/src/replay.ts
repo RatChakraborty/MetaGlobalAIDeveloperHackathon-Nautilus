@@ -8,14 +8,16 @@ import {interpolatePose,displayPose,breach,compatibleReference,type CameraMode} 
 import {underwaterEnvironment,type Decorations} from './environment.ts';
 import {researchVehicle} from './vehicle.ts';
 import {disposeScene,selectRenderer} from './scene-resources.ts';
+import {qualitySettings,qualityTier} from './graphics-quality.ts';
 export type ReplaySettings={mode:CameraMode;distance:number;exaggeration:number;trail:boolean;overlays:boolean;comparison:boolean;commands?:boolean};
 export class Replay{
  private commandSource:CommandSource|null=null;private referenceCommands:CommandSource|null=null;private commandArrows=commandedArrows();private referenceArrows=commandedArrows();
- readonly backend:'webgl'|'svg';private renderer:THREE.WebGLRenderer|SVGRenderer;private scene=new THREE.Scene();private camera=new THREE.PerspectiveCamera(52,1,.08,2000);private controls:OrbitControls;private observer:ResizeObserver;private environment:ReturnType<typeof underwaterEnvironment>;private vehicle:ReturnType<typeof researchVehicle>;private referenceVehicle:ReturnType<typeof researchVehicle>;private trail:THREE.Line;private referenceTrail:THREE.Line;private excursions:THREE.LineSegments;private excursionTimes:number[]=[];private connector:THREE.Line;private corridor=new THREE.Group();private reference:Visual|null=null;private center:THREE.Vector3;private span:number;private orbitOffset=.38;private interacting=false;private time=0;private last=0;private dirty=true;private disposed=false;private snap=true;private reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;private decorations:Decorations={particles:true,details:true,fish:false};
+ readonly backend:'webgl'|'svg';private renderer:THREE.WebGLRenderer|SVGRenderer;private scene=new THREE.Scene();private camera=new THREE.PerspectiveCamera(52,1,.08,2000);private controls:OrbitControls;private observer:ResizeObserver;private environment:ReturnType<typeof underwaterEnvironment>;private vehicle:ReturnType<typeof researchVehicle>;private referenceVehicle:ReturnType<typeof researchVehicle>;private trail:THREE.Line;private referenceTrail:THREE.Line;private excursions:THREE.LineSegments;private excursionTimes:number[]=[];private connector:THREE.Line;private corridor=new THREE.Group();private reference:Visual|null=null;private center:THREE.Vector3;private span:number;private orbitOffset=.38;private interacting=false;private time=0;private last=0;private dirty=true;private disposed=false;private snap=true;private reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;private decorations:Decorations={particles:true,details:true,fish:false};private quality:ReturnType<typeof qualityTier>='high';
  private settings:ReplaySettings={mode:'chase',distance:6,exaggeration:1,trail:true,overlays:true,comparison:true};
- constructor(private host:HTMLElement,private visual:Visual){
+ constructor(private host:HTMLElement,private visual:Visual,quality='high'){
   const selected=selectRenderer<THREE.WebGLRenderer|SVGRenderer>(()=>new THREE.WebGLRenderer({antialias:true}),()=>new SVGRenderer());this.renderer=selected.renderer;this.backend=selected.software?'svg':'webgl';
-  if(this.renderer instanceof THREE.WebGLRenderer){this.renderer.setPixelRatio(Math.min(devicePixelRatio,2));this.renderer.toneMapping=THREE.ACESFilmicToneMapping;this.renderer.toneMappingExposure=1.25;this.renderer.shadowMap.enabled=true;this.renderer.shadowMap.type=THREE.PCFSoftShadowMap;}else this.renderer.setQuality('high');
+  if(this.renderer instanceof THREE.WebGLRenderer){this.renderer.toneMapping=THREE.ACESFilmicToneMapping;this.renderer.toneMappingExposure=1.25;this.renderer.shadowMap.type=THREE.PCFSoftShadowMap;}else this.renderer.setQuality('high');
+  this.quality=qualityTier(quality);
   host.append(this.renderer.domElement);this.renderer.domElement.setAttribute('aria-label','Recorded planar simulator trajectory');
   const points=visual.samples.map(s=>new THREE.Vector3(s.x_m,0,-s.y_m)),box=new THREE.Box3().setFromPoints(points);this.center=box.getCenter(new THREE.Vector3());const size=box.getSize(new THREE.Vector3());this.span=Math.max(size.x,size.z,15);
   this.scene.add(new THREE.AmbientLight(0xb8d0c8,selected.software?1.1:.18));this.scene.add(new THREE.HemisphereLight(0xaacbcc,0x34473b,selected.software?2.1:1.6));const sun=new THREE.DirectionalLight(0xb5d8c9,selected.software?1.4:2.7);sun.position.set(this.center.x-15,25,-10);this.scene.add(sun);
@@ -25,10 +27,15 @@ export class Replay{
   this.connector=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3()]),new THREE.LineDashedMaterial({color:0xd0c28e,dashSize:.2,gapSize:.15,fog:false}));this.scene.add(this.connector,this.corridor);
   if(visual.reference){const length=visual.reference.cable_length_m;const cable=new THREE.Mesh(new THREE.CylinderGeometry(.075,.075,length,selected.software?6:12),selected.software?new THREE.MeshBasicMaterial({color:0xbca275}):new THREE.MeshStandardMaterial({color:0x81776b,roughness:.65,metalness:.35}));cable.rotation.z=-Math.PI/2;cable.position.set(length/2,-1.91,0);cable.receiveShadow=true;this.scene.add(cable);}
   this.controls=new OrbitControls(this.camera,host);this.controls.enableDamping=!this.reducedMotion;this.controls.dampingFactor=.12;this.controls.minDistance=2;this.controls.maxDistance=this.span*2;this.controls.maxPolarAngle=Math.PI*.49;this.controls.addEventListener('change',this.changed);this.controls.addEventListener('start',this.started);this.controls.addEventListener('end',this.ended);
-  this.observer=new ResizeObserver(this.changed);this.observer.observe(host);this.rebuild();this.seek(0);this.frame(0);
+  this.observer=new ResizeObserver(this.changed);this.observer.observe(host);this.rebuild();this.setQuality(quality);this.seek(0);this.frame(0);
  }
  private started=()=>{this.interacting=true;};private ended=()=>{this.interacting=false;};
  private changed=()=>{if(this.interacting&&this.settings.mode==='chase'){const offset=this.camera.position.clone().sub(this.vehicle.group.position);this.orbitOffset=Math.atan2(offset.z,-offset.x)-this.vehicle.group.rotation.y;}this.dirty=true;};
+ setQuality(tier:string){
+  this.quality=qualityTier(tier);const s=qualitySettings(this.quality);
+  if(this.renderer instanceof THREE.WebGLRenderer){this.renderer.setPixelRatio(Math.min(devicePixelRatio,s.pixelRatioCap));this.renderer.shadowMap.enabled=s.shadows;}
+  this.environment.setParticleBudget(s.sedimentParticles);this.dirty=true;this.seek(this.time);
+ }
  setDecorations(settings:Decorations){this.decorations={...settings};this.environment.set(settings);this.seek(this.time);}
  configure(settings:Partial<ReplaySettings>){if(settings.mode&&settings.mode!==this.settings.mode)this.snap=false;this.settings={...this.settings,...settings};this.controls.enabled=this.settings.mode==='free'||this.settings.mode==='chase';this.controls.enableZoom=this.settings.mode==='free';this.controls.enablePan=this.settings.mode==='free';this.controls.enableRotate=this.controls.enabled;if(settings.exaggeration!==undefined)this.rebuild();this.seek(this.time);this.dirty=true;}
  resetCamera(){this.snap=true;this.orbitOffset=.38;this.controls.reset();this.seek(this.time);this.dirty=true;}
