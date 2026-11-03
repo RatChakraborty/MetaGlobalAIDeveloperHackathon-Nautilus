@@ -1,0 +1,867 @@
+{
+  "approved_differences": {
+    "lookahead_m": {
+      "baseline": 7.0,
+      "candidate": 3.0,
+      "unit": "m"
+    }
+  },
+  "artifact_hash": "fbf36a9d4f6cfb98e1e420a992be080e22669ee1e6c066bf87032e14d3ec1578",
+  "baseline": {
+    "aggregate": {
+      "completed_missions": 4,
+      "mean_effort_proxy_n_s": 361.99839125745933,
+      "mean_rms_cross_track_m": 0.9732305113453296,
+      "worst_case_command_saturation_fraction": 0.0,
+      "worst_case_fraction_outside_corridor": 0.7930327868852459,
+      "worst_case_max_abs_cross_track_m": 2.366857418840945
+    }
+  },
+  "candidate": {
+    "aggregate": {
+      "completed_missions": 7,
+      "mean_effort_proxy_n_s": 372.9992854580859,
+      "mean_rms_cross_track_m": 0.4444444822258187,
+      "worst_case_command_saturation_fraction": 0.0,
+      "worst_case_fraction_outside_corridor": 0.0,
+      "worst_case_max_abs_cross_track_m": 1.1591586051291591
+    }
+  },
+  "controller": {
+    "baseline_configuration": {
+      "cruise_thrust": 13.0,
+      "heading_kd": 18.0,
+      "heading_kp": 39.0,
+      "lookahead_m": 7.0,
+      "max_heading_rad": 0.72
+    },
+    "configuration_id": "e680407baec97e41c032e0bd5bc580ed0bf39624717c5e690f707a8c498293b3",
+    "implementation_version": "classical-pd.v1",
+    "policy_hash": "f4d07641f52f0df18235c3b9a96ca59af0de66728286bed36ce3ff565894014c",
+    "policy_id": "nautilus.classical.v1",
+    "source_sha256": "3893f25b388f458edc36eeef9d2b7cb4dd58eaa412d4a15c449359eb7ddf9901"
+  },
+  "created_from": "nautilus.control-lab.v1",
+  "evaluation_conditions": {
+    "acceptance_rule": {
+      "max_effort_increase_fraction": 0.2,
+      "max_saturation_increase": 0.05,
+      "max_scenario_rms_regression_m": 0.1,
+      "max_worst_case_cross_track_increase_m": 0.25,
+      "max_worst_case_outside_fraction_increase": 0.05,
+      "min_mean_rms_improvement_m": 0.05
+    },
+    "budget": {
+      "cases": 7,
+      "equal_per_case_budget": true,
+      "simulations": 14,
+      "total_simulation_s": 368.90668511509
+    },
+    "cases": [
+      "nominal",
+      "current_positive",
+      "current_negative",
+      "thruster_degradation",
+      "heading_bias",
+      "compound_current_bias_degradation",
+      "model_mismatch"
+    ],
+    "decision_qualification": "Accepted on a fixed development suite; not held-out evaluation and not a safety certificate.",
+    "held_out": false,
+    "matched_conditions": {
+      "baseline_candidate_seed_identity": true,
+      "matched_faults": true,
+      "matched_mission": true,
+      "matched_noise_seed": true,
+      "matched_plant": true,
+      "matched_timestep": true,
+      "matched_vehicle": true,
+      "physics": "unchanged simulator kernel"
+    },
+    "rubric": null,
+    "screening_exposure": {
+      "held_out": false,
+      "screened_aggregate": {
+        "completed_missions": {
+          "baseline": 1,
+          "candidate": 2,
+          "difference": 1
+        },
+        "mean_effort_proxy_n_s": {
+          "baseline": 310.29584576415755,
+          "candidate": 323.92921687863,
+          "difference": 13.633371114472425
+        },
+        "mean_rms_cross_track_m": {
+          "baseline": 0.994072166361957,
+          "candidate": 0.44861779601671914,
+          "difference": -0.5454543703452379
+        },
+        "worst_case_command_saturation_fraction": {
+          "baseline": 0.0,
+          "candidate": 0.0,
+          "difference": 0.0
+        },
+        "worst_case_fraction_outside_corridor": {
+          "baseline": 0.7930327868852459,
+          "candidate": 0.0,
+          "difference": -0.7930327868852459
+        },
+        "worst_case_max_abs_cross_track_m": {
+          "baseline": 2.366857418840945,
+          "candidate": 1.1591586051291591,
+          "difference": -1.207698813711786
+        }
+      },
+      "screened_case_ids": [
+        "nominal",
+        "current_positive"
+      ],
+      "statement": "Two declared development cases screen candidate selection; the other five are never consulted during selection. This suite is not held out.",
+      "unscreened_aggregate": {
+        "completed_missions": {
+          "baseline": 3,
+          "candidate": 5,
+          "difference": 2
+        },
+        "mean_effort_proxy_n_s": {
+          "baseline": 382.67940945478006,
+          "candidate": 392.6273128898682,
+          "difference": 9.947903435088165
+        },
+        "mean_rms_cross_track_m": {
+          "baseline": 0.9648938493386785,
+          "candidate": 0.4427751567094586,
+          "difference": -0.5221186926292198
+        },
+        "worst_case_command_saturation_fraction": {
+          "baseline": 0.0,
+          "candidate": 0.0,
+          "difference": 0.0
+        },
+        "worst_case_fraction_outside_corridor": {
+          "baseline": 0.7930327868852459,
+          "candidate": 0.0,
+          "difference": -0.7930327868852459
+        },
+        "worst_case_max_abs_cross_track_m": {
+          "baseline": 2.361603654194574,
+          "candidate": 1.1582519802234266,
+          "difference": -1.2033516739711476
+        }
+      },
+      "unscreened_case_ids": [
+        "current_negative",
+        "thruster_degradation",
+        "heading_bias",
+        "compound_current_bias_degradation",
+        "model_mismatch"
+      ]
+    },
+    "suite_id": "nautilus.development-suite.v1",
+    "suite_sha256": "02781c6dc47dd5ee104f88e612ba55a6e8bd81e248082fa56aa9d2e13d7534da"
+  },
+  "evidence_refs": [
+    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  ],
+  "human_review": {
+    "checklist": [
+      "Confirm the recorded diagnosis supports a controller change rather than a hardware repair.",
+      "Review every development scenario and the worst-case corridor result.",
+      "Confirm the approved differences match the intended configuration.",
+      "Decide separately whether the change is deployed; this artifact grants no authority."
+    ],
+    "performed": false,
+    "status": "required"
+  },
+  "investigation_id": "demo-investigation",
+  "limitations": [
+    "Fixed development suite; these are not benchmark or held-out evaluation cases.",
+    "Two declared cases screen candidate selection; the other five are never consulted, but no case is held out.",
+    "No simulation result is a real-world controller safety certificate.",
+    "Model mismatch is limited to actuator lag, dead zone and uniform drag scaling.",
+    "Human review is required before any deployment decision."
+  ],
+  "patch": {
+    "certified": false,
+    "checks": [],
+    "diff": null,
+    "notes": [
+      "Source-patching is a separate, optional milestone."
+    ],
+    "sandbox": null,
+    "status": "not_attempted"
+  },
+  "proposal": {
+    "evidence_refs": [
+      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    ],
+    "expected_effect": "Lower mean cross-track RMS with slower arrivals in currents.",
+    "parameter": "lookahead_m",
+    "rationale": "Recorded cross-track excursions under lateral current.",
+    "value": 3.0
+  },
+  "recommendation": {
+    "agreement": true,
+    "authority": "Host rule governs the artifact; a model recommendation cannot approve a change.",
+    "decision": "accept",
+    "model_recommendation": {
+      "rationale": "Development suite only.",
+      "recommendation": "accept"
+    },
+    "reasons": []
+  },
+  "robustness": {
+    "cases": [
+      {
+        "baseline": {
+          "command_saturation_fraction": 0.0,
+          "completion_time_s": 23.428765547886,
+          "effort_proxy_n_s": 304.57395212251805,
+          "elapsed_s": 23.428765547886,
+          "final_x_m": 30.0,
+          "final_y_m": 0.001984797619606909,
+          "finite_samples": true,
+          "fraction_outside_corridor": 0.0,
+          "guard_involvement": null,
+          "max_abs_cross_track_m": 0.005022197551754193,
+          "max_abs_yaw_rate_radps": 0.006861709164208075,
+          "mean_absolute_command_n": 13.0,
+          "mean_squared_command_n2": 169.17190283910023,
+          "mission_success": true,
+          "outside_corridor_samples": 0,
+          "peak_absolute_command_n": 14.228860680474119,
+          "reached_cable_end": true,
+          "rms_cross_track_m": 0.001980903067643098,
+          "samples": 470,
+          "saturated_command_samples": 0,
+          "termination": "cable_end"
+        },
+        "baseline_configuration_id": "adda0ae62a6391e69070e48939412684cae58824cff094eae654c89d17c07122",
+        "baseline_run_id": "862287cb562f00a2ab4c641454850f5bc1a02087c5f2d0e8ce7b11e9d73943cd",
+        "candidate": {
+          "command_saturation_fraction": 0.0,
+          "completion_time_s": 21.128946879225,
+          "effort_proxy_n_s": 316.934203188375,
+          "elapsed_s": 21.128946879225,
+          "final_x_m": 30.0,
+          "final_y_m": -0.009884777853925025,
+          "finite_samples": true,
+          "fraction_outside_corridor": 0.0,
+          "guard_involvement": null,
+          "max_abs_cross_track_m": 0.013886110317820072,
+          "max_abs_yaw_rate_radps": 0.015092364383752515,
+          "mean_absolute_command_n": 15.0,
+          "mean_squared_command_n2": 225.65123746254588,
+          "mission_success": true,
+          "outside_corridor_samples": 0,
+          "peak_absolute_command_n": 17.12360926319234,
+          "reached_cable_end": true,
+          "rms_cross_track_m": 0.005967333084883757,
+          "samples": 424,
+          "saturated_command_samples": 0,
+          "termination": "cable_end"
+        },
+        "candidate_configuration_id": "14488365825d022513f6f480db46148bf050a37deb37a0332e6c7ba4784d8a5d",
+        "candidate_run_id": "2b0d161ab11b93fe6357ad90ae7b869579dcbe5dca768ff8f6f0f253fb0408c9",
+        "conditions": [
+          "Vehicle, faults, actuator model, geometry, duration cap, timestep, noise configuration and seed are matched.",
+          "Both runs start from the simulator zero state with zero actuator state.",
+          "Noise streams match by sample index; different completion times can yield different trace lengths."
+        ],
+        "differences": {
+          "command_saturation_fraction": 0.0,
+          "completion_time_s": -2.2998186686610005,
+          "effort_proxy_n_s": 12.360251065856971,
+          "elapsed_s": -2.2998186686610005,
+          "final_x_m": 0.0,
+          "final_y_m": -0.011869575473531934,
+          "fraction_outside_corridor": 0.0,
+          "max_abs_cross_track_m": 0.008863912766065879,
+          "max_abs_yaw_rate_radps": 0.00823065521954444,
+          "mean_absolute_command_n": 2.0,
+          "mean_squared_command_n2": 56.47933462344565,
+          "outside_corridor_samples": 0,
+          "peak_absolute_command_n": 2.89474858271822,
+          "rms_cross_track_m": 0.003986430017240659,
+          "samples": -46,
+          "saturated_command_samples": 0
+        },
+        "matched": true,
+        "scenario_id": "nominal",
+        "simulator_sha256": "c4f5035d81bc51778ba0447b794541af0d6cb49c3da135742a8f9d1c821ef074"
+      },
+      {
+        "baseline": {
+          "command_saturation_fraction": 0.0,
+          "completion_time_s": 24.309056877369,
+          "effort_proxy_n_s": 316.017739405797,
+          "elapsed_s": 24.309056877369,
+          "final_x_m": 30.0,
+          "final_y_m": 2.366857418840945,
+          "finite_samples": true,
+          "fraction_outside_corridor": 0.7930327868852459,
+          "guard_involvement": null,
+          "max_abs_cross_track_m": 2.366857418840945,
+          "max_abs_yaw_rate_radps": 0.09445703962004642,
+          "mean_absolute_command_n": 13.0,
+          "mean_squared_command_n2": 172.6869334317597,
+          "mission_success": false,
+          "outside_corridor_samples": 387,
+          "peak_absolute_command_n": 18.533219429294412,
+          "reached_cable_end": true,
+          "rms_cross_track_m": 1.986163429656271,
+          "samples": 488,
+          "saturated_command_samples": 0,
+          "termination": "cable_end"
+        },
+        "baseline_configuration_id": "adda0ae62a6391e69070e48939412684cae58824cff094eae654c89d17c07122",
+        "baseline_run_id": "70f294105c8653ea509aa423e4f5ede55aa5c9544e37feec7b0b7bacea5f5a5b",
+        "candidate": {
+          "command_saturation_fraction": 0.0,
+          "completion_time_s": 22.061615371259,
+          "effort_proxy_n_s": 330.924230568885,
+          "elapsed_s": 22.061615371259,
+          "final_x_m": 30.0,
+          "final_y_m": 0.9654741112274232,
+          "finite_samples": true,
+          "fraction_outside_corridor": 0.0,
+          "guard_involvement": null,
+          "max_abs_cross_track_m": 1.1591586051291591,
+          "max_abs_yaw_rate_radps": 0.1776852812346809,
+          "mean_absolute_command_n": 15.0,
+          "mean_squared_command_n2": 245.51839497381965,
+          "mission_success": true,
+          "outside_corridor_samples": 0,
+          "peak_absolute_command_n": 24.174052752911507,
+          "reached_cable_end": true,
+          "rms_cross_track_m": 0.8912682589485545,
+          "samples": 443,
+          "saturated_command_samples": 0,
+          "termination": "cable_end"
+        },
+        "candidate_configuration_id": "14488365825d022513f6f480db46148bf050a37deb37a0332e6c7ba4784d8a5d",
+        "candidate_run_id": "5ef243804513d4083458657f5ed265e930952182188409bb96867e5caaace5de",
+        "conditions": [
+          "Vehicle, faults, actuator model, geometry, duration cap, timestep, noise configuration and seed are matched.",
+          "Both runs start from the simulator zero state with zero actuator state.",
+          "Noise streams match by sample index; different completion times can yield different trace lengths."
+        ],
+        "differences": {
+          "command_saturation_fraction": 0.0,
+          "completion_time_s": -2.2474415061100004,
+          "effort_proxy_n_s": 14.906491163087992,
+          "elapsed_s": -2.2474415061100004,
+          "final_x_m": 0.0,
+          "final_y_m": -1.4013833076135218,
+          "fraction_outside_corridor": -0.7930327868852459,
+          "max_abs_cross_track_m": -1.207698813711786,
+          "max_abs_yaw_rate_radps": 0.08322824161463446,
+          "mean_absolute_command_n": 2.0,
+          "mean_squared_command_n2": 72.83146154205994,
+          "outside_corridor_samples": -387,
+          "peak_absolute_command_n": 5.640833323617095,
+          "rms_cross_track_m": -1.0948951707077164,
+          "samples": -45,
+          "saturated_command_samples": 0
+        },
+        "matched": true,
+        "scenario_id": "current_positive",
+        "simulator_sha256": "c4f5035d81bc51778ba0447b794541af0d6cb49c3da135742a8f9d1c821ef074"
+      },
+      {
+        "baseline": {
+          "command_saturation_fraction": 0.0,
+          "completion_time_s": 24.310255828341,
+          "effort_proxy_n_s": 316.033325768433,
+          "elapsed_s": 24.310255828341,
+          "final_x_m": 30.0,
+          "final_y_m": -2.361603654194574,
+          "finite_samples": true,
+          "fraction_outside_corridor": 0.7930327868852459,
+          "guard_involvement": null,
+          "max_abs_cross_track_m": 2.361603654194574,
+          "max_abs_yaw_rate_radps": 0.09180736952893948,
+          "mean_absolute_command_n": 13.0,
+          "mean_squared_command_n2": 172.68962274787086,
+          "mission_success": false,
+          "outside_corridor_samples": 387,
+          "peak_absolute_command_n": 18.76878037405193,
+          "reached_cable_end": true,
+          "rms_cross_track_m": 1.9826445263848633,
+          "samples": 488,
+          "saturated_command_samples": 0,
+          "termination": "cable_end"
+        },
+        "baseline_configuration_id": "adda0ae62a6391e69070e48939412684cae58824cff094eae654c89d17c07122",
+        "baseline_run_id": "ff40c15ab9f319173da77e54c19d0a2de0a67ee5e10ca998d0ee60b757e344a3",
+        "candidate": {
+          "command_saturation_fraction": 0.0,
+          "completion_time_s": 22.058042638863,
+          "effort_proxy_n_s": 330.870639582945,
+          "elapsed_s": 22.058042638863,
+          "final_x_m": 30.0,
+          "final_y_m": -0.952112338360682,
+          "finite_samples": true,
+          "fraction_outside_corridor": 0.0,
+          "guard_involvement": null,
+          "max_abs_cross_track_m": 1.1582519802234266,
+          "max_abs_yaw_rate_radps": 0.1744104860446238,
+          "mean_absolute_command_n": 15.0,
+          "mean_squared_command_n2": 244.83964295144315,
+          "mission_success": true,
+          "outside_corridor_samples": 0,
+          "peak_absolute_command_n": 23.758840399027427,
+          "reached_cable_end": true,
+          "rms_cross_track_m": 0.8869809727513694,
+          "samples": 443,
+          "saturated_command_samples": 0,
+          "termination": "cable_end"
+        },
+        "candidate_configuration_id": "14488365825d022513f6f480db46148bf050a37deb37a0332e6c7ba4784d8a5d",
+        "candidate_run_id": "9582e2cf733769c76918358ecc5faf0c3422cb496a1ba508cfb09f519bec2db4",
+        "conditions": [
+          "Vehicle, faults, actuator model, geometry, duration cap, timestep, noise configuration and seed are matched.",
+          "Both runs start from the simulator zero state with zero actuator state.",
+          "Noise streams match by sample index; different completion times can yield different trace lengths."
+        ],
+        "differences": {
+          "command_saturation_fraction": 0.0,
+          "completion_time_s": -2.252213189477999,
+          "effort_proxy_n_s": 14.837313814512015,
+          "elapsed_s": -2.252213189477999,
+          "final_x_m": 0.0,
+          "final_y_m": 1.4094913158338922,
+          "fraction_outside_corridor": -0.7930327868852459,
+          "max_abs_cross_track_m": -1.2033516739711476,
+          "max_abs_yaw_rate_radps": 0.08260311651568433,
+          "mean_absolute_command_n": 2.0,
+          "mean_squared_command_n2": 72.1500202035723,
+          "outside_corridor_samples": -387,
+          "peak_absolute_command_n": 4.990060024975499,
+          "rms_cross_track_m": -1.0956635536334938,
+          "samples": -45,
+          "saturated_command_samples": 0
+        },
+        "matched": true,
+        "scenario_id": "current_negative",
+        "simulator_sha256": "c4f5035d81bc51778ba0447b794541af0d6cb49c3da135742a8f9d1c821ef074"
+      },
+      {
+        "baseline": {
+          "command_saturation_fraction": 0.0,
+          "completion_time_s": 33.473940656143,
+          "effort_proxy_n_s": 435.16122852985905,
+          "elapsed_s": 33.473940656143,
+          "final_x_m": 30.0,
+          "final_y_m": 0.5646748202878744,
+          "finite_samples": true,
+          "fraction_outside_corridor": 0.0,
+          "guard_involvement": null,
+          "max_abs_cross_track_m": 0.5646748202878744,
+          "max_abs_yaw_rate_radps": 0.05186795398053217,
+          "mean_absolute_command_n": 13.0,
+          "mean_squared_command_n2": 193.01563824487968,
+          "mission_success": true,
+          "outside_corridor_samples": 0,
+          "peak_absolute_command_n": 19.412396328201027,
+          "reached_cable_end": true,
+          "rms_cross_track_m": 0.4602745210089663,
+          "samples": 671,
+          "saturated_command_samples": 0,
+          "termination": "cable_end"
+        },
+        "baseline_configuration_id": "adda0ae62a6391e69070e48939412684cae58824cff094eae654c89d17c07122",
+        "baseline_run_id": "938515f06da70d09d6152d9654243d785a70c205c22b1822eccceece920aa68e",
+        "candidate": {
+          "command_saturation_fraction": 0.0,
+          "completion_time_s": 29.973227840142,
+          "effort_proxy_n_s": 449.59841760213,
+          "elapsed_s": 29.973227840142,
+          "final_x_m": 30.0,
+          "final_y_m": 0.2792107617440202,
+          "finite_samples": true,
+          "fraction_outside_corridor": 0.0,
+          "guard_involvement": null,
+          "max_abs_cross_track_m": 0.29920944026162294,
+          "max_abs_yaw_rate_radps": 0.060988061643188665,
+          "mean_absolute_command_n": 15.0,
+          "mean_squared_command_n2": 257.40018251266565,
+          "mission_success": true,
+          "outside_corridor_samples": 0,
+          "peak_absolute_command_n": 23.90083599037969,
+          "reached_cable_end": true,
+          "rms_cross_track_m": 0.2583784595595656,
+          "samples": 601,
+          "saturated_command_samples": 0,
+          "termination": "cable_end"
+        },
+        "candidate_configuration_id": "14488365825d022513f6f480db46148bf050a37deb37a0332e6c7ba4784d8a5d",
+        "candidate_run_id": "92e25879abf5b886379c6890db9b241085bb799e133533df925d127de5d909b3",
+        "conditions": [
+          "Vehicle, faults, actuator model, geometry, duration cap, timestep, noise configuration and seed are matched.",
+          "Both runs start from the simulator zero state with zero actuator state.",
+          "Noise streams match by sample index; different completion times can yield different trace lengths."
+        ],
+        "differences": {
+          "command_saturation_fraction": 0.0,
+          "completion_time_s": -3.500712816001002,
+          "effort_proxy_n_s": 14.43718907227094,
+          "elapsed_s": -3.500712816001002,
+          "final_x_m": 0.0,
+          "final_y_m": -0.2854640585438542,
+          "fraction_outside_corridor": 0.0,
+          "max_abs_cross_track_m": -0.2654653800262515,
+          "max_abs_yaw_rate_radps": 0.009120107662656494,
+          "mean_absolute_command_n": 2.0,
+          "mean_squared_command_n2": 64.38454426778597,
+          "outside_corridor_samples": 0,
+          "peak_absolute_command_n": 4.4884396621786635,
+          "rms_cross_track_m": -0.2018960614494007,
+          "samples": -70,
+          "saturated_command_samples": 0
+        },
+        "matched": true,
+        "scenario_id": "thruster_degradation",
+        "simulator_sha256": "c4f5035d81bc51778ba0447b794541af0d6cb49c3da135742a8f9d1c821ef074"
+      },
+      {
+        "baseline": {
+          "command_saturation_fraction": 0.0,
+          "completion_time_s": 23.593022380971,
+          "effort_proxy_n_s": 307.39732601834334,
+          "elapsed_s": 23.593022380971,
+          "final_x_m": 30.0,
+          "final_y_m": -2.141797808314222,
+          "finite_samples": true,
+          "fraction_outside_corridor": 0.6976744186046512,
+          "guard_involvement": null,
+          "max_abs_cross_track_m": 2.141797808314222,
+          "max_abs_yaw_rate_radps": 0.22573452889799617,
+          "mean_absolute_command_n": 13.029092391785214,
+          "mean_squared_command_n2": 174.85654796379737,
+          "mission_success": false,
+          "outside_corridor_samples": 330,
+          "peak_absolute_command_n": 31.44905344163465,
+          "reached_cable_end": true,
+          "rms_cross_track_m": 1.7130413278727255,
+          "samples": 473,
+          "saturated_command_samples": 0,
+          "termination": "cable_end"
+        },
+        "baseline_configuration_id": "adda0ae62a6391e69070e48939412684cae58824cff094eae654c89d17c07122",
+        "baseline_run_id": "afdbd4ca21e50f9773d6eecb770684bfa9c2807bcfcc930a9a7daf256c1f8d69",
+        "candidate": {
+          "command_saturation_fraction": 0.0,
+          "completion_time_s": 21.296568658187,
+          "effort_proxy_n_s": 319.8565933740514,
+          "elapsed_s": 21.296568658187,
+          "final_x_m": 30.0,
+          "final_y_m": -1.0187079164484816,
+          "finite_samples": true,
+          "fraction_outside_corridor": 0.0,
+          "guard_involvement": null,
+          "max_abs_cross_track_m": 1.0442897078796776,
+          "max_abs_yaw_rate_radps": 0.22739056341879907,
+          "mean_absolute_command_n": 15.019113044554866,
+          "mean_squared_command_n2": 243.08285512654868,
+          "mission_success": true,
+          "outside_corridor_samples": 0,
+          "peak_absolute_command_n": 33.75315872451648,
+          "reached_cable_end": true,
+          "rms_cross_track_m": 0.8431981883601553,
+          "samples": 427,
+          "saturated_command_samples": 0,
+          "termination": "cable_end"
+        },
+        "candidate_configuration_id": "14488365825d022513f6f480db46148bf050a37deb37a0332e6c7ba4784d8a5d",
+        "candidate_run_id": "831a70b8a6d6858c732f2db00835f1590c7c6993b1b7e86680adac5e0a3220a1",
+        "conditions": [
+          "Vehicle, faults, actuator model, geometry, duration cap, timestep, noise configuration and seed are matched.",
+          "Both runs start from the simulator zero state with zero actuator state.",
+          "Noise streams match by sample index; different completion times can yield different trace lengths."
+        ],
+        "differences": {
+          "command_saturation_fraction": 0.0,
+          "completion_time_s": -2.296453722784001,
+          "effort_proxy_n_s": 12.45926735570805,
+          "elapsed_s": -2.296453722784001,
+          "final_x_m": 0.0,
+          "final_y_m": 1.1230898918657406,
+          "fraction_outside_corridor": -0.6976744186046512,
+          "max_abs_cross_track_m": -1.0975081004345446,
+          "max_abs_yaw_rate_radps": 0.0016560345208029015,
+          "mean_absolute_command_n": 1.9900206527696511,
+          "mean_squared_command_n2": 68.22630716275131,
+          "outside_corridor_samples": -330,
+          "peak_absolute_command_n": 2.3041052828818316,
+          "rms_cross_track_m": -0.8698431395125702,
+          "samples": -46,
+          "saturated_command_samples": 0
+        },
+        "matched": true,
+        "scenario_id": "heading_bias",
+        "simulator_sha256": "c4f5035d81bc51778ba0447b794541af0d6cb49c3da135742a8f9d1c821ef074"
+      },
+      {
+        "baseline": {
+          "command_saturation_fraction": 0.0,
+          "completion_time_s": 31.787722267582,
+          "effort_proxy_n_s": 413.26286346353197,
+          "elapsed_s": 31.787722267582,
+          "final_x_m": 30.0,
+          "final_y_m": 0.7194009958663314,
+          "finite_samples": true,
+          "fraction_outside_corridor": 0.0,
+          "guard_involvement": null,
+          "max_abs_cross_track_m": 0.7194009958663314,
+          "max_abs_yaw_rate_radps": 0.15661342145592638,
+          "mean_absolute_command_n": 13.000705619622163,
+          "mean_squared_command_n2": 184.48387988381228,
+          "mission_success": true,
+          "outside_corridor_samples": 0,
+          "peak_absolute_command_n": 26.449479699319056,
+          "reached_cable_end": true,
+          "rms_cross_track_m": 0.6649694900457787,
+          "samples": 637,
+          "saturated_command_samples": 0,
+          "termination": "cable_end"
+        },
+        "baseline_configuration_id": "adda0ae62a6391e69070e48939412684cae58824cff094eae654c89d17c07122",
+        "baseline_run_id": "7cc9393ed0b1cf949f3f260f7a979e7102e350766b42a76ba46e3396891028d8",
+        "candidate": {
+          "command_saturation_fraction": 0.0,
+          "completion_time_s": 28.279016043111,
+          "effort_proxy_n_s": 424.18524064666497,
+          "elapsed_s": 28.279016043111,
+          "final_x_m": 30.0,
+          "final_y_m": 0.14570437834549949,
+          "finite_samples": true,
+          "fraction_outside_corridor": 0.0,
+          "guard_involvement": null,
+          "max_abs_cross_track_m": 0.3710693566640254,
+          "max_abs_yaw_rate_radps": 0.16294866780268288,
+          "mean_absolute_command_n": 15.0,
+          "mean_squared_command_n2": 246.51211871101924,
+          "mission_success": true,
+          "outside_corridor_samples": 0,
+          "peak_absolute_command_n": 28.288856050911384,
+          "reached_cable_end": true,
+          "rms_cross_track_m": 0.1931669352573061,
+          "samples": 567,
+          "saturated_command_samples": 0,
+          "termination": "cable_end"
+        },
+        "candidate_configuration_id": "14488365825d022513f6f480db46148bf050a37deb37a0332e6c7ba4784d8a5d",
+        "candidate_run_id": "38a517395fa9d4a229bf46728c6312ec70f1c95a5d4e3a28da58b69cd35ef479",
+        "conditions": [
+          "Vehicle, faults, actuator model, geometry, duration cap, timestep, noise configuration and seed are matched.",
+          "Both runs start from the simulator zero state with zero actuator state.",
+          "Noise streams match by sample index; different completion times can yield different trace lengths."
+        ],
+        "differences": {
+          "command_saturation_fraction": 0.0,
+          "completion_time_s": -3.508706224471002,
+          "effort_proxy_n_s": 10.922377183132994,
+          "elapsed_s": -3.508706224471002,
+          "final_x_m": 0.0,
+          "final_y_m": -0.573696617520832,
+          "fraction_outside_corridor": 0.0,
+          "max_abs_cross_track_m": -0.34833163920230603,
+          "max_abs_yaw_rate_radps": 0.006335246346756501,
+          "mean_absolute_command_n": 1.9992943803778367,
+          "mean_squared_command_n2": 62.02823882720696,
+          "outside_corridor_samples": 0,
+          "peak_absolute_command_n": 1.8393763515923283,
+          "rms_cross_track_m": -0.47180255478847255,
+          "samples": -70,
+          "saturated_command_samples": 0
+        },
+        "matched": true,
+        "scenario_id": "compound_current_bias_degradation",
+        "simulator_sha256": "c4f5035d81bc51778ba0447b794541af0d6cb49c3da135742a8f9d1c821ef074"
+      },
+      {
+        "baseline": {
+          "command_saturation_fraction": 0.0,
+          "completion_time_s": 33.964792576441,
+          "effort_proxy_n_s": 441.542303493733,
+          "elapsed_s": 33.964792576441,
+          "final_x_m": 30.0,
+          "final_y_m": 0.0006605685562311668,
+          "finite_samples": true,
+          "fraction_outside_corridor": 0.0,
+          "guard_involvement": null,
+          "max_abs_cross_track_m": 0.007991633113405113,
+          "max_abs_yaw_rate_radps": 0.00872984335136981,
+          "mean_absolute_command_n": 13.0,
+          "mean_squared_command_n2": 169.22406461156422,
+          "mission_success": true,
+          "outside_corridor_samples": 0,
+          "peak_absolute_command_n": 14.363218503842496,
+          "reached_cable_end": true,
+          "rms_cross_track_m": 0.003539381381059083,
+          "samples": 681,
+          "saturated_command_samples": 0,
+          "termination": "cable_end"
+        },
+        "baseline_configuration_id": "adda0ae62a6391e69070e48939412684cae58824cff094eae654c89d17c07122",
+        "baseline_run_id": "6da1d0a8d7664379c0c417a5c8d366712ef8c6f4eb18e6b9c4f6e24428390d10",
+        "candidate": {
+          "command_saturation_fraction": 0.0,
+          "completion_time_s": 29.24171154957,
+          "effort_proxy_n_s": 438.62567324355,
+          "elapsed_s": 29.24171154957,
+          "final_x_m": 30.0,
+          "final_y_m": -0.07116853615255675,
+          "finite_samples": true,
+          "fraction_outside_corridor": 0.0,
+          "guard_involvement": null,
+          "max_abs_cross_track_m": 0.09167028374344309,
+          "max_abs_yaw_rate_radps": 0.11234696205008983,
+          "mean_absolute_command_n": 15.0,
+          "mean_squared_command_n2": 231.1814635533063,
+          "mission_success": true,
+          "outside_corridor_samples": 0,
+          "peak_absolute_command_n": 22.815060518598933,
+          "reached_cable_end": true,
+          "rms_cross_track_m": 0.032151227618896466,
+          "samples": 586,
+          "saturated_command_samples": 0,
+          "termination": "cable_end"
+        },
+        "candidate_configuration_id": "14488365825d022513f6f480db46148bf050a37deb37a0332e6c7ba4784d8a5d",
+        "candidate_run_id": "87389cf6d77300b5932ae5a39836adc3aee2fe7358a112e629c1eed227439c60",
+        "conditions": [
+          "Vehicle, faults, actuator model, geometry, duration cap, timestep, noise configuration and seed are matched.",
+          "Both runs start from the simulator zero state with zero actuator state.",
+          "Noise streams match by sample index; different completion times can yield different trace lengths."
+        ],
+        "differences": {
+          "command_saturation_fraction": 0.0,
+          "completion_time_s": -4.723081026871,
+          "effort_proxy_n_s": -2.9166302501830046,
+          "elapsed_s": -4.723081026871,
+          "final_x_m": 0.0,
+          "final_y_m": -0.07182910470878792,
+          "fraction_outside_corridor": 0.0,
+          "max_abs_cross_track_m": 0.08367865063003797,
+          "max_abs_yaw_rate_radps": 0.10361711869872002,
+          "mean_absolute_command_n": 2.0,
+          "mean_squared_command_n2": 61.95739894174207,
+          "outside_corridor_samples": 0,
+          "peak_absolute_command_n": 8.451842014756437,
+          "rms_cross_track_m": 0.028611846237837385,
+          "samples": -95,
+          "saturated_command_samples": 0
+        },
+        "matched": true,
+        "scenario_id": "model_mismatch",
+        "simulator_sha256": "c4f5035d81bc51778ba0447b794541af0d6cb49c3da135742a8f9d1c821ef074"
+      }
+    ],
+    "decision": "accept",
+    "decision_reasons": [],
+    "failures": [],
+    "gates": [
+      {
+        "description": "Every baseline and candidate run produced finite traces.",
+        "id": "finite_runs",
+        "observed": 0,
+        "passed": true,
+        "threshold": 0
+      },
+      {
+        "description": "Mean cross-track RMS improves by at least the declared minimum.",
+        "id": "mean_rms_improvement",
+        "observed": -0.5287860291195108,
+        "passed": true,
+        "threshold": -0.05
+      },
+      {
+        "description": "No single development scenario regresses beyond the declared limit.",
+        "id": "no_scenario_rms_regression",
+        "observed": 0.028611846237837385,
+        "passed": true,
+        "threshold": 0.1
+      },
+      {
+        "description": "Worst-case maximum cross-track error does not grow beyond the declared limit.",
+        "id": "no_worst_case_cross_track_regression",
+        "observed": -1.207698813711786,
+        "passed": true,
+        "threshold": 0.25
+      },
+      {
+        "description": "Worst-case corridor excursion fraction does not grow beyond the declared limit.",
+        "id": "no_worst_case_excursion_regression",
+        "observed": -0.7930327868852459,
+        "passed": true,
+        "threshold": 0.05
+      },
+      {
+        "description": "The number of completed development missions does not fall.",
+        "id": "no_completion_regression",
+        "observed": 7,
+        "passed": true,
+        "threshold": 4
+      },
+      {
+        "description": "Worst-case command saturation does not grow beyond the declared limit.",
+        "id": "no_saturation_regression",
+        "observed": 0.0,
+        "passed": true,
+        "threshold": 0.05
+      },
+      {
+        "description": "Mean actuation-effort proxy does not grow beyond the declared fraction.",
+        "id": "no_effort_blowup",
+        "observed": 372.9992854580859,
+        "passed": true,
+        "threshold": 434.3980695089512
+      }
+    ],
+    "limitations": [
+      "Fixed development suite; these are not benchmark or held-out evaluation cases.",
+      "Two declared cases screen candidate selection; the other five are never consulted, but no case is held out.",
+      "No simulation result is a real-world controller safety certificate.",
+      "Model mismatch is limited to actuator lag, dead zone and uniform drag scaling."
+    ],
+    "per_scenario": [
+      {
+        "rms_difference_m": 0.003986430017240659,
+        "scenario_id": "nominal"
+      },
+      {
+        "rms_difference_m": -1.0948951707077164,
+        "scenario_id": "current_positive"
+      },
+      {
+        "rms_difference_m": -1.0956635536334938,
+        "scenario_id": "current_negative"
+      },
+      {
+        "rms_difference_m": -0.2018960614494007,
+        "scenario_id": "thruster_degradation"
+      },
+      {
+        "rms_difference_m": -0.8698431395125702,
+        "scenario_id": "heading_bias"
+      },
+      {
+        "rms_difference_m": -0.47180255478847255,
+        "scenario_id": "compound_current_bias_degradation"
+      },
+      {
+        "rms_difference_m": 0.028611846237837385,
+        "scenario_id": "model_mismatch"
+      }
+    ]
+  },
+  "schema_version": "nautilus.control-lab-recommendation.v1",
+  "scope": "Engineering recommendation from matched offline simulation; not a deployed repair, safety certificate or diagnosis evidence.",
+  "unresolved_risks": [
+    "No real-world safety certification; simulation-only evidence.",
+    "A tracking-metric improvement does not repair a physical fault such as a degraded thruster."
+  ]
+}

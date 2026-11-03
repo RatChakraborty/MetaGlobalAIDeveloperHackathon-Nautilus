@@ -1,0 +1,150 @@
+{
+ "case": "A",
+ "generated_by": "frontend/public/evidence script; passive protocol, no model calls",
+ "limitations": [
+  "Scores are a frozen heuristic, not probabilities or a calibrated physical noise floor.",
+  "Ambiguity here is measured by the passive protocol; it is not a model-agent abstention and not a Muse conclusion.",
+  "An active investigation on the same scenario resolves lateral_current after one probe, so this case must not be presented as agent abstention."
+ ],
+ "mode": "live deterministic computation",
+ "outcome": {
+  "competitive": [
+   "nominal",
+   "lateral_current",
+   "starboard_degradation"
+  ],
+  "fits": [
+   {
+    "converged": true,
+    "episode_lengths": [
+     487
+    ],
+    "evaluations": 1,
+    "hypothesis": "nominal",
+    "parameters": {},
+    "score": 1418.8301391863267,
+    "warnings": [
+     "Final fractional-step observation excluded; endpoint x is unobserved.",
+     "Measured-state one-step innovations; not a free-running trajectory. Approximate innovation scaling; temporal correlations are uncalibrated.",
+     "Conditional command replay; known zero reset required; current_x fixed to zero."
+    ],
+    "wrms": 0.9854624819568264
+   },
+   {
+    "converged": true,
+    "episode_lengths": [
+     487
+    ],
+    "evaluations": 33,
+    "hypothesis": "lateral_current",
+    "parameters": {
+     "current_y": -0.05650597032364116
+    },
+    "score": 1419.1493804393149,
+    "warnings": [
+     "Final fractional-step observation excluded; endpoint x is unobserved.",
+     "Measured-state one-step innovations; not a free-running trajectory. Approximate innovation scaling; temporal correlations are uncalibrated.",
+     "Conditional command replay; known zero reset required; current_x fixed to zero."
+    ],
+    "wrms": 0.9830397840339635
+   },
+   {
+    "converged": true,
+    "episode_lengths": [
+     487
+    ],
+    "evaluations": 65,
+    "hypothesis": "port_degradation",
+    "parameters": {
+     "port_efficiency": 0.9999999999999992
+    },
+    "score": 1426.1170155980776,
+    "warnings": [
+     "Final fractional-step observation excluded; endpoint x is unobserved.",
+     "Parameter at bound; fault family or operating bounds may be inadequate.",
+     "Measured-state one-step innovations; not a free-running trajectory. Approximate innovation scaling; temporal correlations are uncalibrated.",
+     "Conditional command replay; known zero reset required; current_x fixed to zero."
+    ],
+    "wrms": 0.9854624819568265
+   },
+   {
+    "converged": true,
+    "episode_lengths": [
+     487
+    ],
+    "evaluations": 61,
+    "hypothesis": "starboard_degradation",
+    "parameters": {
+     "starboard_efficiency": 0.9873342403339619
+    },
+    "score": 1424.6473358615594,
+    "warnings": [
+     "Final fractional-step observation excluded; endpoint x is unobserved.",
+     "Measured-state one-step innovations; not a free-running trajectory. Approximate innovation scaling; temporal correlations are uncalibrated.",
+     "Conditional command replay; known zero reset required; current_x fixed to zero."
+    ],
+    "wrms": 0.9849519594318517
+   },
+   {
+    "converged": true,
+    "episode_lengths": [
+     487
+    ],
+    "evaluations": 35,
+    "hypothesis": "heading_bias",
+    "parameters": {
+     "heading_bias_rad": -0.00353523336927983
+    },
+    "score": 1425.3252728445932,
+    "warnings": [
+     "Final fractional-step observation excluded; endpoint x is unobserved.",
+     "Measured-state one-step innovations; not a free-running trajectory. Approximate innovation scaling; temporal correlations are uncalibrated.",
+     "Conditional command replay; known zero reset required; current_x fixed to zero."
+    ],
+    "wrms": 0.9851874872146419
+   }
+  ],
+  "kind": "ambiguous",
+  "reasons": [
+   "Score gap is a frozen heuristic, not a calibrated physical noise floor."
+  ],
+  "selected": null
+ },
+ "post_hoc_evaluation": {
+  "completed": true,
+  "max_abs_y_m": 0.3106,
+  "note": "Revealed only after the passive classification, for case documentation. Never sent to the lab UI or used by the protocol."
+ },
+ "protocol": {
+  "adequacy_wrms": 2.0,
+  "ambiguity_gap": 6.0,
+  "dt_s": 0.05,
+  "duration_s": 45.0,
+  "fingerprint": "0139bc26ab628355c3bac111d82f7ac019ab5866084c674b92ead8dbdd0cc730",
+  "hypotheses": [
+   "nominal",
+   "lateral_current",
+   "port_degradation",
+   "starboard_degradation",
+   "heading_bias"
+  ],
+  "name": "observer-v1",
+  "scales": [
+   0.035,
+   0.004,
+   0.003
+  ]
+ },
+ "reproduce": "POST /api/v1/simulations with request above, then classify with observer-v1; or press Run case A in the Overview Case Files launcher.",
+ "request": {
+  "duration_s": 45.0,
+  "scenario": {
+   "current_y": -0.06,
+   "heading_bias_rad": 0.0,
+   "port_efficiency": 1.0,
+   "starboard_efficiency": 1.0
+  },
+  "seed": 42
+ },
+ "schema": "nautilus.demo-case.v1"
+}

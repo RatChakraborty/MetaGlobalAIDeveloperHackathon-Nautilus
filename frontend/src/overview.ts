@@ -5,6 +5,7 @@
  */
 import type {Session} from './session.ts';
 import {SECTIONS} from './navigation.ts';
+import {caseFilesMarkup} from './case-files.ts';
 
 const escapeText = (x: unknown) => String(x ?? 'n/a').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]!));
 const num = (value: number | null | undefined, digits = 3) => typeof value === 'number' && Number.isFinite(value) ? value.toFixed(digits) : 'n/a';
@@ -62,6 +63,7 @@ export function overviewMarkup(session: Session, options: OverviewOptions): stri
         <li class=""><small>05</small><b>Report</b><span>Download the record, comparison and engineering report with their run identifiers.</span></li>
       </ol>
     </div>
+    ${caseFilesMarkup({apiEnabled: options.apiEnabled, busy: options.exampleBusy})}
     <section aria-label="Current session"><div class="section-head"><h3>Current session</h3><span class="eyebrow">MEMORY ONLY · LOST ON RELOAD</span></div>${sessionStatus}${recordStatus}</section>
     <section aria-label="Tools"><div class="section-head"><h3>Where everything is</h3><span class="eyebrow">FIVE MORE DESTINATIONS</span></div><div class="tool-grid">${toolIndex(options.apiEnabled)}</div></section>
     <p class="muted">This is a scientific simulation environment. Controller comparisons are simulation-only and are not a certified safety case. Hypotheses are candidates, never proven causes.</p>

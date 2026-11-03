@@ -1,0 +1,126 @@
+{
+  "schema": "nautilus.demo-case.v1",
+  "case": "C",
+  "mode": "recorded demonstration",
+  "generated_by": "Extract of CONTROLLER_AWARE_REPORT.md (Matched development measurements); values copied verbatim, not recomputed.",
+  "study": {
+    "name": "Predeclared lookahead comparison",
+    "candidate": "14 m lookahead versus 7 m baseline",
+    "related_accepted_candidate": "3 m lookahead (separate candidate, same study; not Case B)",
+    "selection": "predeclared before execution; no parameter search and no held-out data",
+    "split": "development (3 scenarios)",
+    "evaluation": "host-side ConfigurationEvaluationHost, matched seeds and noise settings, 100 s cap",
+    "limitations": [
+      "Regeneration requires private retained scenario inputs; public source does not disclose them.",
+      "These are development measurements, not benchmarks or repairs.",
+      "The 3 m alternative in this study is a different candidate from the Case B bounded-integral Studio policy."
+    ]
+  },
+  "fingerprints": {
+    "7 m baseline": "adda0ae62a6391e69070e48939412684cae58824cff094eae654c89d17c07122",
+    "3 m alternative": "3add7582fb2e72460e20d26ed433081c573601bca3948f29e735855a81b68feb",
+    "14 m candidate": "9769d71ba606299782d82f47049f8f0aa9ed8391116fecd0aabe8fbcee76b8f9"
+  },
+  "rows": [
+    {
+      "scenario": "retained-development-disturbance",
+      "lookahead_m": 7,
+      "rms_m": 2.67707,
+      "max_abs_y_m": 2.810649,
+      "outside_samples": 1900,
+      "total_samples": 2001,
+      "outside_fraction": 0.949525,
+      "completion": "capped / 100.000"
+    },
+    {
+      "scenario": "retained-development-disturbance",
+      "lookahead_m": 3,
+      "rms_m": 1.1912,
+      "max_abs_y_m": 1.370127,
+      "outside_samples": 0,
+      "total_samples": 2001,
+      "outside_fraction": 0.0,
+      "completion": "capped / 100.000"
+    },
+    {
+      "scenario": "retained-development-disturbance",
+      "lookahead_m": 14,
+      "rms_m": 5.022044,
+      "max_abs_y_m": 5.607786,
+      "outside_samples": 1905,
+      "total_samples": 2001,
+      "outside_fraction": 0.952024,
+      "completion": "capped / 100.000"
+    },
+    {
+      "scenario": "fresh-current-positive",
+      "lookahead_m": 7,
+      "rms_m": 2.441857,
+      "max_abs_y_m": 2.561575,
+      "outside_samples": 1613,
+      "total_samples": 1708,
+      "outside_fraction": 0.944379,
+      "completion": "complete / 85.348"
+    },
+    {
+      "scenario": "fresh-current-positive",
+      "lookahead_m": 3,
+      "rms_m": 1.085822,
+      "max_abs_y_m": 1.325771,
+      "outside_samples": 0,
+      "total_samples": 1716,
+      "outside_fraction": 0.0,
+      "completion": "complete / 85.716"
+    },
+    {
+      "scenario": "fresh-current-positive",
+      "lookahead_m": 14,
+      "rms_m": 4.595447,
+      "max_abs_y_m": 5.113929,
+      "outside_samples": 1607,
+      "total_samples": 1697,
+      "outside_fraction": 0.946965,
+      "completion": "complete / 84.799"
+    },
+    {
+      "scenario": "fresh-current-negative",
+      "lookahead_m": 7,
+      "rms_m": 2.442906,
+      "max_abs_y_m": 2.566941,
+      "outside_samples": 1614,
+      "total_samples": 1708,
+      "outside_fraction": 0.944965,
+      "completion": "complete / 85.349"
+    },
+    {
+      "scenario": "fresh-current-negative",
+      "lookahead_m": 3,
+      "rms_m": 1.086931,
+      "max_abs_y_m": 1.327769,
+      "outside_samples": 0,
+      "total_samples": 1716,
+      "outside_fraction": 0.0,
+      "completion": "complete / 85.718"
+    },
+    {
+      "scenario": "fresh-current-negative",
+      "lookahead_m": 14,
+      "rms_m": 4.596372,
+      "max_abs_y_m": 5.116582,
+      "outside_samples": 1607,
+      "total_samples": 1697,
+      "outside_fraction": 0.946965,
+      "completion": "complete / 84.800"
+    }
+  ],
+  "public_evidence": {
+    "report": "CONTROLLER_AWARE_REPORT.md",
+    "section": "Matched development measurements"
+  },
+  "reproduce": "Not reproducible from the public tree: the retained scenario inputs are private. Read the report and the approved fingerprints; do not re-run this as a live case.",
+  "limitations": [
+    "Recorded artifact, not a live computation.",
+    "Not generated or selected by Meta Muse.",
+    "Private evaluation fixtures are not part of this repository or the frontend bundle."
+  ]
+}

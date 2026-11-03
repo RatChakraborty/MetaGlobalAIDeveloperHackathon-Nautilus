@@ -1,0 +1,27 @@
+{
+  "approved_differences": {
+    "lookahead_m": {
+      "baseline": 7.0,
+      "candidate": 3.0,
+      "unit": "m"
+    }
+  },
+  "artifact_hash": "fbf36a9d4f6cfb98e1e420a992be080e22669ee1e6c066bf87032e14d3ec1578",
+  "baseline_configuration": {
+    "cruise_thrust": 13.0,
+    "heading_kd": 18.0,
+    "heading_kp": 39.0,
+    "lookahead_m": 7.0,
+    "max_heading_rad": 0.72
+  },
+  "controller": {
+    "policy_hash": "f4d07641f52f0df18235c3b9a96ca59af0de66728286bed36ce3ff565894014c",
+    "policy_id": "nautilus.classical.v1",
+    "source_sha256": "3893f25b388f458edc36eeef9d2b7cb4dd58eaa412d4a15c449359eb7ddf9901"
+  },
+  "decision": "accept",
+  "human_review": "required",
+  "investigation_id": "demo-investigation",
+  "schema_version": "nautilus.configuration-diff.v1",
+  "scope": "Review artifact only; applying it is a separate human decision. Not a deployed repair."
+}
