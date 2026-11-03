@@ -12,6 +12,5 @@
   },
   "rewrites": [
     { "source": "/((?!api/).*)", "destination": "/index.html" }
-  ],
-  "excludeFiles": "{tests/**,frontend/**,data/**,api-jobs/**,**/__pycache__/**,**/*.md,.venv/**,.git/**,artifacts/**}"
+  ]
 }
