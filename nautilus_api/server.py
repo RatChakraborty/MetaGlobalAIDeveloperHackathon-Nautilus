@@ -16,6 +16,7 @@ Environment (all optional unless noted):
 import hmac
 import json
 import os
+import secrets
 import sys
 import threading
 import time
@@ -40,27 +41,23 @@ def _daily_limit():
         return 0
 
 
-def _reserve_live_run():
-    """Count one live run against today's UTC quota. Persisted so a restart cannot reset it."""
-    limit = _daily_limit()
-    path = Path(STORE.directory) / "muse-quota.json"
-    day = time.strftime("%Y-%m-%d", time.gmtime())
-    with _QUOTA_LOCK:
-        state = json.loads(path.read_text()) if path.exists() else {}
-        used = state.get("count", 0) if state.get("day") == day else 0
-        if used >= limit:
-            return False
-        path.write_text(json.dumps({"day": day, "count": used + 1}))
-        return True
+# The demo token is one shared credential, so every live run draws from one bucket.
 
 
-def _release_live_run():
-    path = Path(STORE.directory) / "muse-quota.json"
-    day = time.strftime("%Y-%m-%d", time.gmtime())
-    with _QUOTA_LOCK:
-        state = json.loads(path.read_text()) if path.exists() else {}
-        if state.get("day") == day and state.get("count", 0) > 0:
-            path.write_text(json.dumps({"day": day, "count": state["count"] - 1}))
+def _reserve_live_run(run_id):
+    """Reserve worst-case dollars for one run against the daily and monthly caps (Upstash Redis)."""
+    from nautilus_api import budget, ledger
+    reserved = budget.rounded_up_cents(budget.reservation_usd())
+    ok = ledger.reserve(budget.DEMO_BUCKET, reserved, run_id=run_id,
+                        daily_runs=budget.PER_USER_DAILY_RUNS,
+                        daily_usd=budget.PER_USER_DAILY_USD, monthly_usd=budget.monthly_budget_usd())
+    return reserved if ok else None
+
+
+def _release_live_run(run_id):
+    """Settle a reservation to zero for a run that never reached the provider."""
+    from nautilus_api import budget, ledger
+    ledger.settle(budget.DEMO_BUCKET, run_id, 0.0)
 
 
 def _authorized(headers):
@@ -127,12 +124,15 @@ class Handler(BaseHTTPRequestHandler):
                 if not _authorized(self.headers):
                     return self._send(401, {"error": "Unauthorized"})
                 faults, mission, request = scenario(self._body())
-                if not _reserve_live_run():
-                    return self._send(429, {"error": "Daily live-run limit reached; try again tomorrow"})
+                run_id = secrets.token_hex(16)
+                reserved = _reserve_live_run(run_id)
+                if reserved is None:
+                    return self._send(429, {"error": "Live-run budget reached; try again later"})
                 try:
-                    job = STORE.submit(faults, mission, request, kind="muse")
+                    job = STORE.submit(faults, mission, request, kind="muse", reserved_usd=reserved,
+                                       run_id=run_id)
                 except RequestError:
-                    _release_live_run()
+                    _release_live_run(run_id)
                     raise
                 return self._send(202, {"job": _public_job(job)})
             if method == "GET" and len(parts) == 4 and parts[2] == "investigations":

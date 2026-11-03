@@ -56,7 +56,7 @@ class JobStore:
             raise RequestError("Unknown job")
         return json.loads(path.read_text())
 
-    def submit(self, faults, mission, request, *, kind="scripted"):
+    def submit(self, faults, mission, request, *, kind="scripted", reserved_usd=None, run_id=None):
         with self._lock:
             if self._queue.full():
                 raise RequestError("Server is busy; try again shortly")
@@ -64,7 +64,7 @@ class JobStore:
             record = {"id": job_id, "status": "queued", "kind": kind, "request": request,
                       "created_s": time.time(), "result": None, "error": None}
             self._write(record)
-            self._queue.put((record, faults, mission))
+            self._queue.put((record, faults, mission, reserved_usd, run_id))
             return record
 
     def cancel(self, job_id):
@@ -77,7 +77,7 @@ class JobStore:
 
     def _worker(self):
         while True:
-            record, faults, mission = self._queue.get()
+            record, faults, mission, reserved_usd, run_id = self._queue.get()
             with self._lock:
                 if record["status"] == "cancelled":
                     continue
@@ -86,14 +86,27 @@ class JobStore:
             try:
                 if record["kind"] == "muse":
                     record["result"] = run_muse_investigation(faults, mission, record["request"])
+                    _settle_muse(record["result"], run_id)
                 else:
                     record["result"] = run_investigation(faults, mission, record["request"])
                 record["status"] = "succeeded"
             except Exception:  # bounded, public message only; provider detail never leaves the server
                 record["status"] = "failed"
                 record["error"] = "Investigation failed"
+                if record["kind"] == "muse" and run_id is not None:
+                    _settle_muse(None, run_id)
             with self._lock:
                 self._write(record)
+
+
+def _settle_muse(result, run_id):
+    """Settle the hold to the measured cost. A failed run with no usage keeps the full reservation."""
+    from nautilus_api import budget, ledger
+    if result is None:
+        return  # no usage known: the hold stays at its worst case
+    body = json.loads(result["provenance"]["body_canonical"])
+    actual = sum(budget.cost_usd(r.get("usage", {})) for r in body["model_requests"])
+    ledger.settle(budget.DEMO_BUCKET, run_id, actual)
 
 
 def run_muse_investigation(faults, mission, request):

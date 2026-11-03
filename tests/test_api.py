@@ -126,12 +126,25 @@ def test_muse_route_rejects_client_supplied_key_and_hidden_fields(demo):
     assert status == 400 and "plant" in out["error"]
 
 
-def test_muse_route_enforces_daily_cap_and_does_not_store_key(demo, monkeypatch):
+def test_muse_route_enforces_budget_and_does_not_store_key(demo, monkeypatch):
+    from nautilus_api import budget, ledger
     monkeypatch.setenv("MODEL_API_KEY", "sk-server-" + "z" * 40)
+    # Fake in-memory ledger: allow runs while the worst-case reservations fit the daily cap.
+    spent = {"usd": 0.0, "runs": 0}
+
+    def fake_reserve(user, reserve_usd, *, run_id, daily_runs, daily_usd, monthly_usd, now=None):
+        if spent["runs"] + 1 > daily_runs or spent["usd"] + reserve_usd > daily_usd:
+            return False
+        spent["usd"] += reserve_usd
+        spent["runs"] += 1
+        return True
+
+    monkeypatch.setattr(ledger, "reserve", fake_reserve)
+    monkeypatch.setattr(ledger, "settle", lambda user, run_id, actual, now=None: None)
+    monkeypatch.setattr(budget, "PER_USER_DAILY_USD", 1.00)
     statuses = [_muse_call(demo)[0] for _ in range(3)]
     assert statuses == [202, 202, 429]
-    stored = (server.STORE.directory / "muse-quota.json").read_text()
-    assert json.loads(stored)["count"] == 2
+    assert spent["runs"] == 2
     for path in server.STORE.directory.glob("*.json"):
         assert "sk-server-" not in path.read_text()
 

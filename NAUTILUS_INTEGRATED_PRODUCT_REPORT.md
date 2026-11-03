@@ -14,7 +14,7 @@ Phases 0–4 and 6 of the full-stack spec. Phase 5 (Muse) is out of scope.
 | 1–2. Static demo bundle | Done | Vercel project `nautilus-demo` serves the static bundle. |
 | 3. Thin API | Done | `nautilus_api/` (stdlib `http.server`, no new dependency). Bounded worker, `MAX_QUEUED=4`, durable JSON job records, 4096-byte body cap, `Cache-Control: no-store`. |
 | 4. Lab tab | Done (not visually checked) | Shown only when `NAUTILUS_API_BASE` is set at build time. Default build embeds no API URL. |
-| 5. Live Muse | Done (fake-provider tests only) | `POST /api/v1/muse-investigations` runs on the server with `MODEL_API_KEY`. It requires `Authorization: Bearer` matching `NAUTILUS_DEMO_TOKEN` (route returns 401 when unset), enforces `NAUTILUS_MUSE_DAILY_LIMIT` (default 10 UTC runs, persisted in `muse-quota.json`), and rejects client-supplied keys. No browser key field. No live provider call has been made. |
+| 5. Live Muse | Done (local tests only) | Live runs are server-side only and require `Authorization: Bearer` matching `NAUTILUS_DEMO_TOKEN` (401 when unset). The Vercel function `POST /api/muse` runs one investigation synchronously. The budget is a Redis ledger on Upstash (`nautilus_api/ledger.py`), with atomic reserve and settle, $1/day, 10 runs/day and $10/month. Application caps do not replace a provider spend cap. No live provider call has been made. |
 | 6. Evidence and trace | Done | Evidence ledger timeline; observed lateral-deviation trace (`lateralSeries`). |
 
 ## Live scene decision

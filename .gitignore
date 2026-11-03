@@ -190,3 +190,5 @@ activemq-data/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+# Local live-run budget ledger (SQLite)
+data/
