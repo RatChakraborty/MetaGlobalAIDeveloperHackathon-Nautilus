@@ -45,6 +45,8 @@ __pypackages__/
 
 *.pem
 *.key
+# Runtime job state written by nautilus_api.server
+api-jobs/
 credentials.json
 secrets.json
 .pypirc

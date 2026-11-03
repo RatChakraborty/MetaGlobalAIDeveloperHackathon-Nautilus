@@ -4,34 +4,57 @@ export type LabState = {status: 'idle' | 'running' | 'done' | 'error'; message: 
 
 export const initialLab = (): LabState => ({status: 'idle', message: 'Set a disturbance and run it against the simulator.', simulation: null, job: null});
 
+/** Form values, carried across re-renders so results and inputs stay consistent. */
+export type LabValues = {current_y: number; port_efficiency: number; starboard_efficiency: number; heading_bias_rad: number; seed: number};
+
+export const DEFAULT_LAB_VALUES: LabValues = {current_y: 1.0, port_efficiency: 1.0, starboard_efficiency: 1.0, heading_bias_rad: 0.0, seed: 42};
+
+/** The overview's example experiment: one controlled lateral current, healthy thrusters. */
+export const EXAMPLE_REQUEST = {scenario: {current_y: 1.0, port_efficiency: 1.0, starboard_efficiency: 1.0, heading_bias_rad: 0.0}, seed: 42};
+
+export function labValuesFrom(request: {scenario: Scenario; seed: number}): LabValues {
+  return {current_y: request.scenario.current_y ?? 1, port_efficiency: request.scenario.port_efficiency ?? 1,
+    starboard_efficiency: request.scenario.starboard_efficiency ?? 1, heading_bias_rad: request.scenario.heading_bias_rad ?? 0, seed: request.seed ?? 42};
+}
+
 const escapeText = (x: unknown) => String(x ?? 'n/a').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]!));
 
-export function labMarkup(state: LabState, paidEnabled = false): string {
+export function labMarkup(state: LabState, paidEnabled = false, values: LabValues = DEFAULT_LAB_VALUES): string {
   const busy = state.status === 'running';
   const paidOff = !paidEnabled;
   const diagnosis = state.simulation?.diagnosis ?? state.job?.result?.investigation.outcome;
   const decision = state.job?.result?.investigation.decision;
+  const requestNow = state.simulation?.request ?? state.job?.request ?? null;
+  const runLine = state.job ? `Investigation job <code>${escapeText(state.job.id.slice(0, 12))}</code> · ${escapeText(state.job.status)}`
+    : state.simulation ? `Simulation run · seed ${escapeText(requestNow?.seed ?? values.seed)} · ${state.simulation.observations.length} samples`
+    : '';
+  const v = (value: number) => escapeText(Number(value).toString());
   return `<section class="lab" aria-label="Simulation lab">
+    <div class="lab-panel">
     <form id="lab-form" class="lab-config" novalidate>
-      <h3>Simulation Configuration</h3>
+      <div class="section-head"><h3>Simulation Configuration</h3><span class="eyebrow">FREE · DETERMINISTIC</span></div>
       <fieldset class="lab-group"><legend>Disturbance</legend>
-        <label>Lateral current <span class="unit">(m/s)</span><input name="current_y" type="number" step="0.1" min="-2.5" max="2.5" value="1.0" aria-describedby="hint-current"></label>
+        <label for="lab-current">Lateral current <span class="unit">(m/s)</span><input id="lab-current" name="current_y" type="number" step="0.1" min="-2.5" max="2.5" value="${v(values.current_y)}" aria-describedby="hint-current"></label>
         <p id="hint-current" class="hint">Range −2.5 to 2.5 m/s. Positive pushes toward port.</p>
       </fieldset>
-      <fieldset class="lab-group"><legend>Thrusters</legend>
-        <label>Port efficiency <span class="unit">(0.1–1.0)</span><input name="port_efficiency" type="number" step="0.05" min="0.1" max="1" value="1.0"></label>
-        <label>Starboard efficiency <span class="unit">(0.1–1.0)</span><input name="starboard_efficiency" type="number" step="0.05" min="0.1" max="1" value="1.0"></label>
+      <fieldset class="lab-group"><legend>Thruster health</legend>
+        <label for="lab-port">Port efficiency <span class="unit">(0.1–1.0)</span><input id="lab-port" name="port_efficiency" type="number" step="0.05" min="0.1" max="1" value="${v(values.port_efficiency)}" aria-describedby="hint-efficiency"></label>
+        <label for="lab-starboard">Starboard efficiency <span class="unit">(0.1–1.0)</span><input id="lab-starboard" name="starboard_efficiency" type="number" step="0.05" min="0.1" max="1" value="${v(values.starboard_efficiency)}"></label>
+        <p id="hint-efficiency" class="hint">1.0 is a healthy thruster; lower values model a degraded one.</p>
       </fieldset>
-      <fieldset class="lab-group"><legend>Heading and run</legend>
-        <label>Heading bias <span class="unit">(rad)</span><input name="heading_bias_rad" type="number" step="0.01" min="-0.8" max="0.8" value="0.0"></label>
-        <label>Random seed <span class="unit">(integer)</span><input name="seed" type="number" step="1" min="0" value="42"></label>
+      <fieldset class="lab-group"><legend>Heading and reproducibility</legend>
+        <label for="lab-bias">Heading bias <span class="unit">(rad)</span><input id="lab-bias" name="heading_bias_rad" type="number" step="0.01" min="-0.8" max="0.8" value="${v(values.heading_bias_rad)}" aria-describedby="hint-seed"></label>
+        <label for="lab-seed">Random seed <span class="unit">(integer)</span><input id="lab-seed" name="seed" type="number" step="1" min="0" value="${v(values.seed)}" aria-describedby="hint-seed"></label>
+        <p id="hint-seed" class="hint">The same scenario and seed reproduce the same run.</p>
       </fieldset>
+      <p class="lab-scenario">Scenario · current ${v(values.current_y)} m/s · η port ${v(values.port_efficiency)} · η stbd ${v(values.starboard_efficiency)} · bias ${v(values.heading_bias_rad)} rad · seed ${v(values.seed)}</p>
       <p id="lab-error" class="lab-error" role="alert"></p>
       <div class="lab-actions">
         <button type="submit" class="primary" data-action="simulate" ${busy ? 'disabled' : ''}>Run Simulation</button>
         <button type="button" data-action="investigate" ${busy ? 'disabled' : ''}>Run Investigation</button>
-        <span class="eyebrow">Free · deterministic</span>
+        <button type="button" class="secondary" data-action="example" ${busy ? 'disabled' : ''}>Load example scenario</button>
       </div>
+      <p class="hint">Run Simulation returns public telemetry. Run Investigation additionally selects experiments, runs its tests and records a diagnosis ledger.</p>
     </form>
     <details class="lab-muse">
       <summary>Live Muse investigation <span class="tag">Paid · operator only</span></summary>
@@ -42,8 +65,10 @@ export function labMarkup(state: LabState, paidEnabled = false): string {
         ${paidOff ? '<p class="hint">Paid execution is disabled on this deployment.</p>' : ''}
       </form>
     </details>
+    </div>
+    <div class="lab-results" aria-label="Simulation results">
     <p class="lab-status" role="status" aria-live="polite" data-state="${state.status}">${escapeText(busy ? 'Running on the server…' : state.message)}</p>
-    <div class="lab-results">
+    ${runLine ? `<p class="lab-run">${runLine}</p>` : ''}
     ${state.simulation || state.job?.result ? resultMetrics(state.simulation?.observations ?? state.job?.result?.observations ?? [], state.simulation?.request ?? state.job?.request) : ''}
     ${diagnosis ? `<div class="lab-result"><h3>Diagnosis: ${escapeText(diagnosis.kind)}</h3>
       <p>Selected: ${escapeText(diagnosis.selected ?? 'none (abstained)')}</p>
@@ -53,6 +78,7 @@ export function labMarkup(state: LabState, paidEnabled = false): string {
     </div>` : ''}
     ${state.job?.result ? `<h3>Observed lateral deviation</h3><p class="muted">Observed cross-track position from public telemetry · ${state.job.result.observations.length} samples · not a plan-view replay.</p><svg class="lab-trace" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="Observed lateral deviation over time"><polyline fill="none" stroke="currentColor" stroke-width="0.8" points="${lateralSeries(state.job.result.observations).points}"/></svg>` : ''}
     ${state.job?.result ? `<h3>Evidence ledger</h3>${timelineMarkup(state.job.result.investigation.ledger)}` : ''}
+    <p class="hint">The three-dimensional replay in Workspace replays recorded public telemetry from an export. A simulator run here records planar observations without a world-frame pose, so it is plotted above rather than shown in 3D.</p>
     </div>
   </section>`;
 }

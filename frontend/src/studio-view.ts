@@ -31,6 +31,10 @@ export const initialStudio = (): StudioState => ({status: 'idle', message: 'Load
 
 let state: StudioState = initialStudio();
 let container: HTMLElement | null = null;
+/** Called after every completed paired trial so the application can index it in the session. */
+let trialSink: ((trial: Trial) => void) | null = null;
+
+export function setTrialSink(sink: ((trial: Trial) => void) | null) { trialSink = sink; }
 
 const METRICS: [keyof TrialRow['baseline'], string, number][] = [
   ['rms_cross_track_m', 'Cross-track RMS · m', 3],
@@ -64,6 +68,45 @@ export function trialMarkup(trial: Trial | null): string {
 
 const esc = (value: unknown, digits: number) => typeof value === 'boolean' ? (value ? 'yes' : 'no') : fmt(value, digits);
 const humanReviewNote = () => '<p class="muted">Simulation evidence only. This is not a deployed controller change, a stability proof or a safety certificate.</p>';
+
+export interface StudioDiff {
+  params: {name: string; from: number | null; to: number | null}[];
+  removed: string[];
+  added: string[];
+}
+
+/** Parameter and source differences between the editor and the server baseline. Client-side only: no evaluation. */
+export function studioDiff(current: StudioState): StudioDiff {
+  const from = (text: string) => { const out: Record<string, number> = {};
+    for (const line of text.split('\n')) { const match = /^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(-?\d+(?:\.\d+)?)\s*$/.exec(line); if (match) out[match[1]] = Number(match[2]); }
+    return out; };
+  const baseParams = current.baseline?.policy.params ?? {};
+  const editParams = from(current.params);
+  // Omitted parameters inherit the server baseline, so only overrides and additions are differences.
+  const params = Object.keys(editParams).sort().flatMap(name => {
+    const before = typeof baseParams[name] === 'number' ? baseParams[name] : null;
+    return before === editParams[name] ? [] : [{name, from: before, to: editParams[name]}];
+  });
+  const lines = (text: string) => text.split('\n').map(line => line.trim()).filter(Boolean);
+  const baseLines = lines(current.baseline?.source ?? ''), editLines = lines(current.source);
+  const removed = baseLines.filter(line => { const at = editLines.indexOf(line); if (at < 0) return true; editLines.splice(at, 1); return false; });
+  const added = lines(current.source).filter(line => { const at = baseLines.indexOf(line); if (at < 0) return true; baseLines.splice(at, 1); return false; });
+  return {params, removed, added};
+}
+
+function diffMarkup(current: StudioState): string {
+  if (!current.baseline) return '';
+  const diff = studioDiff(current);
+  const count = diff.params.length + diff.removed.length + diff.added.length;
+  if (!count) return '<p class="muted" id="studio-diff">No changes from the baseline controller yet. Use “Load example revision” or edit the source.</p>';
+  const params = diff.params.map(change => `<li><code>${escapeText(change.name)}</code> ${change.from === null ? '(unset)' : fmt(change.from)} → <strong>${change.to === null ? '(unset)' : fmt(change.to)}</strong></li>`).join('');
+  const removed = diff.removed.map(line => `<li class="failed">− ${escapeText(line)}</li>`).join('');
+  const added = diff.added.map(line => `<li class="verified">+ ${escapeText(line)}</li>`).join('');
+  return `<details class="diff" id="studio-diff" open><summary>Changes from baseline · ${diff.params.length} parameter(s), ${diff.removed.length + diff.added.length} source line(s)</summary>
+    ${params ? `<ul class="control-gates">${params}</ul>` : ''}
+    ${removed || added ? `<ul class="control-gates diff-source">${removed}${added}</ul>` : ''}
+    <p class="muted">Differences are shown for review only. Nothing is applied to a controller until a paired trial is evaluated on the server.</p></details>`;
+}
 
 function polyline(times: number[], values: number[], scale: (t: number, v: number) => [number, number]): string {
   return times.map((t, i) => { const [x, y] = scale(t, values[i] ?? 0); return `${x.toFixed(2)},${y.toFixed(2)}`; }).join(' ');
@@ -141,6 +184,7 @@ export function studioMarkup(current: StudioState): string {
       <button class="button secondary" data-studio="report" ${current.trial ? '' : 'disabled'}>Export engineering report</button>
     </div>
     <p class="lab-status" role="status">${escapeText(current.status === 'loading' ? 'Evaluating on the server…' : current.message)}</p>
+    ${diffMarkup(current)}
     ${current.validation ? (current.validation.valid ? '<p><span class="verified">valid</span> Compiled and validated by the trusted interpreter.</p>' : `<p><span class="failed">invalid</span> ${escapeText(current.validation.error)}</p>`) : ''}
     ${current.versions.length ? `<h4>Policy versions</h4><div class="table-wrap"><table><thead><tr><th>VERSION</th><th>FINGERPRINT</th><th>OUTCOME</th></tr></thead><tbody>${current.versions.map(v => `<tr><td>${escapeText(v.label)}</td><td><code>${escapeText(v.fingerprint.slice(0, 16))}</code></td><td>${escapeText(v.outcome)}</td></tr>`).join('')}</tbody></table></div>` : ''}
     <div id="studio-comparison">${trialMarkup(current.trial)}
@@ -236,6 +280,7 @@ async function run(base: string, action: 'validate' | 'trial' | 'robustness') {
       const version = `v${state.versions.length + 1}`;
       set({status: 'ready', message: 'Paired trial complete.', trial, validation: {valid: true},
         versions: [...state.versions, {label: version, fingerprint: trial.fingerprint, outcome: trial.outcome.label}]});
+      trialSink?.(trial);
       return;
     }
     const robustness = await studioRobustness(base, source, params);

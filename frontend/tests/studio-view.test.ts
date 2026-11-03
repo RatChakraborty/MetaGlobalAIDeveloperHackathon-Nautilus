@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {EXAMPLE_PARAMS, engineeringReport, initialStudio, museMarkup, studioMarkup, traceMarkup, trialMarkup} from '../src/studio-view.ts';
+import {EXAMPLE_PARAMS, engineeringReport, initialStudio, museMarkup, studioDiff, studioMarkup, traceMarkup, trialMarkup} from '../src/studio-view.ts';
 import {parseParams, StudioError} from '../src/studio-api.ts';
 
 const trace = {time_s: [0, 1, 2], y_m: [0, -0.5, -0.2], heading_rad: [0, 0, 0], port_command_n: [10, 12, 11], starboard_command_n: [10, 8, 9]};
@@ -100,4 +100,23 @@ test('investigation handoff panel labels hypotheses as candidates and escapes te
   assert.ok(!html.includes('<img>'));
   assert.ok(html.includes('run-&lt;img&gt;'));
   assert.match(studioMarkup(initialStudio()), /No investigation evidence attached/);
+});
+
+test('studio diff shows parameter and source changes against the server baseline', () => {
+  const baselineSource = 'desired = heading_kp * error\nintegral_term = 0.0';
+  const baseline = {policy: {params: {heading_kp: 39, heading_kd: 18, integral_ki: 0}}, source: baselineSource,
+    fingerprint: 'b'.repeat(64), supported: {references: [], functions: [], limits: {nodes: 64, depth: 8}}, live_muse: false as const};
+  const pristine = {...initialStudio(), baseline, source: baselineSource, params: 'heading_kp = 39\nheading_kd = 18\nintegral_ki = 0'};
+  assert.deepEqual(studioDiff(pristine), {params: [], removed: [], added: []});
+  assert.match(studioMarkup(pristine), /No changes from the baseline controller yet/);
+
+  const edited = {...pristine, source: 'desired = heading_kp * error\nintegral_term = clamp(integral_ki * error, -1.5, 1.5)', params: EXAMPLE_PARAMS};
+  const diff = studioDiff(edited);
+  assert.deepEqual(diff.params, [{name: 'integral_ki', from: 0, to: 6}, {name: 'integral_limit', from: null, to: 1.5}]);
+  assert.deepEqual(diff.removed, ['integral_term = 0.0']);
+  assert.equal(diff.added.length, 1);
+  const html = studioMarkup(edited);
+  assert.match(html, /Changes from baseline/);
+  assert.match(html, /integral_ki/);
+  assert.match(html, /integral_term = 0\.0/);
 });

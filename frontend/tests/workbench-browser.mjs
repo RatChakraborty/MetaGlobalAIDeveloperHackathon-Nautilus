@@ -15,10 +15,11 @@ async function upload(selector,name){const {root}=await send('DOM.getDocument');
 try{
  await send('Page.enable');await send('Runtime.enable');await send('Page.navigate',{url:base});
  await wait("document.querySelector('#workbench-files')!==null",'workbench controls');
- if(await evaluate("document.querySelectorAll('[role=tab]').length")!==3)throw Error('Three-tab regression');
  const names=['investigation.json','configuration-evaluation.json','comparison.json','baseline.public.json','baseline.visualization.json','candidate.public.json','candidate.visualization.json'];
  const uploadFiles=async(names)=>{const {root}=await send('DOM.getDocument');const {nodeId}=await send('DOM.querySelector',{nodeId:root.nodeId,selector:'#workbench-files'});await send('DOM.setFileInputFiles',{nodeId,files:names.map(n=>directory+'/'+n)});};
  await uploadFiles(names);await wait("document.querySelector('#compare-runs')?.disabled===false",'comparison ready after one selection');
+ if(await evaluate("document.querySelectorAll('[role=tab]').length")!==3)throw Error('Three-tab regression');
+ if(await evaluate("document.querySelector('h2')?.textContent")!=='Investigator')throw Error('Loaded record did not open Investigator');
  const original=JSON.parse(fs.readFileSync(directory+'/investigation.json','utf8')).run_id;
  await wait("document.querySelector('#download-report')?.tagName==='A'",'report download');
  await evaluate("document.querySelector('#compare-runs').click()");await wait("document.querySelector('h2')?.textContent==='Trajectory'&&document.querySelector('#scene canvas,#scene svg')!==null",'recorded comparison renderer');
