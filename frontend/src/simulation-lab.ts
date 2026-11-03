@@ -1,4 +1,4 @@
-import {runSimulation, runInvestigation, ApiError, type Job, type Simulation, type Scenario} from './simulation-api.ts';
+import {runSimulation, runInvestigation, runMuseInvestigation, ApiError, type Job, type Simulation, type Scenario} from './simulation-api.ts';
 
 export type LabState = {status: 'idle' | 'running' | 'done' | 'error'; message: string; simulation: Simulation | null; job: Job | null};
 
@@ -18,7 +18,12 @@ export function labMarkup(state: LabState): string {
       <label>Heading bias (rad)<input name="heading_bias_rad" type="number" step="0.01" min="-0.8" max="0.8" value="0.0"></label>
       <label>Seed<input name="seed" type="number" step="1" min="0" value="42"></label>
       <button type="submit" data-action="simulate" ${busy ? 'disabled' : ''}>Run simulation</button>
-      <button type="button" data-action="investigate" ${busy ? 'disabled' : ''}>Run investigation</button>
+      <button type="button" data-action="investigate" ${busy ? 'disabled' : ''}>Run investigation (free, deterministic)</button>
+    </form>
+    <form id="muse-form" class="muse-live">
+      <p class="muted">Live Muse investigation: <strong>paid</strong>, protected, and budget-limited by the server. Enter the operator token; it is not stored.</p>
+      <label>Operator token<input name="token" type="password" autocomplete="off" required></label>
+      <button type="submit" data-action="muse" ${busy ? 'disabled' : ''}>Run live Muse investigation (paid)</button>
     </form>
     <p class="lab-status" role="status">${escapeText(busy ? 'Running on the server…' : state.message)}</p>
     ${diagnosis ? `<div class="lab-result"><h3>Diagnosis: ${escapeText(diagnosis.kind)}</h3>
@@ -77,6 +82,18 @@ export async function simulateLab(base: string, request: ReturnType<typeof readL
     set({status: 'done', message: 'Simulation complete.', simulation, job: null});
   } catch (error) {
     set({status: 'error', message: error instanceof ApiError ? error.message : 'Simulation failed.', simulation: null, job: null});
+  }
+}
+
+// Paid, protected live Muse run. One synchronous request; the token is passed in at click time only.
+export async function museLab(base: string, request: ReturnType<typeof readLabForm>, token: string, set: (s: LabState) => void) {
+  set({status: 'running', message: 'Running live Muse investigation (paid)…', simulation: null, job: null});
+  try {
+    const run = await runMuseInvestigation(base, request, token);
+    void run;
+    set({status: 'done', message: 'Live Muse investigation complete (paid). Its public record was returned by the server.', simulation: null, job: null});
+  } catch (error) {
+    set({status: 'error', message: error instanceof ApiError ? error.message : 'Live Muse investigation failed.', simulation: null, job: null});
   }
 }
 

@@ -13,7 +13,7 @@ export class ApiError extends Error {}
 async function call<T>(base: string, path: string, init?: RequestInit): Promise<T> {
   let response: Response;
   try {
-    response = await fetch(base + path, {...init, headers: {'Content-Type': 'application/json'}});
+    response = await fetch(base + path, {...init, headers: {'Content-Type': 'application/json', ...(init?.headers as Record<string, string> | undefined)}});
   } catch {
     throw new ApiError('The Nautilus API is unreachable.');
   }
@@ -29,6 +29,14 @@ export function runSimulation(base: string, request: SimulationRequest): Promise
 export async function runInvestigation(base: string, request: SimulationRequest, onUpdate: (job: Job) => void, {intervalMs = 1000, maxPolls = 300} = {}): Promise<Job> {
   const {job} = await call<{job: Job}>(base, '/api/v1/investigations', {method: 'POST', body: JSON.stringify(request)});
   return pollJob(base, job, onUpdate, intervalMs, maxPolls);
+}
+
+// Live Muse run (paid, protected). The operator types the demo token at click time; it is kept
+// in memory only and sent as a Bearer header. It is never read from the bundle, storage or the URL.
+export type MuseRun = {result: {public_record: unknown; provenance: unknown}; request: SimulationRequest};
+
+export function runMuseInvestigation(base: string, request: SimulationRequest, token: string): Promise<MuseRun> {
+  return call<MuseRun>(base, '/api/muse', {method: 'POST', body: JSON.stringify(request), headers: {Authorization: `Bearer ${token}`}});
 }
 
 // Live Muse runs are server-side only (demo token + daily cap); the browser never holds a model key.

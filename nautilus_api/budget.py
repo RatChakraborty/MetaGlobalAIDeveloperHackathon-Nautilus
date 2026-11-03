@@ -12,6 +12,8 @@ import os
 import time
 
 WONDER_RATES = {"input": 4.00, "cached_input": 0.20, "output": 20.00}
+# The only model these rates price. Live runs refuse any other model rather than guess a tariff.
+PRICED_MODEL = "muse-wonder-1.0"
 MONTHLY_BUDGET_USD = 10.00
 # The demo token is one shared credential, so every live run draws from one bucket.
 DEMO_BUCKET = "demo"

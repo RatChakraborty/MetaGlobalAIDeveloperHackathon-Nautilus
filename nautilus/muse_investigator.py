@@ -231,7 +231,13 @@ def run(laboratory, provider, *, limits=Limits(), extension=None):
         exact_size=callable(getattr(provider,'request_size',None))
         size=provider.request_size(**request_arguments) if exact_size else len(canonical({'input':pending,'tools':tools,'instructions':instructions}).encode())
         if request_bytes+size > limits.request_bytes_total: reason='request_byte_limit'; break
-        if sum(r['usage'].get('input_tokens',0) for r in requests) >= limits.input_tokens_total:
+        # Chained calls re-send the conversation: the next call's input can be as large as
+        # the last call's input and output plus the new request bytes (one token per byte, a
+        # conservative bound). Refuse the call if the cumulative input could pass the total.
+        measured_input = sum(r['usage'].get('input_tokens',0) for r in requests)
+        last = requests[-1]['usage'] if requests else {}
+        projected_call = size + last.get('input_tokens',0) + last.get('output_tokens',0)
+        if measured_input + projected_call > limits.input_tokens_total:
             reason='input_token_limit'; break
         request_bytes += size; output_reserved += allowance
         request_start = time.monotonic(); entry={'latency_s':0.,'usage':{},'status':'error','function_calls':0,

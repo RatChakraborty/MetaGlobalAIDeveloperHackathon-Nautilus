@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {runSimulation, runInvestigation, ApiError} from '../src/simulation-api.ts';
+import {runSimulation, runInvestigation, runMuseInvestigation, ApiError} from '../src/simulation-api.ts';
 
 const realFetch = globalThis.fetch;
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {status, headers: {'Content-Type': 'application/json'}});
@@ -29,6 +29,24 @@ test('investigation polls until success and reports progress', async () => {
   const job = await runInvestigation('http://x', {scenario: {}}, j => seen.push(j.status), {intervalMs: 0});
   assert.equal(job.status, 'succeeded');
   assert.deepEqual(seen, ['queued', 'running', 'succeeded']);
+});
+
+test('live Muse run sends the token as a Bearer header and never in the body or URL', async () => {
+  let seen: {url: string; init: RequestInit} | null = null;
+  globalThis.fetch = async (url, init) => { seen = {url: String(url), init: init!}; return json({result: {public_record: {}, provenance: {}}, request: {scenario: {}}, usage: {}}); };
+  await runMuseInvestigation('http://x', {scenario: {current_y: 1}}, 'secret-token');
+  const headers = seen!.init.headers as Record<string, string>;
+  assert.equal(headers.Authorization, 'Bearer secret-token');
+  assert.equal(headers['Content-Type'], 'application/json');
+  assert.equal(seen!.url, 'http://x/api/muse');
+  assert.equal(seen!.init.method, 'POST');
+  assert.ok(!String(seen!.url).includes('secret-token'));
+  assert.ok(!String(seen!.init.body).includes('secret-token'));
+});
+
+test('rejected live Muse run surfaces the server message', async () => {
+  globalThis.fetch = async () => json({error: 'unauthorized'}, 401);
+  await assert.rejects(runMuseInvestigation('http://x', {scenario: {}}, 'wrong'), /unauthorized/);
 });
 
 test('investigation that never finishes times out with a clear message', async () => {

@@ -57,7 +57,10 @@ def proposal(template,cid):
     return call('propose_hypothesis',{'template':template,'knobs':{},'bounds':{},'rationale':'Offline public-evidence comparison'},cid)
 
 
-@pytest.mark.parametrize('input_threshold,expected_calls,expected_origin',[(350,4,'model'),(300,3,'host')])
+# Each call reports 10000 input tokens. Projections (request bytes + last call's input and output,
+# added to measured input): call 1 = 28220, call 3 = 47885, call 4 = 57842. So 60000 permits all four
+# calls, and 50000 permits three and refuses the fourth.
+@pytest.mark.parametrize('input_threshold,expected_calls,expected_origin',[(60000,4,'model'),(50000,3,'host')])
 def test_pending_third_fit_is_returned_when_budget_permits_and_retained_when_not(input_threshold,expected_calls,expected_origin):
     l=laboratory()
     def finalize(kwargs):
@@ -69,7 +72,7 @@ def test_pending_third_fit_is_returned_when_budget_permits_and_retained_when_not
     class Measured(Fake):
         def generate(self,**kwargs):
             r=super().generate(**kwargs)
-            return Reply(r.response_id,r.model,r.output,{'input_tokens':100,'output_tokens':5,'total_tokens':105},r.latency_s,r.status)
+            return Reply(r.response_id,r.model,r.output,{'input_tokens':10000,'output_tokens':5,'total_tokens':10005},r.latency_s,r.status)
     f=Measured([[proposal('nominal','nominal')],[proposal('port_degradation','port')],[proposal('heading_bias','heading')],finalize])
     original=deepcopy(l.ledger)
     r=run(l,f,limits=Limits(model_calls=12,actions=12,input_tokens_total=input_threshold,output_tokens_per_call=4096,output_tokens_total=32768))

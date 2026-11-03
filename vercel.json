@@ -1,9 +1,14 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "cd frontend && npm ci && npm run build",
+  "outputDirectory": "frontend/dist",
   "functions": {
     "api/muse.py": {
       "maxDuration": 300
     }
   },
+  "rewrites": [
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ],
   "excludeFiles": "{tests/**,frontend/**,data/**,api-jobs/**,**/__pycache__/**,**/*.md,.venv/**,.git/**,artifacts/**}"
 }

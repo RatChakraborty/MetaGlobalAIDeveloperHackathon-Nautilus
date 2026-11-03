@@ -39,6 +39,44 @@ def finish(l,cid='finish'):
 def body(result): return json.loads(result['provenance']['body_canonical'])
 
 
+def test_unpriced_model_is_refused_before_any_paid_call(monkeypatch):
+    """Rates price Wonder only. A model override must fail closed, not run at a guessed tariff."""
+    import nautilus_api.jobs as jobs
+    from nautilus_api import budget
+    assert budget.PRICED_MODEL == 'muse-wonder-1.0'
+
+    class Stub:
+        model = 'some-other-model'
+        provider = 'meta'
+
+        def generate(self, **kwargs):
+            raise AssertionError('provider must not be called for an unpriced model')
+
+    monkeypatch.setattr('nautilus.muse.MetaProvider', Stub)
+    with pytest.raises(RuntimeError, match='unpriced model'):
+        jobs.run_muse_investigation(Faults(current_y=1.0), Mission(duration_s=.3, seed=5), {})
+
+
+def test_priced_model_reaches_the_provider_path(monkeypatch):
+    """The gate admits the priced model; a provider failure is recorded, never raised to the caller."""
+    import nautilus_api.jobs as jobs
+
+    calls = []
+
+    class Stub:
+        model = 'muse-wonder-1.0'
+        provider = 'meta'
+
+        def generate(self, **kwargs):
+            calls.append(kwargs)
+            raise ProviderError('credential_unavailable')
+
+    monkeypatch.setattr('nautilus.muse.MetaProvider', Stub)
+    out = jobs.run_muse_investigation(Faults(current_y=1.0), Mission(duration_s=.3, seed=5), {})
+    assert len(calls) == 1  # it passed the gate and stopped at the missing credential
+    assert json.loads(out['provenance']['body_canonical'])['errors']
+
+
 def test_sequential_dispatch_continuation_and_export(tmp_path):
     l=lab()
     def continuation(k):
@@ -128,6 +166,16 @@ def test_host_caps(limits,reason):
             r=super().generate(**k);return Reply(r.response_id,r.model,r.output,{},r.latency_s,r.status)
     l=lab();r=run(l,Zero([[call('get_fit_report',{})]]),limits=limits)
     assert body(r)['termination_reason']==reason
+
+
+def test_input_total_projection_refuses_call_that_could_exceed_cap():
+    # The first request is about 28 KB and is projected at its own size. The Fake reports
+    # 10 input + 5 output, so the second call projects 28 KB + 15 + its bytes (about 56 KB),
+    # which exceeds the 30000-token cap. Only one call may be dispatched.
+    l=lab()
+    f=Fake([[call('get_fit_report',{},'c1')],[call('get_fit_report',{},'c2')]])
+    r=run(l,f,limits=Limits(input_tokens_total=30000))
+    assert body(r)['termination_reason']=='input_token_limit' and len(f.requests)==1
 
 
 def test_lab_budget_and_stale_fit_preserved():

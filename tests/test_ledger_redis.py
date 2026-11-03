@@ -47,7 +47,10 @@ def rest(monkeypatch, tmp_path):
         def log_message(self, *a):
             return
 
-    httpd = ThreadingHTTPServer(("127.0.0.1", 0), Shim)
+    class Server(ThreadingHTTPServer):
+        request_queue_size = 128  # 16 concurrent clients overflow the default backlog of 5
+
+    httpd = Server(("127.0.0.1", 0), Shim)
     threading.Thread(target=httpd.serve_forever, daemon=True).start()
     monkeypatch.setenv("UPSTASH_REDIS_REST_URL", f"http://127.0.0.1:{httpd.server_address[1]}")
     monkeypatch.setenv("UPSTASH_REDIS_REST_TOKEN", "test-token")

@@ -116,6 +116,7 @@ def run_muse_investigation(faults, mission, request):
     from nautilus.laboratory import Laboratory
     from nautilus.muse import MetaProvider
     from nautilus.muse_investigator import Limits, run as muse_run
+    from nautilus_api import budget
 
     result = simulate(faults=faults, mission=mission, controller=Controller(), plant=HIDDEN_PLANT)
     observed = public_rows(result.observations)
@@ -124,7 +125,11 @@ def run_muse_investigation(faults, mission, request):
     lab = Laboratory(observed, backend, fit_budget=8, optimization_budget=16,
                      experiment_budget=1, time_budget_s=16., starts=2)
     initialize_controller_context(lab, build_controller_context())
-    out = muse_run(lab, MetaProvider(), limits=Limits(**DEMO_MUSE_LIMITS))
+    provider = MetaProvider()
+    # Pricing is only known for the Wonder model. Any other model fails closed before a paid call.
+    if provider.model != budget.PRICED_MODEL:
+        raise RuntimeError("unpriced model: live Muse refused")
+    out = muse_run(lab, provider, limits=Limits(**DEMO_MUSE_LIMITS))
     return {"public_record": out["public_record"], "provenance": out["provenance"]}
 
 
