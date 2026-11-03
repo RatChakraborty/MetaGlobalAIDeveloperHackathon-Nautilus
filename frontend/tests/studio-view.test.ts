@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {engineeringReport, initialStudio, museMarkup, studioMarkup, traceMarkup, trialMarkup} from '../src/studio-view.ts';
+import {EXAMPLE_PARAMS, engineeringReport, initialStudio, museMarkup, studioMarkup, traceMarkup, trialMarkup} from '../src/studio-view.ts';
 import {parseParams, StudioError} from '../src/studio-api.ts';
 
 const trace = {time_s: [0, 1, 2], y_m: [0, -0.5, -0.2], heading_rad: [0, 0, 0], port_command_n: [10, 12, 11], starboard_command_n: [10, 8, 9]};
@@ -20,6 +20,14 @@ test('studio markup states what the interpreter supports and stays escaped', () 
   const escaped = studioMarkup({...initialStudio(), source: 'desired = __import__("<script>")'});
   assert.ok(!escaped.includes('<script>'));
   assert.ok(escaped.includes('&lt;script&gt;'));
+});
+
+test('studio offers a one-click example revision that loads the verified integral gains', () => {
+  const html = studioMarkup(initialStudio());
+  assert.match(html, /data-studio="example"/);
+  assert.match(html, /Load example revision/);
+  assert.equal(EXAMPLE_PARAMS, 'integral_ki = 6.0\nintegral_limit = 1.5');
+  assert.deepEqual(parseParams(EXAMPLE_PARAMS), {integral_ki: 6, integral_limit: 1.5});
 });
 
 test('trial markup reports every metric and gate from the payload', () => {
