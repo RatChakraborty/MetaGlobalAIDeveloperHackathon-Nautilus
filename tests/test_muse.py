@@ -39,6 +39,13 @@ def finish(l,cid='finish'):
 def body(result): return json.loads(result['provenance']['body_canonical'])
 
 
+def test_demo_wall_budget_fits_inside_the_platform_function_limit():
+    """A run must stop on its own deadline, not be killed by the 300 s Vercel ceiling."""
+    from nautilus_api import jobs
+    assert jobs.DEMO_MUSE_LIMITS["wall_s"] < jobs.VERCEL_FUNCTION_LIMIT_S
+    assert jobs.VERCEL_FUNCTION_LIMIT_S <= 300.
+
+
 def test_unpriced_model_is_refused_before_any_paid_call(monkeypatch):
     """Rates price Wonder only. A model override must fail closed, not run at a guessed tariff."""
     import nautilus_api.jobs as jobs

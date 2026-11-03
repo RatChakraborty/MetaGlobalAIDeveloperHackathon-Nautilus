@@ -90,9 +90,12 @@ class handler(BaseHTTPRequestHandler):
         if not _authorized(self.headers):
             return self._send(401, {"error": "Unauthorized"})
         try:
-            length = int(self.headers.get("Content-Length") or 0)
-            if length > MAX_BODY:
-                raise RequestError("Request body too large")
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+            except ValueError as exc:
+                raise RequestError("Invalid Content-Length") from exc
+            if length < 0 or length > MAX_BODY:
+                raise RequestError("Request body too large" if length > 0 else "Invalid Content-Length")
             raw = self.rfile.read(length) if length else b"{}"
             try:
                 body = json.loads(raw or b"{}")

@@ -5,6 +5,7 @@ behind a local shim that speaks Upstash's REST protocol. The provider run is moc
 makes a paid Muse call.
 """
 import importlib
+import io
 import json
 import sys
 import threading
@@ -133,6 +134,39 @@ def test_successful_run_settles_to_measured_cost_not_worst_case(env):
     assert len(env["calls"]) == 1
     # 1000 input at $4/M + 500 output at $20/M = $0.014, settled to micro-dollars.
     assert _daily_usd(env["redis"]) == 14_000
+
+
+def test_missing_usage_is_priced_at_its_share_of_the_worst_case(env):
+    """A call that reports no usage must not settle to free, or spend would be undercounted."""
+    env["outcome"]["usage"] = {}
+    status, _, _ = _post(env["base"])
+    assert status == 200
+    assert _daily_usd(env["redis"]) > 0
+
+
+def test_negative_content_length_cannot_bypass_the_body_cap(monkeypatch):
+    """int() accepts a negative Content-Length, so the cap must reject it before rfile.read()."""
+    monkeypatch.setenv("NAUTILUS_DEMO_TOKEN", TOKEN)
+    muse = importlib.import_module("api.muse")
+    handler = muse.handler.__new__(muse.handler)
+    handler.headers = {"Content-Length": "-1", "Authorization": f"Bearer {TOKEN}"}
+    handler.rfile = io.BytesIO(b"{" + b" " * 5000 + b"}")
+    sent = {}
+    handler._send = lambda status, payload: sent.update(status=status, payload=payload)
+    handler.do_POST()
+    assert sent["status"] == 400
+
+
+def test_non_numeric_content_length_is_400_not_500(monkeypatch):
+    monkeypatch.setenv("NAUTILUS_DEMO_TOKEN", TOKEN)
+    muse = importlib.import_module("api.muse")
+    handler = muse.handler.__new__(muse.handler)
+    handler.headers = {"Content-Length": "abc", "Authorization": f"Bearer {TOKEN}"}
+    handler.rfile = io.BytesIO(b"{}")
+    sent = {}
+    handler._send = lambda status, payload: sent.update(status=status, payload=payload)
+    handler.do_POST()
+    assert sent["status"] == 400 and sent["payload"]["error"] == "Invalid Content-Length"
 
 
 def test_failed_run_keeps_worst_case_hold_and_hides_detail(env):

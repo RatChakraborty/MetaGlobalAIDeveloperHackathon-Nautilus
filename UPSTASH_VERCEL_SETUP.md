@@ -84,8 +84,12 @@ The repository deploys as **one** Vercel project:
 
 - `vercel.json` sets `buildCommand` = `cd frontend && npm ci && npm run build` and
   `outputDirectory` = `frontend/dist`, so the static frontend is built and served.
-- `api/muse.py` is picked up as a Python serverless function at `/api/muse`
-  (with `maxDuration` 300 s).
+- Three Python serverless functions are picked up from `api/`:
+  - `api/v1/simulations.py` at `POST /api/v1/simulations` — the free deterministic simulation;
+  - `api/v1/investigations.py` at `POST /api/v1/investigations` — the free deterministic
+    investigation, run to completion inside the request so the job comes back already `succeeded`;
+  - `api/muse.py` at `POST /api/muse` — the paid live run, behind the operator token, the Redis
+    ledger and the budget caps (with `maxDuration` 300 s).
 - `rewrites` sends every non-`/api/` path to `/index.html`, so client-side routes work.
 - `api/requirements.txt` pins the Python packages the function needs (`numpy`, `scipy`,
   `matplotlib`). Vercel looks for the nearest requirements file walking up from `api/`, so this one

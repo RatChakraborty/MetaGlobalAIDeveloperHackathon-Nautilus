@@ -19,10 +19,14 @@ from nautilus_api.schema import RequestError
 
 MAX_QUEUED = 4
 # Demo-mode ceilings for one live Muse run; per-user and global limits are enforced in server.py.
+# wall_s must stay below the platform ceiling (Vercel Hobby: 300 s per function) so the
+# investigator stops and returns a record instead of being killed mid-run. The 60 s slack
+# covers simulation, serialization and the budget settlement.
+VERCEL_FUNCTION_LIMIT_S = 300.
 DEMO_MUSE_LIMITS = dict(model_calls=6, actions=8, invalid_calls=3, retries=0,
                         output_tokens_per_call=2048, output_tokens_total=8192,
                         input_tokens_total=60000, request_bytes_total=400_000,
-                        timeout_s=60., wall_s=300.)
+                        timeout_s=60., wall_s=240.)
 PUBLIC_COLUMNS = ("time_s", "observed_y_m", "observed_heading_rad", "observed_yaw_rate_radps",
                   "port_command_n", "starboard_command_n")
 
@@ -100,13 +104,27 @@ class JobStore:
 
 
 def _settle_muse(result, run_id):
-    """Settle the hold to the measured cost. A failed run with no usage keeps the full reservation."""
+    """Settle the hold to the measured cost.
+
+    A request whose usage is missing or unparseable is not trusted as free: it is billed at the
+    full per-call worst case, so an error that still consumed tokens cannot underestimate spend.
+    """
     from nautilus_api import budget, ledger
     if result is None:
         return  # no usage known: the hold stays at its worst case
     body = json.loads(result["provenance"]["body_canonical"])
-    actual = sum(budget.cost_usd(r.get("usage", {})) for r in body["model_requests"])
-    ledger.settle(budget.DEMO_BUCKET, run_id, actual)
+    requests = body["model_requests"]
+    # Per-call share of the run's worst case, used when one request reports no usable usage.
+    unknown_case = budget.cost_usd({"input_tokens": budget.WORST_CASE_INPUT_TOKENS,
+                                    "output_tokens": budget.WORST_CASE_OUTPUT_TOKENS}) / max(1, budget.PRICED_CALLS)
+    actual = 0.0
+    for r in requests:
+        usage = r.get("usage")
+        if isinstance(usage, dict) and usage.get("input_tokens") is not None and usage.get("output_tokens") is not None:
+            actual += budget.cost_usd(usage)
+        else:
+            actual += unknown_case
+    ledger.settle(budget.DEMO_BUCKET, run_id, min(actual, budget.reservation_usd()))
 
 
 def run_muse_investigation(faults, mission, request):

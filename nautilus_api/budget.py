@@ -23,6 +23,9 @@ PER_USER_DAILY_USD = 1.00
 # Worst case for one live run at DEMO_MUSE_LIMITS: 8192 output and 60000 input tokens.
 WORST_CASE_INPUT_TOKENS = 60000
 WORST_CASE_OUTPUT_TOKENS = 8192
+# Largest number of provider calls the bounded workflow can make, used to price a call whose
+# usage did not come back rather than treating it as free.
+PRICED_CALLS = 6
 
 
 def cost_usd(usage, rates=WONDER_RATES):
