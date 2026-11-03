@@ -5,6 +5,9 @@
   "functions": {
     "api/muse.py": {
       "maxDuration": 300
+    },
+    "api/v1/studio.py": {
+      "maxDuration": 60
     }
   },
   "rewrites": [

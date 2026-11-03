@@ -430,6 +430,7 @@ def simulate(
     mission: Mission = Mission(),
     plant: PlantConfig = PlantConfig(),
     experiment: Experiment = Experiment(),
+    policy=None,
 ) -> SimulationResult:
 
     if experiment.maneuver not in ("cable_follow", "heading_response", "thrust_step",
@@ -515,15 +516,21 @@ def simulate(
             )
         )
 
-        port, starboard, desired = experiment_command(
-            t,
-            obs_y,
-            obs_heading,
-            obs_yaw_rate,
-            vehicle,
-            controller,
-            experiment,
-        )
+        if policy is not None and experiment.maneuver == "cable_follow":
+            # Structural policy path: the interpreter sees only public observations and
+            # its own bounded state. Physics below is untouched.
+            port, starboard, desired = policy(
+                t, obs_y, obs_heading, obs_yaw_rate, vehicle, controller)
+        else:
+            port, starboard, desired = experiment_command(
+                t,
+                obs_y,
+                obs_heading,
+                obs_yaw_rate,
+                vehicle,
+                controller,
+                experiment,
+            )
 
         truth_rows.append({
             "time_s": t,

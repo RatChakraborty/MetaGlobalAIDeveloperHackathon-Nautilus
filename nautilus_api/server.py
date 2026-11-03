@@ -3,6 +3,7 @@
 Routes:
   POST /api/v1/simulations            run a simulation, return public telemetry
   POST /api/v1/investigations         queue a scripted investigation job
+  POST /api/v1/studio                 free deterministic Control Policy Studio actions
   POST /api/v1/muse-investigations    queue a live Muse job (demo token + daily cap)
   GET  /api/v1/investigations/{id}    job status and public result
   POST /api/v1/investigations/{id}/cancel
@@ -120,6 +121,8 @@ class Handler(BaseHTTPRequestHandler):
             if method == "POST" and parts[2:] == ["investigations"]:
                 faults, mission, request = scenario(self._body())
                 return self._send(202, {"job": _public_job(STORE.submit(faults, mission, request))})
+            if method == "POST" and parts[2:] == ["studio"]:
+                return self._studio(self._body())
             if method == "POST" and parts[2:] == ["muse-investigations"]:
                 if not _authorized(self.headers):
                     return self._send(401, {"error": "Unauthorized"})
@@ -142,6 +145,25 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(404, {"error": "Not found"})
         except RequestError as exc:
             return self._send(400, {"error": str(exc)})
+
+    def _studio(self, body):
+        """Serve the free Control Policy Studio exactly as the hosted Vercel route does.
+
+        The dispatch table is shared, not reimplemented, so local development and the deployed
+        function cannot drift apart. No credential is read on this path.
+        """
+        try:
+            from api.v1.studio import PolicyError as StudioPolicyError
+            from api.v1.studio import RequestError as StudioRequestError
+            from api.v1.studio import dispatch
+        except Exception:
+            return self._send(503, {"error": "Control Policy Studio unavailable"})
+        try:
+            return self._send(200, dispatch(body))
+        except StudioRequestError as exc:
+            return self._send(400, {"error": str(exc)})
+        except StudioPolicyError as exc:
+            return self._send(422, {"error": str(exc)})
 
     def do_OPTIONS(self):
         self.send_response(204)
