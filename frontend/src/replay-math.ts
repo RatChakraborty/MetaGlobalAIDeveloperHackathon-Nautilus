@@ -1,6 +1,24 @@
 import type {Visual,Investigation,Observation} from './records.ts';
-export type CameraMode='chase'|'onboard'|'top'|'free';
-export const CAMERA_MODES:CameraMode[]=['chase','onboard','top','free'];
+export type InspectionMode='bow'|'stern'|'port'|'starboard'|'underside'|'three-quarter'|'close';
+export const INSPECTION_MODES:InspectionMode[]=['bow','stern','port','starboard','underside','three-quarter','close'];
+export type CameraMode='chase'|'onboard'|'top'|'free'|InspectionMode;
+export const CAMERA_MODES:CameraMode[]=['chase','onboard','top','free',...INSPECTION_MODES];
+// Fixed vehicle-relative inspection views. Offsets are in the vehicle frame: f = forward, s = port side, y = up.
+// Eye and target are offsets from the vehicle origin in world units; they never alter recorded pose.
+export function inspectionView(mode:InspectionMode,heading:number){
+ const f={x:Math.cos(heading),z:-Math.sin(heading)},s={x:-f.z,z:f.x};
+ const at=(a:number,b:number,y:number)=>({x:f.x*a+s.x*b,y,z:f.z*a+s.z*b});
+ switch(mode){
+  case 'bow':return {eye:at(3,0,.6),target:at(.4,0,0)};
+  case 'stern':return {eye:at(-3,0,.6),target:at(-.4,0,0)};
+  case 'port':return {eye:at(0,3,.6),target:at(0,0,0)};
+  case 'starboard':return {eye:at(0,-3,.6),target:at(0,0,0)};
+  case 'underside':return {eye:at(1.5,0,-1.2),target:at(0,0,0)};
+  case 'three-quarter':return {eye:at(2.2,2.2,1.6),target:at(0,0,0)};
+  case 'close':return {eye:at(1.2,.9,.5),target:at(.5,0,0)};
+  default:throw Error('Not an inspection mode');
+ }
+}
 export function cameraMode(value:string):CameraMode{if(!CAMERA_MODES.includes(value as CameraMode))throw Error('Unknown camera mode');return value as CameraMode;}
 export function interpolatePose(rows:Visual['samples'],time:number){
  if(!rows.length||!Number.isFinite(time))throw Error('Finite time and recorded poses required');

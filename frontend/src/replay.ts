@@ -4,11 +4,15 @@ import {alignVisualization,type CommandSource} from './replay-math.ts';
 import {SVGRenderer} from 'three/examples/jsm/renderers/SVGRenderer.js';
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js';
 import type {Visual} from './records.ts';
-import {interpolatePose,displayPose,breach,compatibleReference,type CameraMode} from './replay-math.ts';
+import {interpolatePose,displayPose,breach,compatibleReference,inspectionView,INSPECTION_MODES,type CameraMode} from './replay-math.ts';
 import {underwaterEnvironment,type Decorations} from './environment.ts';
 import {researchVehicle} from './vehicle.ts';
 import {disposeScene,selectRenderer} from './scene-resources.ts';
 import {qualitySettings,qualityTier} from './graphics-quality.ts';
+import {EffectComposer} from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import {RenderPass} from 'three/examples/jsm/postprocessing/RenderPass.js';
+import {UnrealBloomPass} from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import {OutputPass} from 'three/examples/jsm/postprocessing/OutputPass.js';
 export type ReplaySettings={mode:CameraMode;distance:number;exaggeration:number;trail:boolean;overlays:boolean;comparison:boolean;commands?:boolean};
 export class Replay{
  private commandSource:CommandSource|null=null;private referenceCommands:CommandSource|null=null;private commandArrows=commandedArrows();private referenceArrows=commandedArrows();
@@ -19,6 +23,7 @@ export class Replay{
   if(this.renderer instanceof THREE.WebGLRenderer){this.renderer.toneMapping=THREE.ACESFilmicToneMapping;this.renderer.toneMappingExposure=1.25;this.renderer.shadowMap.type=THREE.PCFSoftShadowMap;}else this.renderer.setQuality('high');
   this.quality=qualityTier(quality);
   host.append(this.renderer.domElement);this.renderer.domElement.setAttribute('aria-label','Recorded planar simulator trajectory');
+  if(this.renderer instanceof THREE.WebGLRenderer){this.renderer.domElement.addEventListener('webglcontextlost',this.contextLost,false);this.renderer.domElement.addEventListener('webglcontextrestored',this.contextRestored,false);}
   const points=visual.samples.map(s=>new THREE.Vector3(s.x_m,0,-s.y_m)),box=new THREE.Box3().setFromPoints(points);this.center=box.getCenter(new THREE.Vector3());const size=box.getSize(new THREE.Vector3());this.span=Math.max(size.x,size.z,15);
   this.scene.add(new THREE.AmbientLight(0xb8d0c8,selected.software?1.1:.18));this.scene.add(new THREE.HemisphereLight(0xaacbcc,0x34473b,selected.software?2.1:1.6));const sun=new THREE.DirectionalLight(0xb5d8c9,selected.software?1.4:2.7);sun.position.set(this.center.x-15,25,-10);this.scene.add(sun);
   this.environment=underwaterEnvironment(this.scene,this.center,this.span,selected.software);
@@ -30,11 +35,22 @@ export class Replay{
   this.observer=new ResizeObserver(this.changed);this.observer.observe(host);this.rebuild();this.setQuality(quality);this.seek(0);this.frame(0);
  }
  private started=()=>{this.interacting=true;};private ended=()=>{this.interacting=false;};
+ // On context loss the browser discards GPU resources; skip drawing until restored, then redraw the current frame.
+ private contextLost=(event:Event)=>{event.preventDefault();this.host.dataset.contextLost='true';};
+ private contextRestored=()=>{delete this.host.dataset.contextLost;this.dirty=true;this.seek(this.time);};
  private changed=()=>{if(this.interacting&&this.settings.mode==='chase'){const offset=this.camera.position.clone().sub(this.vehicle.group.position);this.orbitOffset=Math.atan2(offset.z,-offset.x)-this.vehicle.group.rotation.y;}this.dirty=true;};
  setQuality(tier:string){
   this.quality=qualityTier(tier);const s=qualitySettings(this.quality);
   if(this.renderer instanceof THREE.WebGLRenderer){this.renderer.setPixelRatio(Math.min(devicePixelRatio,s.pixelRatioCap));this.renderer.shadowMap.enabled=s.shadows;}
+  this.setPostprocessing(this.renderer instanceof THREE.WebGLRenderer&&s.postprocessing);
   this.environment.setParticleBudget(s.sedimentParticles);this.dirty=true;this.seek(this.time);
+ }
+ private composer:EffectComposer|null=null;
+ // Bloom and output tone mapping are used only by the cinematic tier. They change the image, never the recorded pose.
+ private setPostprocessing(enabled:boolean){
+  if(!enabled||!(this.renderer instanceof THREE.WebGLRenderer)){this.composer?.dispose();this.composer=null;return;}
+  if(this.composer)return;
+  const renderer=this.renderer;this.composer=new EffectComposer(renderer);this.composer.addPass(new RenderPass(this.scene,this.camera));this.composer.addPass(new UnrealBloomPass(new THREE.Vector2(1,1),.25,.4,.85));this.composer.addPass(new OutputPass());
  }
  setDecorations(settings:Decorations){this.decorations={...settings};this.environment.set(settings);this.seek(this.time);}
  configure(settings:Partial<ReplaySettings>){if(settings.mode&&settings.mode!==this.settings.mode)this.snap=false;this.settings={...this.settings,...settings};this.controls.enabled=this.settings.mode==='free'||this.settings.mode==='chase';this.controls.enableZoom=this.settings.mode==='free';this.controls.enablePan=this.settings.mode==='free';this.controls.enableRotate=this.controls.enabled;if(settings.exaggeration!==undefined)this.rebuild();this.seek(this.time);this.dirty=true;}
@@ -61,11 +77,11 @@ export class Replay{
   const mode=this.settings.mode;let target=position.clone(),desired=position.clone();this.camera.up.set(0,1,0);
   if(mode==='onboard'){desired.addScaledVector(forward,1.35);desired.y=.08;target.addScaledVector(forward,8);target.y=-1.91;}
   else if(mode==='chase'){const follow=new THREE.Vector3(Math.cos(heading+this.orbitOffset),0,-Math.sin(heading+this.orbitOffset));desired.addScaledVector(follow,-this.settings.distance);desired.y=Math.max(2.8,this.settings.distance*.4);target.addScaledVector(forward,2);target.y=-.4;}
+  else if(INSPECTION_MODES.includes(mode as never)){const view=inspectionView(mode as never,heading);desired.set(position.x+view.eye.x,position.y+view.eye.y,position.z+view.eye.z);target.set(position.x+view.target.x,position.y+view.target.y,position.z+view.target.z);}
   else if(mode==='top'){this.camera.up.set(0,0,-1);target=this.center.clone();desired.copy(target).add(new THREE.Vector3(0,this.span*.85+.01,0));}
   else if(this.snap){target=this.center.clone();desired.copy(target).add(new THREE.Vector3(this.span*.3,this.span*.55,this.span*.55));}
   if(mode!=='free'||this.snap){const alpha=this.snap||this.reducedMotion?1:1-Math.exp(-dt*5);this.camera.position.lerp(desired,alpha);this.controls.target.lerp(target,alpha);this.camera.lookAt(this.controls.target);if(this.camera.position.distanceTo(desired)>.001)this.dirty=true;}
   this.snap=false;if(mode==='free'||mode==='chase')this.controls.update();if(this.dirty){this.draw();this.dirty=false;}
- }
- private draw(){const width=this.host.clientWidth,height=this.host.clientHeight;if(!width||!height)return;this.renderer.setSize(width,height,false);this.camera.aspect=width/height;this.camera.updateProjectionMatrix();const started=performance.now();this.renderer.render(this.scene,this.camera);this.host.dataset.renderMs=(performance.now()-started).toFixed(2);this.host.dataset.camera=this.settings.mode;this.host.dataset.renderedPose=JSON.stringify({x:this.vehicle.group.position.x,y:this.vehicle.group.position.y,z:this.vehicle.group.position.z,heading:this.vehicle.group.rotation.y});this.host.dataset.referencePose=this.reference?JSON.stringify(interpolatePose(this.reference.samples,this.time)):'';this.host.dataset.cameraPosition=JSON.stringify(this.camera.position.toArray());this.host.dataset.pose=JSON.stringify(interpolatePose(this.visual.samples,this.time));}
- dispose(){if(this.disposed)return;this.disposed=true;this.observer.disconnect();this.controls.removeEventListener('change',this.changed);this.controls.removeEventListener('start',this.started);this.controls.removeEventListener('end',this.ended);this.controls.dispose();disposeScene(this.scene);if(this.renderer instanceof THREE.WebGLRenderer)this.renderer.dispose();this.renderer.domElement.remove();}
+ }  private draw(){const width=this.host.clientWidth,height=this.host.clientHeight;if(!width||!height||this.host.dataset.contextLost)return;this.renderer.setSize(width,height,false);this.camera.aspect=width/height;this.camera.updateProjectionMatrix();const started=performance.now();if(this.composer){this.composer.setSize(width,height);this.composer.render();}else this.renderer.render(this.scene,this.camera);this.host.dataset.renderMs=(performance.now()-started).toFixed(2);this.host.dataset.camera=this.settings.mode;this.host.dataset.renderedPose=JSON.stringify({x:this.vehicle.group.position.x,y:this.vehicle.group.position.y,z:this.vehicle.group.position.z,heading:this.vehicle.group.rotation.y});this.host.dataset.referencePose=this.reference?JSON.stringify(interpolatePose(this.reference.samples,this.time)):'';this.host.dataset.cameraPosition=JSON.stringify(this.camera.position.toArray());this.host.dataset.pose=JSON.stringify(interpolatePose(this.visual.samples,this.time));}
+ dispose(){if(this.disposed)return;this.disposed=true;this.observer.disconnect();this.controls.removeEventListener('change',this.changed);this.controls.removeEventListener('start',this.started);this.controls.removeEventListener('end',this.ended);this.controls.dispose();this.composer?.dispose();this.composer=null;disposeScene(this.scene);if(this.renderer instanceof THREE.WebGLRenderer){this.renderer.domElement.removeEventListener('webglcontextlost',this.contextLost);this.renderer.domElement.removeEventListener('webglcontextrestored',this.contextRestored);this.renderer.dispose();}this.renderer.domElement.remove();}
 }
