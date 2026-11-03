@@ -190,3 +190,15 @@ workbench demo can instead use `NAUTILUS_DEMO_ENABLED=true` and
 `NAUTILUS_WORKBENCH_DEMO_MANIFEST=workbench.json` with that manifest and its public
 files under `public/demo/`. Requests use the configured Pages base and safe basenames;
 there is no arbitrary-URL manifest fetch. No data or deployment is included here.
+
+### V6 control lab
+
+The Investigator tab accepts a validated `nautilus.control-lab-recommendation.v1`
+artifact, either standalone or as the `controlLab` companion of **Open investigation
+files**. It shows the approved policy values, the proposed change and its stated reason,
+matched baseline/candidate aggregates, per-scenario robustness, every declared gate,
+unresolved risks, the required human-review status and the patch state, and offers the
+configuration diff download. The scope wording is enforced: a recommendation is not a
+deployed repair. Simulation metrics are not physical evidence, the panel never executes
+a patch, and **Compare in 3D** still requires the existing validated baseline/candidate
+export pair.
