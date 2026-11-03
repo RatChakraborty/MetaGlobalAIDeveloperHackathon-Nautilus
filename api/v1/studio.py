@@ -28,6 +28,7 @@ os.environ.setdefault("MPLBACKEND", "Agg")
 from nautilus.policy_ir import PolicyError, baseline_policy, validate  # noqa: E402
 from nautilus.policy_source import from_source, to_source  # noqa: E402
 from nautilus.studio import cases, paired_trial, policy_fingerprint, robustness  # noqa: E402
+from nautilus.studio_handoff import HandoffError, validate_handoff  # noqa: E402
 from nautilus.studio_muse import run_session  # noqa: E402
 from nautilus_api.vercel_http import BodyError, preflight, read_json, send_json  # noqa: E402
 
@@ -92,8 +93,14 @@ def _trial_payload(body):
                             "split": part}}
 
 
-def _muse_payload():
-    session = run_session()
+def _muse_payload(body):
+    handoff = body.get("handoff")
+    if handoff is not None:
+        try:
+            handoff = validate_handoff(handoff)
+        except HandoffError as exc:
+            raise RequestError(f"invalid investigation handoff: {exc}")
+    session = run_session(handoff=handoff)
     return {"final": session["final"], "stopped": session["stopped"],
             "transcript": session["transcript"], "budget": session["budget"],
             "candidates": session["candidates"], "results": session["results"],
@@ -136,7 +143,7 @@ def dispatch(body):
                 "outcome": report["outcome"],
                 "note": "Held-out split: reported as evidence, never used to select a candidate."}
     if action == "muse":
-        return _muse_payload()
+        return _muse_payload(body)
     raise RequestError("unknown action")
 
 

@@ -99,8 +99,9 @@ class Budget:
 class Session:
     """State and trust boundary of one engineering session."""
 
-    def __init__(self, budget: Budget | None = None):
+    def __init__(self, budget: Budget | None = None, handoff: dict | None = None):
         self.budget = budget or Budget()
+        self.handoff = handoff
         self.baseline = baseline_policy()
         self.candidates = {}
         self.results = {}
@@ -116,7 +117,11 @@ class Session:
                 'ir_limits': {'max_nodes': 96, 'max_depth': 14, 'parameters': PARAM_LIMITS}}
 
     def inspect_diagnosis_evidence(self):
-        """Public, truth-free evidence: measured tracking error under a cross-current case."""
+        """Public, truth-free evidence: the investigation handoff when provided, else matched tracking error."""
+        if self.handoff is not None:
+            return {'source': 'investigation_handoff', 'handoff': self.handoff,
+                    'uncertainty': 'hypotheses are candidate explanations, not proven causes',
+                    'hidden_truth_exposed': False}
         if self.evidence is None:
             trial = paired_trial(self.baseline, 'development',
                                  scenario_ids={cases('development')[1].identifier})
@@ -310,10 +315,11 @@ class MockMuse:
             'rationale': 'Recorded evidence is inconclusive: neither a gated improvement nor a clear regression.'}}
 
 
-def run_session(provider=None, budget: Budget | None = None, session: Session | None = None) -> dict:
+def run_session(provider=None, budget: Budget | None = None, session: Session | None = None,
+                handoff: dict | None = None) -> dict:
     """Run the bounded loop. Stops on finalize, on budget exhaustion, or on tool error."""
     provider = provider or MockMuse()
-    session = session or Session(budget)
+    session = session or Session(budget, handoff=handoff)
     stopped = None
     while session.final is None:
         try:

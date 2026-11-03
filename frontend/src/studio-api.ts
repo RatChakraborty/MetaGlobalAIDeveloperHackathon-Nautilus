@@ -40,7 +40,8 @@ export const studioTrial = (base: string, source: string, params?: Record<string
   post<Trial>(base, {action: 'trial', source, params});
 export const studioRobustness = (base: string, source: string, params?: Record<string, number>) =>
   post<{part: string; rows: TrialRow[]; gates: Gate[]; outcome: Outcome; note: string}>(base, {action: 'robustness', source, params});
-export const studioMuse = (base: string) => post<MuseSession>(base, {action: 'muse'});
+export const studioMuse = (base: string, handoff?: unknown) =>
+  post<MuseSession>(base, handoff === undefined ? {action: 'muse'} : {action: 'muse', handoff});
 
 export class StudioError extends Error {}
 export const parseParams = (text: string): Record<string, number> => {

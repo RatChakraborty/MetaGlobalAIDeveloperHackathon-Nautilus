@@ -6,6 +6,7 @@
  */
 import {studioBaseline, studioMuse, studioRobustness, studioTrial, studioValidate, parseParams,
   type Baseline, type Gate, type MuseSession, type Trial, type TrialRow, type Trace} from './studio-api.ts';
+import type {InvestigationHandoff} from './studio-handoff.ts';
 
 const escapeText = (x: unknown) => String(x ?? 'n/a').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]!));
 const fmt = (value: unknown, digits = 3) => typeof value === 'number' && Number.isFinite(value) ? value.toFixed(digits) : 'n/a';
@@ -22,10 +23,11 @@ export type StudioState = {
   robustness: {rows: TrialRow[]; gates: Gate[]; outcome: Trial['outcome']} | null;
   muse: MuseSession | null;
   versions: {label: string; fingerprint: string; outcome: string}[];
+  handoff: InvestigationHandoff | null;
 };
 
 export const initialStudio = (): StudioState => ({status: 'idle', message: 'Load the baseline controller to begin.',
-  baseline: null, source: '', params: '', validation: null, trial: null, robustness: null, muse: null, versions: []});
+  baseline: null, source: '', params: '', validation: null, trial: null, robustness: null, muse: null, versions: [], handoff: null});
 
 let state: StudioState = initialStudio();
 let container: HTMLElement | null = null;
@@ -140,8 +142,25 @@ export function studioMarkup(current: StudioState): string {
     <div id="studio-comparison">${trialMarkup(current.trial)}
     ${current.trial ? traceMarkup(current.trial.traces, ['y_m', 'port_command_n'], 'cross-track · m', 1.5) : ''}
     ${current.robustness ? `<h4>Held-out robustness</h4><p class="muted">Reported as evidence only; it is never used to select a candidate.</p><ul class="control-gates">${current.robustness.rows.map(row => `<li>${escapeText(row.scenario_id)} · baseline ${fmt(row.baseline.rms_cross_track_m)} m · candidate ${fmt(row.candidate.rms_cross_track_m)} m</li>`).join('')}</ul><p>${escapeText(current.robustness.outcome.rationale)}</p>` : ''}</div>
+    ${handoffMarkup(current.handoff)}
     <div id="studio-muse">${museMarkup(current.muse)}</div>
   </section>`;
+}
+
+/** Public investigation evidence. Hypotheses are candidates, never proven causes. */
+function handoffMarkup(handoff: InvestigationHandoff | null): string {
+  if (!handoff) return '<p class="muted">No investigation evidence attached. Open an investigation and choose “Open in Policy Studio”.</p>';
+  const hypotheses = handoff.hypotheses.map(h => `<li><b>${escapeText(h.hypothesis)}</b> · WRMS ${fmt(h.weighted_rmse)} · ${h.converged ? 'converged' : 'not converged'} · <em>candidate, not proven</em></li>`).join('');
+  return `<section id="studio-handoff" class="handoff"><h4>Investigation evidence</h4>
+    <p>Run <code>${escapeText(handoff.reproducibility.run_id.slice(0, 12))}</code> · ${handoff.observations.episodes} observation episode(s) · ${handoff.reproducibility.events} verified ledger events</p>
+    <ul class="control-gates">${hypotheses || '<li>No numerical fit recorded.</li>'}</ul>
+    ${handoff.conclusion ? `<p>Recorded conclusion: ${escapeText(handoff.conclusion.diagnosis ?? 'abstained')} · ${escapeText(handoff.conclusion.confidence)} <em>(recorded, not proof)</em></p>` : ''}
+    <ul class="muted">${handoff.limitations.map(l => `<li>${escapeText(l)}</li>`).join('')}</ul></section>`;
+}
+
+export function setHandoff(handoff: InvestigationHandoff | null) {
+  state = {...state, handoff, muse: null};
+  render();
 }
 
 export function engineeringReport(current: StudioState): Record<string, unknown> {
@@ -233,8 +252,8 @@ function bind() {
         params: Object.entries(state.baseline.policy.params).map(([k, v]) => `${k} = ${v}`).join('\n'), trial: null, robustness: null, validation: null, message: 'Reverted to the baseline controller.'});
       else if (action === 'report') download('nautilus-policy-engineering-report.json', engineeringReport(state));
       else if (action === 'muse') {
-        set({status: 'loading', message: 'Running the deterministic mocked engineering session…'});
-        studioMuse(base).then(muse => set({status: 'ready', message: 'Mocked engineering session complete.', muse}))
+        set({status: 'loading', message: state.handoff ? 'Running the mocked engineering session on the investigation evidence…' : 'Running the deterministic mocked engineering session…'});
+        studioMuse(base, state.handoff ?? undefined).then(muse => set({status: 'ready', message: 'Mocked engineering session complete.', muse}))
           .catch(error => set({status: 'error', message: error instanceof Error ? error.message : 'Session failed.'}));
       }
     };

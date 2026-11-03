@@ -74,3 +74,22 @@ test('engineering report carries decisions, gates and limitations', () => {
   assert.ok(Array.isArray(report.limitations));
   assert.match(String((report.limitations as string[]).join(' ')), /never used to select/);
 });
+
+test('investigation handoff panel labels hypotheses as candidates and escapes text', () => {
+  const handoff = {
+    schema_version: 'nautilus.studio-handoff.v1' as const,
+    reproducibility: {run_id: 'run-<img>', source_kind: 'recorded', ledger_head: 'h', events: 3},
+    observations: {episodes: 1, evidence_refs: ['h-obs'], max_abs_observed_y_m: 0.4},
+    hypotheses: [{hypothesis: 'thruster_gain_loss', converged: true, parameters: {gain: 0.8},
+      weighted_rmse: 0.07, identifiability: {rank: 1, condition: 1e8, qualification: 'weak'},
+      evidence_refs: ['h-obs'], status: 'candidate_hypothesis' as const}],
+    conclusion: null,
+    limitations: ['Hypotheses are candidate explanations, not proven causes.'],
+  };
+  const html = studioMarkup({...initialStudio(), handoff});
+  assert.match(html, /Investigation evidence/);
+  assert.match(html, /candidate, not proven/);
+  assert.ok(!html.includes('<img>'));
+  assert.ok(html.includes('run-&lt;img&gt;'));
+  assert.match(studioMarkup(initialStudio()), /No investigation evidence attached/);
+});
