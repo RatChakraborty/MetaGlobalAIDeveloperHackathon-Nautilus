@@ -35,8 +35,10 @@ MAX_BODY = 4096
 
 def _run_live(faults, mission, request):
     """Reserve, run and settle one live run. Returns (status, payload)."""
+    # Kill switch: checked before any budget reservation or provider request.
+    if os.environ.get("NAUTILUS_MUSE_ENABLED", "").strip().lower() != "true":
+        return 503, {"error": "Live Muse is disabled on this deployment"}
     from nautilus_api.jobs import _settle_muse, run_muse_investigation
-
     run_id = secrets.token_hex(16)
     reserved = budget.rounded_up_cents(budget.reservation_usd())
     if not ledger.reserve(budget.DEMO_BUCKET, reserved, run_id=run_id,

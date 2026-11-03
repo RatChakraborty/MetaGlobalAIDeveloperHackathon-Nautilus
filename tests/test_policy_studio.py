@@ -402,6 +402,19 @@ def test_api_trial_returns_measured_comparison(studio_api):
     assert len(json.dumps(payload)) < 400_000
 
 
+def test_studio_kill_switch_defaults_off_and_never_enables_live(monkeypatch):
+    from nautilus import studio_muse
+    monkeypatch.delenv("NAUTILUS_MUSE_ENABLED", raising=False)
+    assert studio_muse.muse_enabled() is False
+    for value in ("", "false", "1", "yes"):
+        monkeypatch.setenv("NAUTILUS_MUSE_ENABLED", value)
+        assert studio_muse.muse_enabled() is False
+    monkeypatch.setenv("NAUTILUS_MUSE_ENABLED", "true")
+    assert studio_muse.muse_enabled() is True
+    # Live Studio provider is not implemented, so it stays unavailable even when enabled.
+    assert studio_muse.live_available() is False
+
+
 def test_api_muse_is_mock_only(studio_api):
     payload = studio_api.dispatch({'action': 'muse'})
     assert payload['mock'] is True and payload['provider_calls'] == 0

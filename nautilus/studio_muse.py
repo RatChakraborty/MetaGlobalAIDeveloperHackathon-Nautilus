@@ -13,6 +13,7 @@ does. No credential, price or reservation is read here.
 """
 from __future__ import annotations
 
+import os
 import time
 from copy import deepcopy
 from dataclasses import dataclass, field
@@ -56,8 +57,13 @@ TOOLS = (
 TOOL_NAMES = tuple(tool['name'] for tool in TOOLS)
 
 
+def muse_enabled() -> bool:
+    """Server-side kill switch. Live Muse is off unless NAUTILUS_MUSE_ENABLED is exactly 'true'."""
+    return os.environ.get('NAUTILUS_MUSE_ENABLED', '').strip().lower() == 'true'
+
+
 def live_available() -> bool:
-    """Live Muse execution is deliberately not wired in this branch."""
+    """Live provider execution is not implemented for Studio; it stays unavailable even when enabled."""
     return False
 
 

@@ -67,6 +67,7 @@ def env(monkeypatch, tmp_path):
     monkeypatch.setenv("UPSTASH_REDIS_REST_URL", f"http://127.0.0.1:{httpd.server_address[1]}")
     monkeypatch.setenv("UPSTASH_REDIS_REST_TOKEN", "redis-token")
     monkeypatch.setenv("NAUTILUS_DEMO_TOKEN", TOKEN)
+    monkeypatch.setenv("NAUTILUS_MUSE_ENABLED", "true")
     monkeypatch.delenv("NAUTILUS_MUSE_MONTHLY_BUDGET_USD", raising=False)
 
     muse = importlib.import_module("api.muse")
@@ -109,6 +110,27 @@ def _post(base, body=BODY, token=TOKEN, raw=None):
 def _daily_usd(store):
     value = store.hget(DAY, "usd")
     return int(value) if value is not None else 0
+
+
+@pytest.mark.parametrize("flag", [None, "", "false", "0", "no", "TRUE-ish"])
+def test_kill_switch_blocks_provider_and_reservation_when_not_exactly_true(env, monkeypatch, flag):
+    """Default is off: absent or non-'true' values never reach the provider or Redis."""
+    if flag is None:
+        monkeypatch.delenv("NAUTILUS_MUSE_ENABLED", raising=False)
+    else:
+        monkeypatch.setenv("NAUTILUS_MUSE_ENABLED", flag)
+    status, payload, _ = _post(env["base"])
+    assert status == 503
+    assert payload == {"error": "Live Muse is disabled on this deployment"}
+    assert env["calls"] == []
+    assert env["redis"].hget(DAY, "usd") is None
+
+
+def test_kill_switch_still_requires_the_operator_token(env, monkeypatch):
+    monkeypatch.delenv("NAUTILUS_MUSE_ENABLED", raising=False)
+    status, _, _ = _post(env["base"], token="wrong")
+    assert status == 401
+    assert env["calls"] == []
 
 
 def test_missing_or_wrong_token_is_rejected_before_any_run(env):
