@@ -27,6 +27,7 @@ export function labMarkup(state: LabState): string {
       ${diagnosis.reasons.length ? `<ul>${diagnosis.reasons.map(r => `<li>${escapeText(r)}</li>`).join('')}</ul>` : ''}
       ${decision !== undefined && state.job ? `<p>Investigation tests run: ${escapeText(state.job.result?.investigation.tests)}</p>` : ''}
     </div>` : ''}
+    ${state.job?.result ? `<h3>Observed lateral deviation</h3><p class="muted">Observed cross-track position from public telemetry · ${state.job.result.observations.length} samples · not a plan-view replay.</p><svg class="lab-trace" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="Observed lateral deviation over time"><polyline fill="none" stroke="currentColor" stroke-width="0.8" points="${lateralSeries(state.job.result.observations).points}"/></svg>` : ''}
     ${state.job?.result ? `<h3>Evidence ledger</h3>${timelineMarkup(state.job.result.investigation.ledger)}` : ''}
   </section>`;
 }
@@ -51,6 +52,16 @@ export function timelineMarkup(ledger: unknown[]): string {
     return `<li><b>${escapeText(event.index)}. ${escapeText(LEDGER_LABELS[type] ?? type)}</b> ${detail}<code title="event hash">${escapeText(String(event.event_hash ?? '').slice(0, 12))}</code></li>`;
   });
   return `<ol class="lab-timeline" aria-label="Evidence ledger">${rows.join('')}</ol>`;
+}
+
+export function lateralSeries(observations: {time_s: number; observed_y_m: number}[]): {points: string; min: number; max: number} {
+  if (!observations.length) return {points: '', min: 0, max: 0};
+  const ys = observations.map(o => o.observed_y_m);
+  const min = Math.min(...ys), max = Math.max(...ys);
+  const t0 = observations[0].time_s, t1 = observations[observations.length - 1].time_s;
+  const span = max - min || 1, tspan = t1 - t0 || 1;
+  const points = observations.map(o => `${(((o.time_s - t0) / tspan) * 100).toFixed(2)},${(100 - ((o.observed_y_m - min) / span) * 100).toFixed(2)}`).join(' ');
+  return {points, min, max};
 }
 
 export function readLabForm(form: HTMLFormElement): {scenario: Scenario; seed: number} {
