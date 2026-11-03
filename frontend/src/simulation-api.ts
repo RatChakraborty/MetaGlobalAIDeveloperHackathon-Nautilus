@@ -6,7 +6,7 @@ export type SimulationRequest = {scenario: Scenario; seed?: number; duration_s?:
 export type Observation = {time_s: number; observed_y_m: number; observed_heading_rad: number; observed_yaw_rate_radps: number; port_command_n: number; starboard_command_n: number};
 export type Diagnosis = {kind: string; selected: string | null; competitive: string[]; reasons: string[]};
 export type Simulation = {request: SimulationRequest; observations: Observation[]; diagnosis: Diagnosis};
-export type Job = {id: string; status: 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled'; request: SimulationRequest; result: {observations: Observation[]; investigation: {outcome: Diagnosis; ledger: unknown[]; tests: number; time_s: number; decision: string | null; error: string | null}; protocol_fingerprint: string} | null; error: string | null};
+export type Job = {id: string; status: 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled'; request: SimulationRequest; result: {observations: Observation[]; investigation: {outcome: Diagnosis; ledger: unknown[]; tests: number; time_s: number; error: string | null; decision: string | null}; protocol_fingerprint: string} | null; error: string | null};
 
 export class ApiError extends Error {}
 
