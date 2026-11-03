@@ -61,6 +61,17 @@ class Handler(BaseHTTPRequestHandler):
             if method == "POST" and parts[2:] == ["investigations"]:
                 faults, mission, request = scenario(self._body())
                 return self._send(202, {"job": _public_job(STORE.submit(faults, mission, request))})
+            if method == "POST" and parts[2:] == ["muse-investigations"]:
+                body = self._body()
+                if not isinstance(body, dict):
+                    raise RequestError("Request body must be a JSON object")
+                # The key is the only non-scenario field. It is removed before validation and never stored.
+                api_key = body.pop("api_key", None)
+                if not isinstance(api_key, str) or not api_key:
+                    raise RequestError("api_key is required")
+                faults, mission, request = scenario(body)
+                return self._send(202, {"job": _public_job(STORE.submit(
+                    faults, mission, request, kind="muse", api_key=api_key))})
             if method == "GET" and len(parts) == 4 and parts[2] == "investigations":
                 return self._send(200, {"job": _public_job(STORE.get(parts[3]))})
             if method == "POST" and len(parts) == 5 and parts[2] == "investigations" and parts[4] == "cancel":

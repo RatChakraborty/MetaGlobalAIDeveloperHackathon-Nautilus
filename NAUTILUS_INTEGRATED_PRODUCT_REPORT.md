@@ -14,6 +14,7 @@ Phases 0–4 and 6 of the full-stack spec. Phase 5 (Muse) is out of scope.
 | 1–2. Static demo bundle | Done | Vercel project `nautilus-demo` serves the static bundle. |
 | 3. Thin API | Done | `nautilus_api/` (stdlib `http.server`, no new dependency). Bounded worker, `MAX_QUEUED=4`, durable JSON job records, 4096-byte body cap, `Cache-Control: no-store`. |
 | 4. Lab tab | Done (not visually checked) | Shown only when `NAUTILUS_API_BASE` is set at build time. Default build embeds no API URL. |
+| 5. Live Muse | Done (fake-provider tests only) | `POST /api/v1/muse-investigations` takes a per-run `api_key` in the body. The key goes into the in-memory queue entry only, is removed from the body before scenario validation, and is never written to job records or artifacts. The Lab has a password field that is cleared when the run starts. No live provider call has been made. |
 | 6. Evidence and trace | Done | Evidence ledger timeline; observed lateral-deviation trace (`lateralSeries`). |
 
 ## Live scene decision
@@ -29,19 +30,21 @@ Public telemetry has no along-track `x` position, and the recorded `Replay` need
 ## Checks run
 
 - Frontend: `tsc --noEmit` exit 0; `npm test` 86/86 pass; `npm run build` exit 0 (chunk-size warning existed before).
-- Python: `tests/test_api.py` 13 passed. Full suite last ran at 510 passed, before the latest frontend-only commits.
+- Python: `tests/test_api.py` 16 passed (3 added for phase 5). `tests/test_muse.py` passes. Full suite: 508 passed. The earlier baseline was 510 from a different state; the count is not directly comparable.
+- Frontend after phase 5: `tsc --noEmit` exit 0; `npm test` 86/86 pass.
 
 ## Not verified
 
 - The Lab UI has not been checked in a browser. Only typecheck, unit tests and build ran.
-- Live Muse is not built. Phase 5 is out of scope.
+- Live Muse has not been run against the real provider. Only the fake provider path is tested.
+- Failed Muse runs return the fixed message `Investigation failed`, so provider detail is not shown to the user. This hides diagnostic information.
 - Remote `main` cannot be fetched from this workspace (no GitHub credentials), so whether the deployed site matches `main` is unverified.
 - Vercel Hobby terms are unverified. You state the Hobby tier applies because the project is open source.
 - `current_y=2.5` is outside the singleton bounds (±1.0). Abstention classification is incomplete for that case.
 
-## Muse key conflict (for later phase)
+## Muse key handling
 
-The spec says the model key lives server-side as `MODEL_API_KEY`. You want to enter a key in the UI for the demo. Planned approach: a one-run key held in server memory only, never stored, logged, returned, or written to artifacts. This decision needs your sign-off before phase 5.
+The spec keeps the model key server-side as `MODEL_API_KEY`. For the demo, the key is entered in the UI and used for one run. `MetaProvider(api_key=...)` takes it per run and falls back to `MODEL_API_KEY` when none is given. The key is validated for shape only; a bad key returns the fixed message `Invalid credential format`. The key is not persisted anywhere. The public API is not hosted yet, so this path is only reachable from a local API. Hosting it publicly would expose a key-entry endpoint to anyone who can reach it and needs a decision before deploy.
 
 ## Next steps
 

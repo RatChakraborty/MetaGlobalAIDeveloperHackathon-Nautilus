@@ -1,4 +1,4 @@
-import {runSimulation, runInvestigation, ApiError, type Job, type Simulation, type Scenario} from './simulation-api.ts';
+import {runSimulation, runInvestigation, runMuseInvestigation, ApiError, type Job, type Simulation, type Scenario} from './simulation-api.ts';
 
 export type LabState = {status: 'idle' | 'running' | 'done' | 'error'; message: string; simulation: Simulation | null; job: Job | null};
 
@@ -19,6 +19,8 @@ export function labMarkup(state: LabState): string {
       <label>Seed<input name="seed" type="number" step="1" min="0" value="42"></label>
       <button type="submit" data-action="simulate" ${busy ? 'disabled' : ''}>Run simulation</button>
       <button type="button" data-action="investigate" ${busy ? 'disabled' : ''}>Run investigation</button>
+      <label>Muse API key (this run only)<input name="muse_api_key" type="password" autocomplete="off" spellcheck="false" placeholder="Paste key; not stored"></label>
+      <button type="button" data-action="muse" ${busy ? 'disabled' : ''}>Run live Muse investigation</button>
     </form>
     <p class="lab-status" role="status">${escapeText(busy ? 'Running on the server…' : state.message)}</p>
     ${diagnosis ? `<div class="lab-result"><h3>Diagnosis: ${escapeText(diagnosis.kind)}</h3>
@@ -88,5 +90,21 @@ export async function investigateLab(base: string, request: ReturnType<typeof re
     set({status: 'done', message: 'Investigation complete.', simulation: null, job});
   } catch (error) {
     set({status: 'error', message: error instanceof ApiError ? error.message : 'Investigation failed.', simulation: null, job: null});
+  }
+}
+
+// The key is passed in as a parameter and never placed in LabState, so it is not rendered or retained.
+export async function museLab(base: string, request: ReturnType<typeof readLabForm>, apiKey: string, set: (s: LabState) => void) {
+  if (!apiKey.trim()) {
+    set({status: 'error', message: 'Enter a Muse API key to run a live investigation.', simulation: null, job: null});
+    return;
+  }
+  set({status: 'running', message: '', simulation: null, job: null});
+  try {
+    const job = await runMuseInvestigation(base, request, apiKey.trim(), j => set({status: 'running', message: `Live Muse investigation ${j.status}…`, simulation: null, job: j}));
+    if (job.status !== 'succeeded') throw new ApiError(job.error ?? `Investigation ${job.status}.`);
+    set({status: 'done', message: 'Live Muse investigation complete.', simulation: null, job});
+  } catch (error) {
+    set({status: 'error', message: error instanceof ApiError ? error.message : 'Live Muse investigation failed.', simulation: null, job: null});
   }
 }

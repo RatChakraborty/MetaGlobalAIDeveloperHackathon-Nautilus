@@ -28,7 +28,18 @@ export function runSimulation(base: string, request: SimulationRequest): Promise
 
 export async function runInvestigation(base: string, request: SimulationRequest, onUpdate: (job: Job) => void, {intervalMs = 1000, maxPolls = 300} = {}): Promise<Job> {
   const {job} = await call<{job: Job}>(base, '/api/v1/investigations', {method: 'POST', body: JSON.stringify(request)});
-  let current = job;
+  return pollJob(base, job, onUpdate, intervalMs, maxPolls);
+}
+
+// Live Muse run. The key travels only in this POST body; it is never stored in the
+// client beyond this call and the server keeps it in memory for the run.
+export async function runMuseInvestigation(base: string, request: SimulationRequest, apiKey: string, onUpdate: (job: Job) => void, {intervalMs = 1000, maxPolls = 600} = {}): Promise<Job> {
+  const {job} = await call<{job: Job}>(base, '/api/v1/muse-investigations', {method: 'POST', body: JSON.stringify({...request, api_key: apiKey})});
+  return pollJob(base, job, onUpdate, intervalMs, maxPolls);
+}
+
+async function pollJob(base: string, first: Job, onUpdate: (job: Job) => void, intervalMs: number, maxPolls: number): Promise<Job> {
+  let current = first;
   for (let i = 0; i < maxPolls && (current.status === 'queued' || current.status === 'running'); i++) {
     await new Promise(resolve => setTimeout(resolve, intervalMs));
     current = (await call<{job: Job}>(base, `/api/v1/investigations/${current.id}`)).job;

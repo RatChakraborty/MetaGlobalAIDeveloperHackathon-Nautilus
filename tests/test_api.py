@@ -78,6 +78,51 @@ def test_unknown_job_is_400(base_url):
     assert status == 400
 
 
+def test_muse_route_requires_key_and_never_persists_it(base_url, tmp_path):
+    status, out = _call(base_url + "/api/v1/muse-investigations", "POST",
+                        {"scenario": {"current_y": 1.0}, "seed": 5, "duration_s": 4.0})
+    assert status == 400 and "api_key" in out["error"]
+    secret = "sk-test-" + "x" * 40
+    status, out = _call(base_url + "/api/v1/muse-investigations", "POST",
+                        {"scenario": {"current_y": 1.0}, "seed": 5, "duration_s": 4.0,
+                         "api_key": secret})
+    assert status == 202 and out["job"]["status"] == "queued"
+    assert secret not in json.dumps(out)
+    job_id = out["job"]["id"]
+    stored = server.STORE.get(job_id)
+    assert secret not in json.dumps(stored)
+    assert secret not in (server.STORE.directory / f"{job_id}.json").read_text()
+    _call(base_url + f"/api/v1/investigations/{job_id}/cancel", "POST")
+
+
+def test_muse_route_rejects_hidden_fields(base_url):
+    status, out = _call(base_url + "/api/v1/muse-investigations", "POST",
+                        {"api_key": "sk-test-" + "x" * 40, "plant": {"drag_scale": 1.2}})
+    assert status == 400 and "plant" in out["error"]
+
+
+def test_muse_run_uses_fake_provider_and_returns_public_record(monkeypatch):
+    from nautilus import muse
+    from nautilus.muse import Reply
+    from nautilus_api import jobs
+
+    seen = {}
+
+    def fake_generate(self, **kwargs):
+        seen["key"] = self._api_key
+        return Reply("r1", self.model, [], {}, 0.0, "incomplete", incomplete_reason="max_output_tokens")
+
+    monkeypatch.setattr(muse.MetaProvider, "generate", fake_generate)
+    faults = Faults(current_y=1.0)
+    mission = Mission(duration_s=4., seed=5)
+    out = jobs.run_muse_investigation(faults, mission, {}, "sk-test-" + "y" * 40)
+    assert seen["key"] == "sk-test-" + "y" * 40
+    text = json.dumps(out)
+    assert "sk-test-" not in text
+    assert not any(k in text for k in HIDDEN_KEYS)
+    assert out["provenance"]["schema_version"] == "nautilus.muse-provenance.v1"
+
+
 def test_investigation_job_lifecycle(base_url):
     status, out = _call(base_url + "/api/v1/investigations", "POST",
                         {"scenario": {"current_y": 1.0}, "seed": 5, "duration_s": 4.0})

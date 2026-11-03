@@ -127,7 +127,11 @@ class MetaProvider:
     """
     provider = 'meta'
 
-    def __init__(self, model=None, *, reasoning_effort=None):
+    def __init__(self, model=None, *, reasoning_effort=None, api_key=None):
+        # Per-run key held in memory only; never stored, logged or serialized.
+        if api_key is not None and (type(api_key) is not str or not 20 <= len(api_key) <= 512 or any(c.isspace() for c in api_key)):
+            raise ValueError('Invalid credential format')
+        self._api_key = api_key
         self.model = model or os.environ.get('NAUTILUS_MUSE_MODEL', DEFAULT_MODEL)
         # Empty string explicitly omits the override, including environment defaults.
         effort = os.environ.get('NAUTILUS_MUSE_REASONING_EFFORT') if reasoning_effort is None else reasoning_effort
@@ -143,7 +147,7 @@ class MetaProvider:
             max_output_tokens=max_output_tokens))
 
     def generate(self, *, instructions, input, tools, previous_response_id, max_output_tokens, timeout):
-        key = os.environ.get('MODEL_API_KEY')
+        key = self._api_key or os.environ.get('MODEL_API_KEY')
         if not key:
             raise ProviderError('credential_unavailable')
         body = encode_request(model=self.model, reasoning_effort=self.reasoning_effort,

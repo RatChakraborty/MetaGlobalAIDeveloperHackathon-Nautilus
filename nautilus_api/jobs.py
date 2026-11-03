@@ -18,6 +18,11 @@ from nautilus.simulator import HIDDEN_PLANT, Controller, Mission, Experiment, si
 from nautilus_api.schema import RequestError
 
 MAX_QUEUED = 4
+# Demo-mode ceilings for one live Muse run; per-user and global limits are enforced in server.py.
+DEMO_MUSE_LIMITS = dict(model_calls=6, actions=8, invalid_calls=3, retries=0,
+                        output_tokens_per_call=2048, output_tokens_total=8192,
+                        input_tokens_total=60000, request_bytes_total=400_000,
+                        timeout_s=60., wall_s=300.)
 PUBLIC_COLUMNS = ("time_s", "observed_y_m", "observed_heading_rad", "observed_yaw_rate_radps",
                   "port_command_n", "starboard_command_n")
 
@@ -51,15 +56,16 @@ class JobStore:
             raise RequestError("Unknown job")
         return json.loads(path.read_text())
 
-    def submit(self, faults, mission, request):
+    def submit(self, faults, mission, request, *, kind="scripted", api_key=None):
         with self._lock:
             if self._queue.full():
                 raise RequestError("Server is busy; try again shortly")
             job_id = secrets.token_hex(16)
-            record = {"id": job_id, "status": "queued", "request": request,
+            record = {"id": job_id, "status": "queued", "kind": kind, "request": request,
                       "created_s": time.time(), "result": None, "error": None}
             self._write(record)
-            self._queue.put((record, faults, mission))
+            # api_key lives only in this in-memory tuple; it is never written to the record.
+            self._queue.put((record, faults, mission, api_key))
             return record
 
     def cancel(self, job_id):
@@ -72,20 +78,45 @@ class JobStore:
 
     def _worker(self):
         while True:
-            record, faults, mission = self._queue.get()
+            record, faults, mission, api_key = self._queue.get()
             with self._lock:
                 if record["status"] == "cancelled":
                     continue
                 record["status"] = "running"
                 self._write(record)
             try:
-                record["result"] = run_investigation(faults, mission, record["request"])
+                if record["kind"] == "muse":
+                    record["result"] = run_muse_investigation(faults, mission, record["request"], api_key)
+                else:
+                    record["result"] = run_investigation(faults, mission, record["request"])
                 record["status"] = "succeeded"
             except Exception as exc:  # bounded, public message only
                 record["status"] = "failed"
-                record["error"] = f"{type(exc).__name__}: {exc}"
+                record["error"] = "Investigation failed"
+            finally:
+                api_key = None
             with self._lock:
                 self._write(record)
+
+
+def run_muse_investigation(faults, mission, request, api_key):
+    """Live Muse investigation. Uses the same hidden backend and public-only record as the scripted path."""
+    from nautilus.controller_context import build_controller_context, initialize_controller_context
+    from nautilus.lab_safety import SafeBackend
+    from nautilus.laboratory import Laboratory
+    from nautilus.muse import MetaProvider
+    from nautilus.muse_investigator import Limits, run as muse_run
+
+    result = simulate(faults=faults, mission=mission, controller=Controller(), plant=HIDDEN_PLANT)
+    observed = public_rows(result.observations)
+    backend = SafeBackend(faults=faults, controller=Controller(), plant=HIDDEN_PLANT,
+                          seed=mission.seed, mode="simulation_advisory")
+    lab = Laboratory(observed, backend, fit_budget=8, optimization_budget=16,
+                     experiment_budget=1, time_budget_s=16., starts=2)
+    initialize_controller_context(lab, build_controller_context())
+    provider = MetaProvider(api_key=api_key)
+    out = muse_run(lab, provider, limits=Limits(**DEMO_MUSE_LIMITS))
+    return {"public_record": out["public_record"], "provenance": out["provenance"]}
 
 
 def run_investigation(faults, mission, request):
