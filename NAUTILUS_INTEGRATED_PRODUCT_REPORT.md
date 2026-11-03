@@ -14,7 +14,7 @@ Phases 0–4 and 6 of the full-stack spec. Phase 5 (Muse) is out of scope.
 | 1–2. Static demo bundle | Done | Vercel project `nautilus-demo` serves the static bundle. |
 | 3. Thin API | Done | `nautilus_api/` (stdlib `http.server`, no new dependency). Bounded worker, `MAX_QUEUED=4`, durable JSON job records, 4096-byte body cap, `Cache-Control: no-store`. |
 | 4. Lab tab | Done (not visually checked) | Shown only when `NAUTILUS_API_BASE` is set at build time. Default build embeds no API URL. |
-| 5. Live Muse | Done (fake-provider tests only) | `POST /api/v1/muse-investigations` takes a per-run `api_key` in the body. The key goes into the in-memory queue entry only, is removed from the body before scenario validation, and is never written to job records or artifacts. The Lab has a password field that is cleared when the run starts. No live provider call has been made. |
+| 5. Live Muse | Done (fake-provider tests only) | `POST /api/v1/muse-investigations` runs on the server with `MODEL_API_KEY`. It requires `Authorization: Bearer` matching `NAUTILUS_DEMO_TOKEN` (route returns 401 when unset), enforces `NAUTILUS_MUSE_DAILY_LIMIT` (default 10 UTC runs, persisted in `muse-quota.json`), and rejects client-supplied keys. No browser key field. No live provider call has been made. |
 | 6. Evidence and trace | Done | Evidence ledger timeline; observed lateral-deviation trace (`lateralSeries`). |
 
 ## Live scene decision
@@ -44,10 +44,10 @@ Public telemetry has no along-track `x` position, and the recorded `Replay` need
 
 ## Muse key handling
 
-The spec keeps the model key server-side as `MODEL_API_KEY`. For the demo, the key is entered in the UI and used for one run. `MetaProvider(api_key=...)` takes it per run and falls back to `MODEL_API_KEY` when none is given. The key is validated for shape only; a bad key returns the fixed message `Invalid credential format`. The key is not persisted anywhere. The public API is not hosted yet, so this path is only reachable from a local API. Hosting it publicly would expose a key-entry endpoint to anyone who can reach it and needs a decision before deploy.
+The model key stays on the server as `MODEL_API_KEY`, read only by `nautilus/muse.py`. The browser never sees it and no request carries it. Live runs need the demo token and count against a daily cap, so the provider-side monthly spend cap is the hard stop. The key is never written to job records or artifacts, and provider errors reach clients only as `Investigation failed`.
 
 ## Next steps
 
 1. Browser-check the Lab (run API locally, dev server, check layout).
 2. Approve or decline pushing the branch.
-3. Decide on the Muse key approach before phase 5.
+3. Choose a host, set `MODEL_API_KEY`, `NAUTILUS_DEMO_TOKEN`, `NAUTILUS_ALLOWED_ORIGIN` and a $10/month cap at the provider, then deploy.

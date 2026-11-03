@@ -1,4 +1,5 @@
 import json
+import os
 import threading
 import time
 import urllib.error
@@ -78,30 +79,64 @@ def test_unknown_job_is_400(base_url):
     assert status == 400
 
 
-def test_muse_route_requires_key_and_never_persists_it(base_url, tmp_path):
-    status, out = _call(base_url + "/api/v1/muse-investigations", "POST",
-                        {"scenario": {"current_y": 1.0}, "seed": 5, "duration_s": 4.0})
-    assert status == 400 and "api_key" in out["error"]
-    secret = "sk-test-" + "x" * 40
-    status, out = _call(base_url + "/api/v1/muse-investigations", "POST",
-                        {"scenario": {"current_y": 1.0}, "seed": 5, "duration_s": 4.0,
-                         "api_key": secret})
-    assert status == 202 and out["job"]["status"] == "queued"
-    assert secret not in json.dumps(out)
-    job_id = out["job"]["id"]
-    stored = server.STORE.get(job_id)
-    assert secret not in json.dumps(stored)
-    assert secret not in (server.STORE.directory / f"{job_id}.json").read_text()
-    _call(base_url + f"/api/v1/investigations/{job_id}/cancel", "POST")
+MUSE_BODY = {"scenario": {"current_y": 1.0}, "seed": 5, "duration_s": 4.0}
+TOKEN = "demo-token-for-tests-only"
 
 
-def test_muse_route_rejects_hidden_fields(base_url):
-    status, out = _call(base_url + "/api/v1/muse-investigations", "POST",
-                        {"api_key": "sk-test-" + "x" * 40, "plant": {"drag_scale": 1.2}})
+@pytest.fixture
+def demo(monkeypatch, tmp_path):
+    monkeypatch.setenv("NAUTILUS_DEMO_TOKEN", TOKEN)
+    monkeypatch.setenv("NAUTILUS_MUSE_DAILY_LIMIT", "2")
+    monkeypatch.setattr(server, "STORE", JobStore(tmp_path / "jobs"))
+    httpd = ThreadingHTTPServer(("127.0.0.1", 0), server.Handler)
+    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    yield f"http://127.0.0.1:{httpd.server_port}"
+    httpd.shutdown()
+
+
+def _muse_call(base, body=MUSE_BODY, token=TOKEN):
+    data = json.dumps(body).encode()
+    headers = {"Content-Type": "application/json"}
+    if token is not None:
+        headers["Authorization"] = f"Bearer {token}"
+    req = urllib.request.Request(base + "/api/v1/muse-investigations", data=data,
+                                 method="POST", headers=headers)
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return r.status, json.loads(r.read())
+    except urllib.error.HTTPError as e:
+        return e.code, json.loads(e.read())
+
+
+def test_muse_route_is_disabled_without_demo_token(demo, monkeypatch):
+    monkeypatch.delenv("NAUTILUS_DEMO_TOKEN")
+    status, out = _muse_call(demo)
+    assert status == 401 and out["error"] == "Unauthorized"
+
+
+def test_muse_route_rejects_wrong_or_missing_token(demo):
+    assert _muse_call(demo, token=None)[0] == 401
+    assert _muse_call(demo, token="wrong")[0] == 401
+
+
+def test_muse_route_rejects_client_supplied_key_and_hidden_fields(demo):
+    status, out = _muse_call(demo, {**MUSE_BODY, "api_key": "sk-test-" + "x" * 40})
+    assert status == 400
+    status, out = _muse_call(demo, {**MUSE_BODY, "plant": {"drag_scale": 1.2}})
     assert status == 400 and "plant" in out["error"]
 
 
-def test_muse_run_uses_fake_provider_and_returns_public_record(monkeypatch):
+def test_muse_route_enforces_daily_cap_and_does_not_store_key(demo, monkeypatch):
+    monkeypatch.setenv("MODEL_API_KEY", "sk-server-" + "z" * 40)
+    statuses = [_muse_call(demo)[0] for _ in range(3)]
+    assert statuses == [202, 202, 429]
+    stored = (server.STORE.directory / "muse-quota.json").read_text()
+    assert json.loads(stored)["count"] == 2
+    for path in server.STORE.directory.glob("*.json"):
+        assert "sk-server-" not in path.read_text()
+
+
+def test_muse_run_uses_server_key_and_returns_public_record(monkeypatch):
     from nautilus import muse
     from nautilus.muse import Reply
     from nautilus_api import jobs
@@ -109,13 +144,14 @@ def test_muse_run_uses_fake_provider_and_returns_public_record(monkeypatch):
     seen = {}
 
     def fake_generate(self, **kwargs):
-        seen["key"] = self._api_key
+        seen["key"] = os.environ.get("MODEL_API_KEY")
         return Reply("r1", self.model, [], {}, 0.0, "incomplete", incomplete_reason="max_output_tokens")
 
+    monkeypatch.setenv("MODEL_API_KEY", "sk-test-" + "y" * 40)
     monkeypatch.setattr(muse.MetaProvider, "generate", fake_generate)
     faults = Faults(current_y=1.0)
     mission = Mission(duration_s=4., seed=5)
-    out = jobs.run_muse_investigation(faults, mission, {}, "sk-test-" + "y" * 40)
+    out = jobs.run_muse_investigation(faults, mission, {})
     assert seen["key"] == "sk-test-" + "y" * 40
     text = json.dumps(out)
     assert "sk-test-" not in text

@@ -19,7 +19,7 @@ import {interpolatePose,alignVisualization,advanceClock,cameraMode,breach,compat
 import {readRecord,readVisual,bindController,fitsAt,sampleAt,parameterUnit,type Investigation,type Visual,type Observation,type RecordFile} from './records.ts';
 import type {Replay} from './replay.ts';
 import {loadDemo} from './demo.ts';
-import {labMarkup,readLabForm,simulateLab,investigateLab,museLab,initialLab,type LabState} from './simulation-lab.ts';
+import {labMarkup,readLabForm,simulateLab,investigateLab,initialLab,type LabState} from './simulation-lab.ts';
 declare const __NAUTILUS_WORKBENCH_DEMO__:string;declare const __NAUTILUS_DEMO_ENABLED__:boolean;declare const __NAUTILUS_BASE__:string;declare const __NAUTILUS_API_BASE__:string;
 let labState:LabState=initialLab();
 const labEnabled=__NAUTILUS_API_BASE__!=='';
@@ -84,7 +84,7 @@ function render(){
  const compareButton=document.querySelector<HTMLButtonElement>('#compare-runs');if(compareButton)compareButton.onclick=()=>{if(!record||!bundleComparison||comparisonOrigin)return;comparisonOrigin={record,visual,referenceRecord,referenceVisual,index,time};record=bundleComparison.candidate.record;visual=bundleComparison.candidate.visual;referenceRecord=bundleComparison.baseline.record;referenceVisual=bundleComparison.baseline.visual;index=matchingEpisode(record,visual)!.index;time=0;playing=false;tab='Trajectory';render();};
  const backButton=document.querySelector<HTMLButtonElement>('#return-investigation');if(backButton)backButton.onclick=()=>{restoreInvestigation();tab='Investigator';render();};
  for(const id of ['visual-file','reference-record','reference-visual','clear-reference']){const control=document.getElementById(id) as HTMLInputElement|null;if(control)control.disabled=!!comparisonOrigin;}
- document.querySelectorAll<HTMLButtonElement>('[data-tab]').forEach(b=>b.onclick=()=>{if(b.dataset.tab!=='Trajectory')restoreInvestigation();tab=b.dataset.tab!;render();});  const labForm=document.querySelector<HTMLFormElement>('#lab-form');if(labForm){labForm.onsubmit=e=>{e.preventDefault();void simulateLab(__NAUTILUS_API_BASE__,readLabForm(labForm),setLab);};labForm.querySelector<HTMLButtonElement>('[data-action="investigate"]')!.onclick=()=>void investigateLab(__NAUTILUS_API_BASE__,readLabForm(labForm),setLab);labForm.querySelector<HTMLButtonElement>('[data-action="muse"]')!.onclick=()=>{const keyInput=labForm.elements.namedItem('muse_api_key') as HTMLInputElement;const key=keyInput.value;keyInput.value='';void museLab(__NAUTILUS_API_BASE__,readLabForm(labForm),key,setLab);};}
+ document.querySelectorAll<HTMLButtonElement>('[data-tab]').forEach(b=>b.onclick=()=>{if(b.dataset.tab!=='Trajectory')restoreInvestigation();tab=b.dataset.tab!;render();});  const labForm=document.querySelector<HTMLFormElement>('#lab-form');if(labForm){labForm.onsubmit=e=>{e.preventDefault();void simulateLab(__NAUTILUS_API_BASE__,readLabForm(labForm),setLab);};labForm.querySelector<HTMLButtonElement>('[data-action="investigate"]')!.onclick=()=>void investigateLab(__NAUTILUS_API_BASE__,readLabForm(labForm),setLab);}
  document.querySelectorAll<HTMLButtonElement>('[data-event]').forEach(b=>b.onclick=()=>{index=Number(b.dataset.event);time=0;playing=false;render();});
  const seek=document.querySelector<HTMLInputElement>('#seek');if(seek)seek.oninput=()=>{time=Number(seek.value);updateTime();};
  const play=document.querySelector<HTMLButtonElement>('#play');if(play)play.onclick=()=>{playing=!playing;play.textContent=playing?'Ⅱ':'▶';play.setAttribute('aria-label',playing?'Pause replay':'Play replay');};

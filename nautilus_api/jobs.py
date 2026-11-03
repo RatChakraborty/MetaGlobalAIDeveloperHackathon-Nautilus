@@ -56,7 +56,7 @@ class JobStore:
             raise RequestError("Unknown job")
         return json.loads(path.read_text())
 
-    def submit(self, faults, mission, request, *, kind="scripted", api_key=None):
+    def submit(self, faults, mission, request, *, kind="scripted"):
         with self._lock:
             if self._queue.full():
                 raise RequestError("Server is busy; try again shortly")
@@ -64,8 +64,7 @@ class JobStore:
             record = {"id": job_id, "status": "queued", "kind": kind, "request": request,
                       "created_s": time.time(), "result": None, "error": None}
             self._write(record)
-            # api_key lives only in this in-memory tuple; it is never written to the record.
-            self._queue.put((record, faults, mission, api_key))
+            self._queue.put((record, faults, mission))
             return record
 
     def cancel(self, job_id):
@@ -78,7 +77,7 @@ class JobStore:
 
     def _worker(self):
         while True:
-            record, faults, mission, api_key = self._queue.get()
+            record, faults, mission = self._queue.get()
             with self._lock:
                 if record["status"] == "cancelled":
                     continue
@@ -86,21 +85,19 @@ class JobStore:
                 self._write(record)
             try:
                 if record["kind"] == "muse":
-                    record["result"] = run_muse_investigation(faults, mission, record["request"], api_key)
+                    record["result"] = run_muse_investigation(faults, mission, record["request"])
                 else:
                     record["result"] = run_investigation(faults, mission, record["request"])
                 record["status"] = "succeeded"
-            except Exception as exc:  # bounded, public message only
+            except Exception:  # bounded, public message only; provider detail never leaves the server
                 record["status"] = "failed"
                 record["error"] = "Investigation failed"
-            finally:
-                api_key = None
             with self._lock:
                 self._write(record)
 
 
-def run_muse_investigation(faults, mission, request, api_key):
-    """Live Muse investigation. Uses the same hidden backend and public-only record as the scripted path."""
+def run_muse_investigation(faults, mission, request):
+    """Live Muse investigation. Uses the server-side MODEL_API_KEY; the key is never in a request or record."""
     from nautilus.controller_context import build_controller_context, initialize_controller_context
     from nautilus.lab_safety import SafeBackend
     from nautilus.laboratory import Laboratory
@@ -114,8 +111,7 @@ def run_muse_investigation(faults, mission, request, api_key):
     lab = Laboratory(observed, backend, fit_budget=8, optimization_budget=16,
                      experiment_budget=1, time_budget_s=16., starts=2)
     initialize_controller_context(lab, build_controller_context())
-    provider = MetaProvider(api_key=api_key)
-    out = muse_run(lab, provider, limits=Limits(**DEMO_MUSE_LIMITS))
+    out = muse_run(lab, MetaProvider(), limits=Limits(**DEMO_MUSE_LIMITS))
     return {"public_record": out["public_record"], "provenance": out["provenance"]}
 
 
