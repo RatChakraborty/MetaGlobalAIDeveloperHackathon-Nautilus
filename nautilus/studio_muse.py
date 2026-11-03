@@ -228,6 +228,11 @@ class Session:
             trial = self.results.get(candidate_id)
             if trial is None or trial['outcome']['label'] != 'Recommended':
                 raise ToolError('refusing to recommend a candidate without a Recommended trial')
+            robust = self.robustness.get(candidate_id)
+            if robust is None:
+                raise ToolError('refusing to recommend a candidate before held-out robustness is evaluated')
+            if robust['outcome']['label'] != 'Recommended':
+                raise ToolError('refusing to recommend a candidate whose held-out robustness is not Recommended')
         self.final = {'decision': decision, 'rationale': rationale, 'candidate_id': candidate_id,
                       'budget': self.budget.as_dict()}
         return self.final
