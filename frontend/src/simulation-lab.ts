@@ -27,7 +27,30 @@ export function labMarkup(state: LabState): string {
       ${diagnosis.reasons.length ? `<ul>${diagnosis.reasons.map(r => `<li>${escapeText(r)}</li>`).join('')}</ul>` : ''}
       ${decision !== undefined && state.job ? `<p>Investigation tests run: ${escapeText(state.job.result?.investigation.tests)}</p>` : ''}
     </div>` : ''}
+    ${state.job?.result ? `<h3>Evidence ledger</h3>${timelineMarkup(state.job.result.investigation.ledger)}` : ''}
   </section>`;
+}
+
+const LEDGER_LABELS: Record<string, string> = {
+  initial_observation: 'Initial observation',
+  experiment_selected: 'Experiment selected',
+  experiment_observed: 'Experiment observed',
+  experiment_error: 'Experiment error',
+  stopped: 'Stopped',
+};
+
+export function timelineMarkup(ledger: unknown[]): string {
+  if (!ledger.length) return '<p class="muted">No ledger events recorded.</p>';
+  const rows = ledger.map(e => {
+    const event = e as Record<string, unknown>;
+    const type = String(event.type ?? 'unknown');
+    const detail = type === 'stopped' ? `reason ${escapeText(event.reason)} · tests ${escapeText(event.tests)}`
+      : type === 'experiment_error' ? escapeText(event.error)
+      : type === 'initial_observation' || type === 'experiment_observed' ? `diagnosis ${escapeText((event.diagnosis as {kind?: unknown})?.kind)}`
+      : '';
+    return `<li><b>${escapeText(event.index)}. ${escapeText(LEDGER_LABELS[type] ?? type)}</b> ${detail}<code title="event hash">${escapeText(String(event.event_hash ?? '').slice(0, 12))}</code></li>`;
+  });
+  return `<ol class="lab-timeline" aria-label="Evidence ledger">${rows.join('')}</ol>`;
 }
 
 export function readLabForm(form: HTMLFormElement): {scenario: Scenario; seed: number} {
