@@ -11,3 +11,45 @@
 .studio .control-gates{list-style:none;padding:0;margin:12px 0}
 .studio .control-gates li{font-family:var(--font-mono);font-size:12px;color:var(--muted);padding:6px 0;border-bottom:1px solid var(--line)}
 .studio .lab-timeline li{font-size:13px;color:var(--muted);padding:6px 0}
+
+/* Simulation Lab: configuration panel, free actions, paid Muse section and results. */
+.lab{display:grid;grid-template-columns:minmax(260px,340px) minmax(0,1fr);gap:var(--space-4);align-items:start}
+.lab-config{display:flex;flex-direction:column;gap:var(--space-3);border:1px solid var(--line);background:var(--surface);padding:var(--space-3)}
+.lab-config h3{margin:0;font-size:14px;font-weight:400;letter-spacing:.5px}
+.lab-group{border:0;border-top:1px solid var(--line);margin:0;padding:var(--space-2) 0 0;display:grid;gap:var(--space-2);min-width:0}
+.lab-group legend{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);padding:0;margin-bottom:var(--space-1)}
+.lab label{display:flex;flex-direction:column;gap:6px;font-size:11px;color:var(--text);min-width:0}
+.lab .unit{color:var(--muted);font-size:10px;font-family:var(--font-mono)}
+.lab input{position:static;opacity:1;pointer-events:auto;width:100%;height:36px;padding:0 10px;background:var(--background);color:var(--text);border:1px solid var(--line);border-radius:var(--radius);font-family:var(--font-mono);font-size:12px}
+.lab input:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.lab input:disabled{color:var(--muted);opacity:.6}
+.hint{margin:0;font-size:10px;color:var(--muted);line-height:1.6}
+.lab-error{margin:0;font-size:11px;color:var(--failure)}
+.lab-error:empty{display:none}
+.lab-actions{display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center}
+.lab button{border:1px solid var(--line);background:#1b292f;color:var(--accent);padding:10px 14px;font-size:11px;border-radius:var(--radius);min-height:40px}
+.lab button.primary{border-color:var(--teal)}
+.lab button:hover:not(:disabled){border-color:var(--teal)}
+.lab button:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.lab button:disabled{opacity:.5;cursor:not-allowed}
+.lab-muse{border:1px solid var(--line);padding:var(--space-2) var(--space-3);margin-top:var(--space-3)}
+.lab-muse summary{cursor:pointer;font-size:11px;color:var(--muted)}
+.lab-muse .tag{margin-left:8px;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--caution);border:1px solid var(--line);padding:2px 6px}
+.muse-live{display:flex;flex-direction:column;gap:var(--space-2);margin-top:var(--space-2)}
+.lab-status{margin:0;font-size:11px;color:var(--muted);min-height:1.6em}
+.lab-status[data-state="error"]{color:var(--failure)}
+.lab-results{display:flex;flex-direction:column;gap:var(--space-3);min-width:0}
+.lab-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));border:1px solid var(--line);background:#111e26}
+.lab-metrics div{padding:var(--space-2) var(--space-3);border-right:1px solid var(--line);min-width:0}
+.lab-metrics div:last-child{border-right:0}
+.lab-metrics small{display:block;font-size:8px;letter-spacing:1px;color:var(--muted);margin-bottom:8px}
+.lab-metrics b{font-weight:400;font-size:18px;font-family:var(--font-mono)}
+.lab-params{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:var(--space-2);margin:0}
+.lab-params div{border-top:1px solid var(--line);padding-top:var(--space-1);min-width:0}
+.lab-params dt{font-size:9px;letter-spacing:1px;color:var(--muted);text-transform:uppercase}
+.lab-params dd{margin:4px 0 0;font-family:var(--font-mono);font-size:12px}
+.lab-timeline{margin:0;padding-left:20px;font-size:11px;line-height:1.8;overflow-wrap:anywhere}
+.lab-timeline code{margin-left:8px;color:var(--muted);font-size:10px}
+.lab-trace{width:100%;height:180px;color:var(--teal);border:1px solid var(--line);background:var(--surface)}
+@media (max-width:900px){.lab{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:520px){.lab-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.lab-metrics div:nth-child(2n){border-right:0}.lab-metrics div{border-bottom:1px solid var(--line)}}
