@@ -393,13 +393,23 @@ def test_api_trial_returns_measured_comparison(studio_api):
                                    'source': studio_api.dispatch({'action': 'baseline'})['source'],
                                    'params': baseline_policy()['params']})
     assert payload['part'] == 'development'
-    assert len(payload['rows']) == 2
+    assert len(payload['rows']) == 4  # full development split, no partial default
     assert payload['outcome']['label'] == 'Inconclusive'
     for row in payload['rows']:
         for key in ('rms_cross_track_m', 'max_abs_cross_track_m', 'fraction_outside_corridor'):
             assert math.isfinite(row['candidate'][key])
     assert payload['traces']
     assert len(json.dumps(payload)) < 400_000
+
+
+def test_example_revision_is_recommended_through_the_api(studio_api):
+    # The one-click example sends only the integral gains; declared heading gains must persist.
+    payload = studio_api.dispatch({'action': 'trial', 'part': 'development',
+                                   'source': studio_api.dispatch({'action': 'baseline'})['source'],
+                                   'params': {'integral_ki': 6.0, 'integral_limit': 1.5}})
+    assert payload['outcome']['label'] == 'Recommended'
+    nominal = next(r for r in payload['rows'] if r['scenario_id'] == 'nominal')
+    assert round(nominal['candidate']['rms_cross_track_m'], 4) == 0.0114
 
 
 def test_studio_kill_switch_defaults_off_and_never_enables_live(monkeypatch):
@@ -515,3 +525,16 @@ def test_dev_server_shares_the_hosted_dispatch(hosted_url):
     finally:
         httpd.shutdown()
         httpd.server_close()
+
+
+
+def test_from_source_keeps_declared_gains_when_overriding_only_some_params():
+    # The Studio's example sends only the integral gains. The heading gains declared in the
+    # readable source header must survive, or the controller loses its heading law.
+    from nautilus.policy_ir import baseline_policy
+    source = to_source(baseline_policy())
+    compiled = from_source(source, params={'integral_ki': 6.0, 'integral_limit': 1.5})
+    assert compiled['params']['heading_kp'] == 39.0
+    assert compiled['params']['heading_kd'] == 18.0
+    assert compiled['params']['integral_ki'] == 6.0
+    assert compiled['params']['integral_limit'] == 1.5

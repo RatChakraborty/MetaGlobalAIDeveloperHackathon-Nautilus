@@ -33,7 +33,7 @@ from nautilus.studio_muse import run_session  # noqa: E402
 from nautilus_api.vercel_http import BodyError, preflight, read_json, send_json  # noqa: E402
 
 MAX_POINTS = 120
-DEFAULT_SCENARIOS = 2
+DEFAULT_SCENARIOS = 4  # the full development split: no gate is hidden by a partial default
 
 
 class RequestError(ValueError):

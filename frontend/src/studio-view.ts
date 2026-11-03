@@ -121,6 +121,9 @@ function summarize(step: {tool: string; arguments: Record<string, unknown>; resu
   return typeof step.arguments.candidate_id === 'string' ? step.arguments.candidate_id : 'read evidence';
 }
 
+/** Working example: a bounded integral augmentation of the baseline law. It is a candidate, evaluated like any other. */
+export const EXAMPLE_PARAMS = 'integral_ki = 6.0\nintegral_limit = 1.5';
+
 export function studioMarkup(current: StudioState): string {
   const baseline = current.baseline;
   const busy = current.status === 'loading';
@@ -133,6 +136,7 @@ export function studioMarkup(current: StudioState): string {
       <button class="button" data-studio="validate" ${busy || !baseline ? 'disabled' : ''}>Validate</button>
       <button class="button" data-studio="trial" ${busy || !baseline ? 'disabled' : ''}>Run paired trial (free)</button>
       <button class="button secondary" data-studio="robustness" ${busy || !baseline ? 'disabled' : ''}>Held-out robustness</button>
+      <button class="button secondary" data-studio="example" ${busy || !baseline ? 'disabled' : ''}>Load example revision</button>
       <button class="button secondary" data-studio="revert" ${busy || !baseline ? 'disabled' : ''}>Revert to baseline</button>
       <button class="button secondary" data-studio="report" ${current.trial ? '' : 'disabled'}>Export engineering report</button>
     </div>
@@ -250,6 +254,7 @@ function bind() {
       if (action === 'validate' || action === 'trial' || action === 'robustness') void run(base, action);
       else if (action === 'revert' && state.baseline) set({source: state.baseline.source,
         params: Object.entries(state.baseline.policy.params).map(([k, v]) => `${k} = ${v}`).join('\n'), trial: null, robustness: null, validation: null, message: 'Reverted to the baseline controller.'});
+      else if (action === 'example') set({params: EXAMPLE_PARAMS, trial: null, robustness: null, validation: null, message: 'Example revision loaded: integral_ki = 6.0, integral_limit = 1.5 (bounded integral action). Run the paired trial to evaluate it.'});
       else if (action === 'report') download('nautilus-policy-engineering-report.json', engineeringReport(state));
       else if (action === 'muse') {
         set({status: 'loading', message: state.handoff ? 'Running the mocked engineering session on the investigation evidence…' : 'Running the deterministic mocked engineering session…'});

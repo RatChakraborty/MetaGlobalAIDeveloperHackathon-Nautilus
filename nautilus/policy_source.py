@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import ast
 import json
+import re
 
 from nautilus.policy_ir import CONSTANTS, INPUTS, MAX_DEPTH, MAX_NODES, PARAM_LIMITS, PolicyError, validate
 
@@ -201,8 +202,12 @@ def from_source(text: str, *, params: dict | None = None, name: str = 'candidate
         env[target] = _compile(statement.value, env, 0, counter)
     if 'port' not in env or 'starboard' not in env:
         raise PolicyError('source must define port and starboard')
+    # Parameters the source declares (its readable header) are the base; caller overrides
+    # replace only the keys they name. Dropping the declared ones would zero unrelated gains.
+    declared = {m.group(1): float(m.group(2))
+                for m in re.finditer(r'^#\s*([a-z_]+)\s*=\s*(-?[0-9.]+)', text, re.MULTILINE)}
     policy = {'schema': 'nautilus.policy-ir.v1', 'name': name,
-              'params': dict(params or {}), 'port': env['port'], 'starboard': env['starboard']}
+              'params': {**declared, **dict(params or {})}, 'port': env['port'], 'starboard': env['starboard']}
     if 'desired' in env:
         policy['desired_heading'] = env['desired']
     return validate(policy)
