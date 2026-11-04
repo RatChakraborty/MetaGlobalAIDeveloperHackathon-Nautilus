@@ -84,8 +84,7 @@ def _strict_schema(schema):
         return schema
     wrapped = {}
     for key, spec in properties.items():
-        kind = spec.get('type')
-        wrapped[key] = {'type': [kind, 'null']} if kind else spec
+        wrapped[key] = _nullable_spec(spec)
     return {'type': 'object', 'properties': wrapped, 'required': list(properties),
             'additionalProperties': False}
 
@@ -104,6 +103,16 @@ WIRE_ALIASES = {'propose_parameter_revision': 'propose_controller_revision',
                 'propose_source_revision': 'propose_controller_revision'}
 
 
+def _nullable_spec(spec):
+    """Add null to a field's type, keeping its items, description and other keys."""
+    kind = spec.get('type')
+    if not kind:
+        return spec
+    if isinstance(kind, list):
+        return spec
+    return {**spec, 'type': [kind, 'null']}
+
+
 def _nullable_except(props, keep):
     """Strict wire variant: the chosen field stays required; the other field is always null.
     `_drop_nulls` removes the null, so the trusted validator sees only the chosen field."""
@@ -112,8 +121,7 @@ def _nullable_except(props, keep):
         if key == keep:
             out[key] = spec
         else:
-            kind = spec.get('type')
-            out[key] = {'type': [kind, 'null']} if kind else spec
+            out[key] = _nullable_spec(spec)
     return out
 
 
