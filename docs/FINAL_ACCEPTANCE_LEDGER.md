@@ -2,7 +2,7 @@
 
 Status key: **Verified** (tests or runtime evidence exist), **Implemented** (code exists, not fully verified), **Incomplete**, **Blocked**, **Excluded** (optional, infeasible, documented).
 
-Last updated against commit `82723c9` on `main`. Production: `dpl_854RRwAdx5tka5HLwCUBHknzxrbv` (prebuilt upload of `82723c9`, READY, aliased to `nautilus-demo-delta.vercel.app`). Git-triggered deploys of commits by `noreply@codebuff.com` are blocked by Vercel's commit-author check; see `docs/RELEASE_CHECKLIST.md`.
+Last updated against commit `b3d1b92` on `main`. Production: `dpl_8ySqGppDuqySug3gvZELbjkuL8ez` (prebuilt upload of `b3d1b92`, READY, aliased to `nautilus-demo-delta.vercel.app`). Previous production `dpl_854RRwAdx5tka5HLwCUBHknzxrbv` (`82723c9`) remains the rollback target. Git-triggered deploys of commits by `noreply@codebuff.com` are blocked by Vercel's commit-author check; see `docs/RELEASE_CHECKLIST.md`.
 
 ## Release gates (at `e647ff1`)
 
@@ -13,7 +13,7 @@ Last updated against commit `82723c9` on `main`. Production: `dpl_854RRwAdx5tka5
 | `tsc --noEmit` | Verified: exit 0 | `frontend/` |
 | Production build | Verified: exit 0 (chunk-size warning only) | `frontend/dist` |
 | Bundle secret scan | Verified: none of the five secret values present | `frontend/dist` |
-| Production deployment | Verified READY (prebuilt upload of `82723c9`) | `dpl_854RRwAdx5tka5HLwCUBHknzxrbv` |
+| Production deployment | Verified READY (prebuilt upload of `b3d1b92`) | `dpl_8ySqGppDuqySug3gvZELbjkuL8ez` |
 | Browser acceptance | Not verified: no browser automation in this environment | - |
 
 ## Requirement status
