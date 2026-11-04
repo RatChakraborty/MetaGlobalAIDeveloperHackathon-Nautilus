@@ -30,6 +30,24 @@ These are real provider calls made from a sandbox during the release run. They a
 - Stored robustness outcome: `Recommended`, no failed gates, mean RMS difference −0.181 m.
 - Usage: 2,622 input, 618 output, 404 reasoning tokens over two turns.
 
+## Test E — complete live Studio session (Phase C)
+
+- Artifact: `artifacts/muse-studio-live-run.recommend.json` (final run, `muse-spark-1.3`, real Meta Responses API).
+- Full workflow driven by Muse through the trusted tool layer: inspect controller, inspect diagnosis evidence,
+  propose C1, validate, paired dev trial, propose C2, validate, paired dev trial, compare candidates,
+  held-out robustness for C1, finalize.
+- Outcome: C1 `recommend` (Kp 39, Kd 18, Ki 6.0). Dev trial Recommended. Held-out robustness Recommended
+  (`part: held_out`, no failed gates, mean RMS difference −0.493 m). C2 (Ki 12) Rejected on dev for scenario
+  regression and completion loss.
+- The finalize call was accepted only after robustness ran on the same controller fingerprint and held-out split.
+- 11 requests; 53,476 input and 5,790 output tokens; estimated $0.091.
+- Earlier attempts that did not reach a decision are kept as `artifacts/muse-studio-live-run.attempt*.json` and are
+  not evidence of success. Causes, in order: an HTTP 400 from a malformed strict schema (fixed in commits
+  `c2d62fb`, `fa14146`, `c77abb3`); the input, output, and candidate limits, which are now 120k, 12k, and 3
+  respectively; and proposals offered after the candidate budget was used (fixed in `b947b27`). The input and output ceilings were raised in `692677b` and `bdd5fd0`.
+- Limitations: one run; not a failure-rate measurement. Muse's rationale describes the robustness result, which
+  the artifact confirms. This is a simulation result, not hardware validation.
+
 ## Cost
 
 - Worst-case reserved spend (conservative per-request reservation, not billed amounts): about $0.14 for Test C and $0.04 for Test D, plus about $0.001 for Test A. Total reserved about $0.18 of the $30 authorization.
