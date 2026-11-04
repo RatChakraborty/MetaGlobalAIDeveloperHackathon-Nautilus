@@ -103,6 +103,14 @@ WIRE_ALIASES = {'propose_parameter_revision': 'propose_controller_revision',
                 'propose_source_revision': 'propose_controller_revision'}
 
 
+def _closed_params_spec():
+    """Strict mode needs a closed object: list the IR parameter names the validator accepts."""
+    from nautilus.policy_ir import PARAM_LIMITS
+    return {'type': 'object', 'description': 'IR parameter overrides. Send only one of params or source; never both.',
+            'properties': {name: {'type': 'number'} for name in PARAM_LIMITS},
+            'required': list(PARAM_LIMITS), 'additionalProperties': False}
+
+
 def _nullable_spec(spec):
     """Add null to a field's type, keeping its items, description and other keys."""
     kind = spec.get('type')
@@ -138,7 +146,7 @@ def meta_transport(provider=None):
                                       ('propose_source_revision', 'source', 'string')):
                 raw = t['parameters']['properties']
                 props = {k: v for k, v in raw.items() if k not in ('params', 'source')}
-                props[field] = raw[field]
+                props[field] = _closed_params_spec() if field == 'params' else raw[field]
                 strict_tools.append({'type': 'function', 'name': wire,
                                      'description': t['description'] + f' Send only the {field} field.',
                                      'strict': True,
