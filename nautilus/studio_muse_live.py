@@ -22,7 +22,7 @@ from nautilus.studio_muse import TOOL_NAMES, TOOLS, ToolError, muse_enabled
 
 # Ceilings for one controller-engineering session. The investigation budget ($0.41) is not
 # reused: this workflow issues more calls, so it gets its own ceilings, checked before each request.
-MAX_INPUT_TOKENS = 60_000       # total prompt tokens across the session
+MAX_INPUT_TOKENS = 120_000      # total prompt tokens across the session (transcript is re-sent each request)
 MAX_OUTPUT_TOKENS = 4_000       # total completion tokens across the session
 MAX_REQUESTS = 12               # model requests per session (matches Budget.max_requests)
 MAX_USD = 0.25                  # hard session spend ceiling (see docs/muse-cost-envelope.md)

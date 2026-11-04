@@ -9,7 +9,7 @@ investigation figure does not cover it and is not reused.
 | Ceiling | Value | Enforced by |
 |---|---|---|
 | Model requests per session | 12 | `LiveEnvelope.reserve` |
-| Input tokens per session | 60,000 | `LiveEnvelope.reserve` |
+| Input tokens per session | 120,000 | `LiveEnvelope.reserve` |
 | Output tokens per session | 4,000 | `LiveEnvelope.reserve` |
 | Spend per session | $0.25 | `LiveEnvelope.reserve` |
 | Transcript sent per request | 6,000 characters | `_trim` |
@@ -18,11 +18,13 @@ investigation figure does not cover it and is not reused.
 ## Worst-case estimate
 
 - Requests: 12 × (≈ 1,500 input + 600 output) ≈ 18,000 input and 7,200 output tokens in the typical path.
-- The 60,000-token input ceiling is 3.3× that estimate, and the 4,000-token output ceiling is below the
-  7,200 estimate, so the output ceiling is the binding constraint. The session stops at that ceiling rather
-  than running past it.
-- Spend is computed from per-token prices read from configuration. **No verified price is configured in
-  this branch.** With prices at zero, `reserve` refuses every request, so the live path cannot spend money.
+- Observed: the first complete-workflow attempt (9 requests) used 36,611 input and 3,699 output tokens,
+  about $0.061. Input grows with the transcript on every request, so input, not output, is the binding cost.
+- The 120,000-token input ceiling was raised from 60,000 after that run stopped at 60,000 before the
+  workflow could finish. At $1.25 per million input tokens and $4.25 per million output tokens, the worst case
+  (120,000 in and 4,000 out) is about $0.167, below the $0.25 spend ceiling, which is the binding limit.
+- Prices are constants (`SPARK_USD_PER_MTOK_IN/OUT`) used as `LiveEnvelope` defaults. Without a configured price,
+  `reserve` refuses every request.
 
 ## Status
 
