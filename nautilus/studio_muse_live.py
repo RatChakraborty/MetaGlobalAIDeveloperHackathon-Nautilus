@@ -100,12 +100,45 @@ def _drop_nulls(arguments):
     return cleaned
 
 
+WIRE_ALIASES = {'propose_parameter_revision': 'propose_controller_revision',
+                'propose_source_revision': 'propose_controller_revision'}
+
+
+def _nullable_except(props, keep):
+    """Strict wire variant: the chosen field stays required; the other field is always null.
+    `_drop_nulls` removes the null, so the trusted validator sees only the chosen field."""
+    out = {}
+    for key, spec in props.items():
+        if key == keep:
+            out[key] = spec
+        else:
+            kind = spec.get('type')
+            out[key] = {'type': [kind, 'null']} if kind else spec
+    return out
+
+
 def meta_transport(provider=None):
     """Adapt MetaProvider to the transport contract: one HTTP request, one tool call per reply."""
     from nautilus.muse import MetaProvider
     provider = provider or MetaProvider(model=os.environ.get('NAUTILUS_STUDIO_MUSE_MODEL', 'muse-spark-1.3'))
-    strict_tools = [{'type': 'function', 'name': t['name'], 'description': t['description'],
-                     'strict': True, 'parameters': _strict_schema(t['parameters'])} for t in TOOLS]
+    strict_tools = []
+    for t in TOOLS:
+        if t['name'] == 'propose_controller_revision':
+            # Strict mode cannot express "params or source", so the wire offers two fixed variants.
+            # Both map back to the one trusted proposal tool in `to_trusted_call`.
+            base = _strict_schema(t['parameters'])
+            for wire, field, kind in (('propose_parameter_revision', 'params', 'object'),
+                                      ('propose_source_revision', 'source', 'string')):
+                props = {k: v for k, v in base['properties'].items() if k not in ('params', 'source')}
+                props[field] = t['parameters']['properties'][field]
+                strict_tools.append({'type': 'function', 'name': wire,
+                                     'description': t['description'] + f' Send only the {field} field.',
+                                     'strict': True,
+                                     'parameters': {'type': 'object', 'properties': _nullable_except(props, field),
+                                                    'required': list(props), 'additionalProperties': False}})
+        else:
+            strict_tools.append({'type': 'function', 'name': t['name'], 'description': t['description'],
+                                 'strict': True, 'parameters': _strict_schema(t['parameters'])})
     state = {'previous': None, 'pending': None}
 
     def transport(*, system, transcript, tools, last=None):
@@ -126,7 +159,8 @@ def meta_transport(provider=None):
         state['pending'] = call['call_id']
         return {'usage': {'input_tokens': reply.usage.get('input_tokens', 0),
                           'output_tokens': reply.usage.get('output_tokens', 0)},
-                'tool_call': {'name': call['name'], 'arguments': _drop_nulls(json.loads(call['arguments']))}}
+                'tool_call': {'name': WIRE_ALIASES.get(call['name'], call['name']),
+                              'arguments': _drop_nulls(json.loads(call['arguments']))}}
     return transport
 
 

@@ -184,6 +184,21 @@ class StrictSchemaTests(unittest.TestCase):
                          {'candidate_id': 'c', 'params': {'heading_kp': 1.0}, 'source': 'x'})
 
 
+class RevisionWireVariantTests(unittest.TestCase):
+    def test_wire_variants_map_to_one_trusted_tool_and_carry_one_field(self):
+        from nautilus.studio_muse import TOOL_NAMES
+        from nautilus.studio_muse_live import WIRE_ALIASES, _nullable_except, _drop_nulls, _strict_schema
+        self.assertNotIn('propose_parameter_revision', TOOL_NAMES)
+        self.assertEqual(WIRE_ALIASES['propose_parameter_revision'], 'propose_controller_revision')
+        self.assertEqual(WIRE_ALIASES['propose_source_revision'], 'propose_controller_revision')
+        base = {'candidate_id': {'type': 'string'}, 'params': {'type': 'object'}, 'source': {'type': 'string'}}
+        params_only = _drop_nulls({'candidate_id': 'c', 'params': {'heading_kp': 1.0}, 'source': None})
+        self.assertEqual(params_only, {'candidate_id': 'c', 'params': {'heading_kp': 1.0}})
+        source_only = _drop_nulls({'candidate_id': 'c', 'params': None, 'source': 'x'})
+        self.assertEqual(source_only, {'candidate_id': 'c', 'source': 'x'})
+        self.assertEqual(_nullable_except(base, 'source')['params'], {'type': ['object', 'null']})
+
+
 class MalformedReplyTests(unittest.TestCase):
     def test_malformed_reply_is_recorded_and_loop_continues_until_limit(self):
         from nautilus.studio_muse import Session, ToolError, run_session, MAX_INVALID_CALLS
