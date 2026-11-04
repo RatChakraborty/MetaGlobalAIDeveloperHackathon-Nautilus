@@ -15,6 +15,7 @@ No API key is read here. The transport is injected by the operator and is never 
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass
 
 from nautilus.studio_muse import TOOL_NAMES, TOOLS, ToolError, muse_enabled
@@ -69,6 +70,36 @@ def _trim(observations: list) -> str:
     return text[-MAX_OBSERVATION_CHARS:]
 
 
+def meta_transport(provider=None):
+    """Adapt MetaProvider to the transport contract: one HTTP request, one tool call per reply."""
+    from nautilus.muse import MetaProvider
+    provider = provider or MetaProvider(model=os.environ.get('NAUTILUS_STUDIO_MUSE_MODEL', 'muse-spark-1.3'))
+    strict_tools = [{'type': 'function', 'name': t['name'], 'description': t['description'],
+                     'strict': True, 'parameters': t['parameters']} for t in TOOLS]
+    state = {'previous': None, 'pending': None}
+
+    def transport(*, system, transcript, tools, last=None):
+        if state['pending'] is None:
+            payload = [{'role': 'user', 'content': transcript}]
+        else:
+            # Return the trusted result (or refusal) of the previous call so Muse reasons on real numbers.
+            body = last.get('result') if last and 'result' in last else {'error': (last or {}).get('error', 'no result')}
+            payload = [{'type': 'function_call_output', 'call_id': state['pending'],
+                        'output': json.dumps(body, default=str, sort_keys=True)[:MAX_OBSERVATION_CHARS]}]
+        reply = provider.generate(instructions=system, input=payload, tools=strict_tools,
+                                  previous_response_id=state['previous'],
+                                  max_output_tokens=MAX_OUTPUT_TOKENS, timeout=60)
+        if reply.status != 'completed' or len(reply.calls) != 1:
+            raise ToolError('model returned no supported tool call')
+        call = reply.calls[0]
+        state['previous'] = reply.response_id
+        state['pending'] = call['call_id']
+        return {'usage': {'input_tokens': reply.usage.get('input_tokens', 0),
+                          'output_tokens': reply.usage.get('output_tokens', 0)},
+                'tool_call': {'name': call['name'], 'arguments': json.loads(call['arguments'])}}
+    return transport
+
+
 class LiveMuse:
     """Provider that asks a model for the next tool call, using the fixed tool schema only."""
 
@@ -88,6 +119,7 @@ class LiveMuse:
                     'Abstain when evidence is inconclusive. Candidate hypotheses are not proven causes.'),
             transcript=_trim(observations),
             tools=TOOLS,
+            last=observations[-1] if observations else None,
         )
         used = reply.get('usage', {})
         self.envelope.record(int(used.get('input_tokens', est_in)), int(used.get('output_tokens', 0)))

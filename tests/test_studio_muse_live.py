@@ -100,5 +100,41 @@ class LoopTests(unittest.TestCase):
         self.assertIn('no supported tool call', result['stopped'] or '')
 
 
+class BindingTests(unittest.TestCase):
+    def test_recommendation_refused_when_controller_changed_after_robustness(self):
+        from nautilus.policy_ir import baseline_policy
+        from nautilus.studio import policy_fingerprint
+        from nautilus.studio_muse import Session, ToolError
+        s = Session()
+        s.propose_controller_revision('c1', 'bind test', params={'integral_ki': 1.0})
+        policy = s.candidates['c1']['policy']
+        s.results['c1'] = {'outcome': {'label': 'Recommended'}}
+        s.robustness['c1'] = {'outcome': {'label': 'Recommended'}, 'part': 'held_out',
+                              'fingerprint': policy_fingerprint(policy), 'protocol': 'held_out:held_out'}
+        policy['params']['integral_ki'] = 2.0  # controller changed after approval
+        with self.assertRaises(ToolError):
+            s.finalize_controller_recommendation('recommend', 'changed after approval', 'c1')
+        self.assertIsNotNone(baseline_policy())
+
+    def test_invalid_proposal_is_returned_to_model_and_loop_recovers(self):
+        class Scripted:
+            name = 'scripted'
+            def __init__(self):
+                self.steps = [
+                    {'tool': 'propose_controller_revision', 'arguments': {
+                        'candidate_id': 'bad', 'rationale': 'out of range', 'params': {'integral_ki': 1e9}}},
+                    {'tool': 'finalize_controller_recommendation', 'arguments': {
+                        'decision': 'abstain', 'rationale': 'recovered after a structured error'}},
+                ]
+            def next_call(self, session, observations):
+                return self.steps.pop(0)
+        run = run_session(provider=Scripted(), budget=Budget())
+        self.assertEqual(run['final']['decision'], 'abstain')
+        errors = [step for step in run['transcript'] if 'error' in step]
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(run['candidates'], {})
+        self.assertEqual(errors[0]['tool'], 'propose_controller_revision')
+
+
 if __name__ == '__main__':
     unittest.main()

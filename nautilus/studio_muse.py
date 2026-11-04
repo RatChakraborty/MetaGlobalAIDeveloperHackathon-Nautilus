@@ -55,6 +55,7 @@ TOOLS = (
                     'additionalProperties': False}},
 )
 TOOL_NAMES = tuple(tool['name'] for tool in TOOLS)
+MAX_INVALID_CALLS = 3
 
 
 def muse_enabled() -> bool:
@@ -209,7 +210,9 @@ class Session:
     def evaluate_policy_robustness(self, candidate_id):
         record = self._candidate(candidate_id)
         report = robustness(record['policy'])
-        self.robustness[candidate_id] = report
+        # Approval is bound to the exact controller version and the held-out split.
+        self.robustness[candidate_id] = {**report, 'fingerprint': policy_fingerprint(record['policy']),
+                                         'protocol': 'held_out:' + report['part']}
         self.budget.trials += len(report['rows'])
         return {'candidate_id': candidate_id, 'part': report['part'],
                 'outcome': report['outcome'],
@@ -231,6 +234,10 @@ class Session:
             robust = self.robustness.get(candidate_id)
             if robust is None:
                 raise ToolError('refusing to recommend a candidate before held-out robustness is evaluated')
+            if robust['fingerprint'] != policy_fingerprint(self._candidate(candidate_id)['policy']):
+                raise ToolError('refusing to recommend: robustness was evaluated on a different controller version')
+            if robust['protocol'] != 'held_out:held_out':
+                raise ToolError('refusing to recommend: robustness was not evaluated on the held-out split')
             if robust['outcome']['label'] != 'Recommended':
                 raise ToolError('refusing to recommend a candidate whose held-out robustness is not Recommended')
         self.final = {'decision': decision, 'rationale': rationale, 'candidate_id': candidate_id,
@@ -326,6 +333,7 @@ def run_session(provider=None, budget: Budget | None = None, session: Session | 
     provider = provider or MockMuse()
     session = session or Session(budget, handoff=handoff)
     stopped = None
+    invalid = 0
     while session.final is None:
         try:
             decision = provider.next_call(session, list(session.transcript))
@@ -337,11 +345,25 @@ def run_session(provider=None, budget: Budget | None = None, session: Session | 
             break
         try:
             call(session, decision['tool'], decision.get('arguments') or {})
-        except (ToolError, PolicyError) as exc:
+            invalid = 0
+        except ToolError as exc:
+            # Budget exhaustion stops the session; other refusals are returned to the model as errors.
             session.transcript.append({'tool': decision['tool'], 'arguments': decision.get('arguments') or {},
                                        'error': str(exc)})
-            stopped = str(exc)
-            break
+            if 'budget' in str(exc) or 'ceiling' in str(exc):
+                stopped = str(exc)
+                break
+            invalid += 1
+            if invalid >= MAX_INVALID_CALLS:
+                stopped = 'too many invalid tool calls'
+                break
+        except PolicyError as exc:
+            session.transcript.append({'tool': decision['tool'], 'arguments': decision.get('arguments') or {},
+                                       'error': 'invalid controller: ' + str(exc)})
+            invalid += 1
+            if invalid >= MAX_INVALID_CALLS:
+                stopped = 'too many invalid controller proposals'
+                break
     return {'final': session.final, 'stopped': stopped, 'transcript': session.transcript,
             'budget': session.budget.as_dict(),
             'candidates': {key: {'rationale': value['rationale'], 'params': value['policy'].get('params', {}),
