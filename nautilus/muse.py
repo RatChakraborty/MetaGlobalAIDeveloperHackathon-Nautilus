@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 import json
 import os
+import re
 import time
 import urllib.error
 import urllib.request
@@ -22,7 +23,35 @@ def encode_request(*, model, reasoning_effort, instructions, input, tools,
     return json.dumps(payload, allow_nan=False).encode()
 
 
+_SAFE_ERROR_TOKEN = re.compile(r'[a-z][a-z0-9_]{0,63}')
+
+
+def _safe_error_token(exc):
+    """Return the provider's error type/code only when it is a short enum-like token.
+
+    The error message, parameters and any echoed text are never returned. Anything that is
+    not a short lowercase identifier is reported as None.
+    """
+    try:
+        raw = exc.read(65_537)
+        if len(raw) > 65_536:
+            return None
+        value = json.loads(raw.decode('utf-8', 'strict'))
+    except Exception:
+        return None
+    error = value.get('error') if isinstance(value, dict) else None
+    if not isinstance(error, dict):
+        return None
+    for key in ('code', 'type'):
+        token = error.get(key)
+        if isinstance(token, str) and _SAFE_ERROR_TOKEN.fullmatch(token):
+            return token
+    return None
+
+
 class ProviderError(Exception):
+    provider_error_type = None
+
     def __init__(self, code, *, retryable=False):
         super().__init__(code)
         self.code, self.retryable = code, retryable
@@ -166,9 +195,12 @@ class MetaProvider:
                 http_status = response.status
             return parse_reply(value, self.model, time.monotonic()-start, http_status)
         except urllib.error.HTTPError as exc:
-            # Provider error bodies can echo untrusted arguments/headers: never retain them.
+            # Provider error bodies can echo untrusted arguments/headers: never retain the message.
+            # Only a short, allowlisted error type/code (enum-like token) is kept for diagnosis.
             code = exc.code
-            raise ProviderError('http_'+str(code), retryable=code in (429, 500, 502, 503, 504)) from None
+            error = ProviderError('http_'+str(code), retryable=code in (429, 500, 502, 503, 504))
+            error.provider_error_type = _safe_error_token(exc)
+            raise error from None
         except (urllib.error.URLError, TimeoutError, OSError):
             raise ProviderError('network_or_timeout') from None
         except (ValueError, UnicodeError, RecursionError):

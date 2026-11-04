@@ -490,3 +490,44 @@ def test_input_threshold_preserves_last_executed_fit_without_sending_another_req
     assert len(body(r)['actions'])==1 and body(r)['actions'][0]['accepted']
     assert any(e['type']=='fit' and e['report']['hypothesis']=='nominal' and e['report']['converged'] for e in l.ledger)
     assert l.ledger[-1]['confidence']=='abstain' and 'HOST-ENFORCED' in l.ledger[-1]['stop_reason']
+
+
+def _http_error(code, body):
+    import io
+    import urllib.error
+    return urllib.error.HTTPError('https://example.invalid', code, 'rejected', {}, io.BytesIO(body))
+
+
+@pytest.mark.parametrize('code', [400, 503])
+def test_rejected_request_keeps_only_an_allowlisted_error_token(monkeypatch, code):
+    import urllib.request
+    monkeypatch.setenv('MODEL_API_KEY', 'sk-test-secret-value-123456')
+    hostile = json.dumps({'error': {'code': 'invalid_request', 'type': 'bad', 'message': 'echo sk-test-secret-value-123456 <script>'}}).encode()
+
+    def fake_open(self, request, timeout=None):
+        raise _http_error(code, hostile)
+
+    monkeypatch.setattr(urllib.request.OpenerDirector, 'open', fake_open)
+    provider = MetaProvider(model='muse-spark-1.3')
+    with pytest.raises(ProviderError) as info:
+        provider.generate(instructions='x', input=[], tools=[], previous_response_id=None, max_output_tokens=10, timeout=1)
+    error = info.value
+    assert error.code == f'http_{code}'
+    assert error.provider_error_type == 'invalid_request'
+    assert error.__cause__ is None and error.__suppress_context__
+    assert 'secret' not in str(error) and 'script' not in str(error)
+
+
+def test_non_token_provider_error_fields_are_discarded(monkeypatch):
+    import urllib.request
+    monkeypatch.setenv('MODEL_API_KEY', 'sk-test-secret-value-123456')
+    body = json.dumps({'error': {'code': 'Has Spaces And Caps sk-leak'}}).encode()
+
+    def fake_open(self, request, timeout=None):
+        raise _http_error(400, body)
+
+    monkeypatch.setattr(urllib.request.OpenerDirector, 'open', fake_open)
+    provider = MetaProvider(model='muse-spark-1.3')
+    with pytest.raises(ProviderError) as info:
+        provider.generate(instructions='x', input=[], tools=[], previous_response_id=None, max_output_tokens=10, timeout=1)
+    assert info.value.provider_error_type is None

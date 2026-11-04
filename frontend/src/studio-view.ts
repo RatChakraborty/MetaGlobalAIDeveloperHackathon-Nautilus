@@ -172,6 +172,7 @@ export function studioMarkup(current: StudioState): string {
   const busy = current.status === 'loading';
   return `<section class="studio" aria-label="Control policy studio">
     <div class="section-head"><h3>Controller policy</h3><span class="eyebrow">CONSTRAINED DSL · NOT PYTHON</span></div>
+    <p class="muted">A verified Muse parameter-engineering run is available as a recorded trace (not a live call). <button class="button secondary" type="button" data-goto="Overview">View recorded Muse trace on Overview</button></p>
     <p class="muted">Expressions over public observations only. Supported functions: ${baseline ? escapeText(baseline.supported.functions.join(', ')) : 'loading…'}; references ${baseline ? escapeText(baseline.supported.references.join(', ')) : ''}. Loops, recursion, imports, attribute access and I/O are rejected before execution.</p>
     <label>Controller source<textarea id="studio-source" spellcheck="false" rows="12">${escapeText(current.source)}</textarea></label>
     <label>Parameters<textarea id="studio-params" spellcheck="false" rows="4">${escapeText(current.params)}</textarea></label>
