@@ -165,7 +165,10 @@ def meta_transport(provider=None):
             body = last.get('result') if last and 'result' in last else {'error': (last or {}).get('error', 'no result')}
             payload = [{'type': 'function_call_output', 'call_id': state['pending'],
                         'output': json.dumps(body, default=str, sort_keys=True)[:MAX_OBSERVATION_CHARS]}]
-        reply = provider.generate(instructions=system, input=payload, tools=strict_tools,
+        # Offer only the wire variants whose trusted tool is in the offered list.
+        offered = {t['name'] for t in tools}
+        wire = [s for s in strict_tools if WIRE_ALIASES.get(s['name'], s['name']) in offered]
+        reply = provider.generate(instructions=system, input=payload, tools=wire,
                                   previous_response_id=state['previous'],
                                   max_output_tokens=MAX_OUTPUT_TOKENS, timeout=60)
         if reply.status != 'completed' or len(reply.calls) != 1:
@@ -194,11 +197,23 @@ class LiveMuse:
     def next_call(self, session, observations) -> dict:
         est_in = (len(_trim(observations)) + 2_000) // 4
         self.envelope.reserve(est_in, 600)
+        # Once the trusted candidate budget is used up, stop offering proposal tools so the model
+        # can only inspect, compare, check robustness, or finalise. The trusted budget still enforces
+        # the limit; this only keeps the model from spending its requests on refused proposals.
+        used_all = len(session.candidates) >= session.budget.max_candidates
+        offered = [t for t in TOOLS if not (used_all and t['name'].startswith('propose_'))]
+        if used_all:
+            system = ('You engineer a marine controller through the listed tools only. The candidate budget is '
+                      'used up: compare the recorded candidates, check robustness, then finalise. Abstain when '
+                      'evidence is inconclusive. Candidate hypotheses are not proven causes.')
+        else:
+            system = ('You engineer a marine controller through the listed tools only. '
+                      f'You may propose at most {session.budget.max_candidates} candidates, then compare and finalise. '
+                      'Abstain when evidence is inconclusive. Candidate hypotheses are not proven causes.')
         reply = self.transport(
-            system=('You engineer a marine controller through the listed tools only. '
-                    'Abstain when evidence is inconclusive. Candidate hypotheses are not proven causes.'),
+            system=system,
             transcript=_trim(observations),
-            tools=TOOLS,
+            tools=offered,
             last=observations[-1] if observations else None,
         )
         used = reply.get('usage', {})

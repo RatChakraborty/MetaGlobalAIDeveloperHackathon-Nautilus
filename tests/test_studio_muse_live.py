@@ -92,6 +92,25 @@ class LoopTests(unittest.TestCase):
         self.assertEqual(len(transport.calls), 3)
         self.assertTrue(all('tools' in call and call['tools'] for call in transport.calls))
 
+    def test_proposal_tools_are_withdrawn_once_the_candidate_budget_is_used(self):
+        propose = {'tool_call': {'name': 'propose_controller_revision', 'arguments': {
+            'candidate_id': 'cand_x', 'rationale': 'Scripted test proposal.',
+            'params': {'kp': 1.0}, 'evidence_refs': ['E1']}}, 'usage': {'input_tokens': 10, 'output_tokens': 5}}
+        replies = [{'tool_call': {'name': 'inspect_controller', 'arguments': {}}, 'usage': {'input_tokens': 10, 'output_tokens': 5}},
+                   {'tool_call': {'name': 'inspect_diagnosis_evidence', 'arguments': {}}, 'usage': {'input_tokens': 10, 'output_tokens': 5}}]
+        replies += [dict(propose, tool_call=dict(propose['tool_call'], arguments=dict(
+            propose['tool_call']['arguments'], candidate_id=f'cand_{i}'))) for i in range(4)]
+        replies.append({'tool_call': {'name': 'finalize_controller_recommendation', 'arguments': {
+            'decision': 'abstain', 'rationale': 'Scripted test: budget used, abstain.'}}, 'usage': {'input_tokens': 10, 'output_tokens': 5}})
+        transport = scripted(replies)
+        with mock.patch.dict(os.environ, {'NAUTILUS_MUSE_ENABLED': 'true'}):
+            provider = LiveMuse(transport, LiveEnvelope(**PRICED))
+            run_session(provider=provider, budget=Budget())
+        # After three proposals the budget is used: no wire call may offer a proposal tool any more.
+        for call in transport.calls[5:]:
+            names = {t['name'] for t in call['tools']}
+            self.assertFalse(any(n.startswith('propose_') for n in names), names)
+
     def test_unsupported_tool_from_model_is_refused_not_executed(self):
         transport = scripted([{'tool_call': {'name': 'run_python', 'arguments': {'code': 'import os'}}}] * 3)
         with mock.patch.dict(os.environ, {'NAUTILUS_MUSE_ENABLED': 'true'}):
