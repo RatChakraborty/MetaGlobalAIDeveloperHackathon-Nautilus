@@ -23,6 +23,7 @@ Last updated against commit `e647ff1` (feature branch `feature/autonomous-contro
 | Robustness gate on the host | Verified (mock tests and one real-run gate check) | `nautilus/studio_muse.py`, commit `48d31d2`. Recommendation refused before robustness, accepted after. |
 | Muse connectivity (Test A) | Verified (one authentic call) | `docs/MUSE_LIVE_TEST_RESULTS.md` |
 | Muse engineering loop (Test C) | Verified, but recorded before the gate | `artifacts/muse-live-engineering-run.json` (git-ignored) |
+| Complete live Studio session (Test E) | Verified: real Meta provider, full workflow, held-out robustness before host acceptance, final `recommend` | `docs/MUSE_LIVE_TEST_RESULTS.md`, `artifacts/muse-studio-live-run.recommend.json` (git-ignored) |
 | Muse robustness continuation (Test D) | Verified | `artifacts/muse-live-robustness-run.json` (git-ignored) |
 | Muse Tests 1, 2, 4, 6 (investigation, experiment planning, feedback, negatives) | Incomplete | Not run in this release |
 | Muse Test 5 (rerun of robustness enforcement with the provider) | Incomplete | Not rerun after the gate; see the Test D result |
