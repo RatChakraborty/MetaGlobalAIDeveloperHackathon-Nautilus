@@ -50,6 +50,22 @@ test('Reports disables every export until its source data exists', () => {
   assert.match(ready, /1 experiment\(s\) and 1 paired trial\(s\)/);
 });
 
+test('Reports links each claim to the trial evidence it rests on', () => {
+  const none = reportsView(initialSession(), {recordLoaded: false, hasEngineeringReport: false, trial: null});
+  assert.match(none, /Claims appear here after a Policy Studio trial completes/);
+
+  const trial = {
+    fingerprint: '585bd1d5aaaaaaaaaaaaaaaaaaaaaaaa', part: 'development', rows: [{scenario_id: 's1', baseline: {}, candidate: {}}, {scenario_id: 's2', baseline: {}, candidate: {}}],
+    gates: [{id: 'g1', passed: true}, {id: 'g2', passed: false}],
+    outcome: {label: 'Rejected', mean_rms_difference_m: 0.25, failed_gates: ['g2'], rationale: ''},
+  } as unknown as Trial;
+  const html = reportsView(initialSession(), {recordLoaded: false, hasEngineeringReport: true, trial});
+  assert.match(html, /Controller comparison outcome<\/td><td>Rejected · mean RMS change 0\.250 m<\/td><td>Fingerprint 585bd1d5/);
+  assert.match(html, /Failed: g2/);
+  assert.doesNotMatch(html, /All 2 gates passed/);
+  assert.match(html, /Not hardware validation and not a safety certificate/);
+});
+
 test('fault evidence stays empty until the server returns an investigation', () => {
   const markup = faultEvidence(idleLab);
   assert.match(markup, /NO INVESTIGATION YET/);

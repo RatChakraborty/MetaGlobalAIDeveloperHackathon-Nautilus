@@ -35,7 +35,7 @@ Last updated against commit `82723c9` on `main`. Production: `dpl_854RRwAdx5tka5
 | Live agent execution UI with cancellation | Incomplete | Not implemented |
 | Six top-level destinations | Implemented | `frontend/src/destinations.ts`, `navigation.ts`; unverified in a browser |
 | Overview, Simulation Lab, Dashboards, Policy Studio, Experiments, Reports | Implemented | Frontend tests pass; no browser acceptance |
-| Claim-to-evidence links | Incomplete | Not verified |
+| Claim-to-evidence links | Implemented (scoped) | Reports table lists each claim from the last paired trial with its fingerprint and gate result; frontend test covers passing and failing gates. Covers only the trial's recorded outcome, not investigation claims. |
 | Case Files A, B, C | Implemented | `frontend/src/case-files.ts`, `docs/EVALUATION.md` |
 | Field Case 01 (real AUV data) | Excluded | See the feasibility note below |
 | Documentation (README, ARCHITECTURE, EVALUATION, DEMO_RUNBOOK, RELEASE_CHECKLIST, SECURITY, MUSE_INTEGRATION, `.env.example`) | Partly complete | `SECURITY.md` and `RELEASE_CHECKLIST.md` written at 82723c9. `ARCHITECTURE`, `EVALUATION`, `DEMO_RUNBOOK`, `MUSE_INTEGRATION` still reflect the earlier state and need a pass |
@@ -78,7 +78,7 @@ The items below are the open work, with their current status. Nothing here is co
 - Structural (source) Muse run: not verified. Source-mode requests returned HTTP 503 or 400; the cause is unknown because provider error bodies are discarded by design. No successful structural run exists.
 - Frozen benchmark against deterministic baselines: not run. The private evaluator pool is not on disk, and re-running would touch frozen results. The only measured comparison is the Studio candidate versus baseline in `docs/EVALUATION.md`.
 - Agent Engineering Trace UI with live execution and cancellation: not built.
-- Claim-to-evidence links in Reports: not built (see the table above).
+- Claim-to-evidence links in Reports: implemented for the last paired trial only (outcome, gates, scenarios). Investigation-record claims are not linked.
 - AUV Field Case: excluded; the reasons are in the feasibility section below.
 - Untracked local files, deliberately not committed: `.vercel/` (project link), `_uv/` (a local uv binary), and `api/pyproject.toml`, `api/uv.lock`, `api/.python-version` (a uv alternative to the tracked `api/requirements.txt`; the pins are identical, and the deployed function uses `requirements.txt`).
 - Browser rehearsal of the demo: not run.

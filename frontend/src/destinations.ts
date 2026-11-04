@@ -67,11 +67,33 @@ export type ReportOptions = {
   recordLoaded: boolean;
   /** True once Policy Studio has a completed paired trial to report. */
   hasEngineeringReport: boolean;
+  /** The last completed paired trial, used to link each report claim to its evidence. */
+  trial?: Trial | null;
 };
+
+/**
+ * Claim-to-evidence table for the last paired trial. Each row states a claim the trial supports
+ * and the exact fingerprint, split and gate result it rests on. Claims are shown only when the
+ * trial records them; nothing is inferred beyond the recorded outcome.
+ */
+function claimsMarkup(trial: Trial | null | undefined): string {
+  if (!trial) {
+    return '<p class="muted">No paired trial has been run in this session. Claims appear here after a Policy Studio trial completes.</p>';
+  }
+  const failed = trial.outcome.failed_gates;
+  const passedAll = failed.length === 0;
+  const rows = [
+    ['Controller comparison outcome', `${trial.outcome.label} · mean RMS change ${trial.outcome.mean_rms_difference_m.toFixed(3)} m`, `Fingerprint ${escapeText(trial.fingerprint.slice(0, 16))}… · ${escapeText(trial.part)} split`],
+    ['Predeclared acceptance gates', passedAll ? `All ${trial.gates.length} gates passed` : `Failed: ${failed.map(escapeText).join(', ')}`, `${trial.gates.length} gates recorded in the trial`],
+    ['Scenario outcomes', `${trial.rows.length} scenario(s) compared on identical seeds and noise`, 'Per-scenario metrics are in the engineering report'],
+  ];
+  return `<table class="claims"><thead><tr><th>Claim</th><th>Result</th><th>Evidence it rests on</th></tr></thead><tbody>${rows.map(([claim, result, evidence]) => `<tr><td>${claim}</td><td>${result}</td><td>${evidence}</td></tr>`).join('')}</tbody></table><p class="muted">Simulation-only evidence. Not hardware validation and not a safety certificate.</p>`;
+}
 
 export function reportsView(session: Session, options: ReportOptions): string {
   const sessionRuns = session.experiments.length + session.trials.length;
   return `<div class="destinations">
+    <section aria-label="Claims and evidence"><div class="section-head"><h3>Claims and their evidence</h3><span class="eyebrow">FROM THE LAST PAIRED TRIAL</span></div>${claimsMarkup(options.trial)}</section>
     <section aria-label="Report exports"><div class="section-head"><h3>Download</h3><span class="eyebrow">FILES STAY ON THIS DEVICE</span></div>
       <p class="muted">Each file is generated from data already in this browser. The investigation exports require a loaded public record; the engineering report requires a completed Policy Studio trial.</p>
       <div class="report-list">
