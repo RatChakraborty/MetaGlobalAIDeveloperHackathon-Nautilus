@@ -341,6 +341,7 @@ def test_tool_schema_rejects_unknown_tools_and_arguments():
 
 def test_execution_requires_prior_validation():
     session = Session()
+    session.inspect_diagnosis_evidence()
     session.propose_controller_revision('c1', 'test', params={'integral_ki': 1.0})
     with pytest.raises(ToolError):
         session.execute_controller_trial('c1')
@@ -348,6 +349,7 @@ def test_execution_requires_prior_validation():
 
 def test_candidate_budget_is_enforced():
     session = Session()
+    session.inspect_diagnosis_evidence()
     for index in range(3):
         session.propose_controller_revision(f'c{index}', 'test', params={'integral_ki': 1.0})
     with pytest.raises(ToolError):

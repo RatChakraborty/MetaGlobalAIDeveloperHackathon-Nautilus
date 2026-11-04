@@ -27,6 +27,9 @@ MAX_OUTPUT_TOKENS = 4_000       # total completion tokens across the session
 MAX_REQUESTS = 12               # model requests per session (matches Budget.max_requests)
 MAX_USD = 0.25                  # hard session spend ceiling (see docs/muse-cost-envelope.md)
 MAX_OBSERVATION_CHARS = 6_000   # trimmed transcript sent to the model per request
+# Published muse-spark-1.3 prices, USD per million tokens (https://dev.meta.ai/products/meta-model-api).
+SPARK_USD_PER_MTOK_IN = 1.25
+SPARK_USD_PER_MTOK_OUT = 4.25
 
 
 class LiveDisabled(RuntimeError):
@@ -40,8 +43,8 @@ class LiveEnvelope:
     output_tokens: int = 0
     requests: int = 0
     usd: float = 0.0
-    usd_per_mtok_in: float = 0.0
-    usd_per_mtok_out: float = 0.0
+    usd_per_mtok_in: float = SPARK_USD_PER_MTOK_IN
+    usd_per_mtok_out: float = SPARK_USD_PER_MTOK_OUT
 
     def reserve(self, est_input: int, est_output: int):
         if not muse_enabled():
@@ -70,12 +73,33 @@ def _trim(observations: list) -> str:
     return text[-MAX_OBSERVATION_CHARS:]
 
 
+def _strict_schema(schema):
+    """Strict Responses mode requires every property to be listed as required.
+
+    Optional fields become required nullable fields. The trusted validator still sees the
+    original schema: `_drop_nulls` removes null optional arguments before dispatch.
+    """
+    properties = schema.get('properties', {})
+    if not properties:
+        return schema
+    wrapped = {}
+    for key, spec in properties.items():
+        kind = spec.get('type')
+        wrapped[key] = {'type': [kind, 'null']} if kind else spec
+    return {'type': 'object', 'properties': wrapped, 'required': list(properties),
+            'additionalProperties': False}
+
+
+def _drop_nulls(arguments):
+    return {key: value for key, value in arguments.items() if value is not None}
+
+
 def meta_transport(provider=None):
     """Adapt MetaProvider to the transport contract: one HTTP request, one tool call per reply."""
     from nautilus.muse import MetaProvider
     provider = provider or MetaProvider(model=os.environ.get('NAUTILUS_STUDIO_MUSE_MODEL', 'muse-spark-1.3'))
     strict_tools = [{'type': 'function', 'name': t['name'], 'description': t['description'],
-                     'strict': True, 'parameters': t['parameters']} for t in TOOLS]
+                     'strict': True, 'parameters': _strict_schema(t['parameters'])} for t in TOOLS]
     state = {'previous': None, 'pending': None}
 
     def transport(*, system, transcript, tools, last=None):
@@ -96,7 +120,7 @@ def meta_transport(provider=None):
         state['pending'] = call['call_id']
         return {'usage': {'input_tokens': reply.usage.get('input_tokens', 0),
                           'output_tokens': reply.usage.get('output_tokens', 0)},
-                'tool_call': {'name': call['name'], 'arguments': json.loads(call['arguments'])}}
+                'tool_call': {'name': call['name'], 'arguments': _drop_nulls(json.loads(call['arguments']))}}
     return transport
 
 

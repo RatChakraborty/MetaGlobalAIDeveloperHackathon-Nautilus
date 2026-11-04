@@ -58,6 +58,18 @@ Why the Field Case is excluded:
 
 Decision: excluded from the Production interface. Documented here as a scientific compatibility limitation.
 
+## Pass status (uncommitted tree on top of `7a45245`)
+
+- Phase A (scientific agent): evidence IDs (`E1`), evidence-first guard, hypothesis records citing evidence IDs, append-only action log, bounded memory with stable IDs, counterfactual notes. Focused tests pass (132).
+- Phase B (Muse-authored source): `from_source` compilation is in place; an end-to-end Muse-proposed source run is not yet executed.
+- Phase C (live Muse): one bounded Studio session ran earlier (8 requests, about 25k in / 3.7k out, est. $0.047), before the malformed-reply fix. No final decision was recorded. Aggregate estimated spend to date is about $0.23 of $30.
+- Phase D (UI): frontend `npm ci`, `npm test`, `tsc --noEmit` and `npm run build` pass on the current tree.
+- Full Python suite on the current tree: 666 passed, 2 failed.
+
+### Open failures
+
+1. `tests/test_muse_evaluation.py::test_resume_skips_completed_pairs_and_prevents_duplicates` and `::test_provider_failure_is_terminal_case_and_campaign_stop` fail with `Frozen source/runtime changed`. `evaluate_muse.make_manifest` pins `CANDIDATE=340d1c1` and rejects any working-tree change under `nautilus/*.py`. The 14 tests pass at HEAD. This is an intentional protocol guard. It is not bypassed or re-pinned. Resolving it requires either reverting the `nautilus/` edits or a documented protocol revision by the owner.
+
 ## Remaining work (in order)
 
 1. Run the Muse Tests 1, 2, 4 and 6 with the real provider within the $30 budget, and record results.

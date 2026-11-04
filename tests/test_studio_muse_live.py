@@ -44,9 +44,10 @@ class KillSwitchTests(unittest.TestCase):
 
     def test_missing_price_blocks_every_request(self):
         transport = scripted([{'tool_call': {'name': 'inspect_controller', 'arguments': {}}}])
+        unpriced = LiveEnvelope(usd_per_mtok_in=0.0, usd_per_mtok_out=0.0)
         with mock.patch.dict(os.environ, {'NAUTILUS_MUSE_ENABLED': 'true'}):
             with self.assertRaises(LiveDisabled):
-                LiveMuse(transport, LiveEnvelope()).next_call(None, [])
+                LiveMuse(transport, unpriced).next_call(None, [])
         self.assertEqual(transport.calls, [])
 
     def test_transport_is_required(self):
@@ -92,12 +93,13 @@ class LoopTests(unittest.TestCase):
         self.assertTrue(all('tools' in call and call['tools'] for call in transport.calls))
 
     def test_unsupported_tool_from_model_is_refused_not_executed(self):
-        transport = scripted([{'tool_call': {'name': 'run_python', 'arguments': {'code': 'import os'}}}])
+        transport = scripted([{'tool_call': {'name': 'run_python', 'arguments': {'code': 'import os'}}}] * 3)
         with mock.patch.dict(os.environ, {'NAUTILUS_MUSE_ENABLED': 'true'}):
             provider = LiveMuse(transport, LiveEnvelope(**PRICED))
             result = run_session(provider=provider, budget=Budget())
         self.assertIsNone(result['final'])
-        self.assertIn('no supported tool call', result['stopped'] or '')
+        self.assertEqual(result['stopped'], 'too many invalid tool calls')
+        self.assertEqual(len(transport.calls), 3)
 
 
 class BindingTests(unittest.TestCase):
@@ -106,6 +108,7 @@ class BindingTests(unittest.TestCase):
         from nautilus.studio import policy_fingerprint
         from nautilus.studio_muse import Session, ToolError
         s = Session()
+        s.inspect_diagnosis_evidence()
         s.propose_controller_revision('c1', 'bind test', params={'integral_ki': 1.0})
         policy = s.candidates['c1']['policy']
         s.results['c1'] = {'outcome': {'label': 'Recommended'}}
@@ -134,6 +137,69 @@ class BindingTests(unittest.TestCase):
         self.assertEqual(len(errors), 1)
         self.assertEqual(run['candidates'], {})
         self.assertEqual(errors[0]['tool'], 'propose_controller_revision')
+
+
+class EvidenceTests(unittest.TestCase):
+    def test_revision_requires_inspected_evidence_and_evidence_has_stable_id(self):
+        from nautilus.studio_muse import Session, ToolError
+        s = Session()
+        with self.assertRaises(ToolError):
+            s.propose_controller_revision('early', 'no evidence yet', params={'integral_ki': 1.0})
+        ev = s.inspect_diagnosis_evidence()
+        self.assertEqual(ev['evidence_id'], 'E1')
+        self.assertFalse(ev['hidden_truth_exposed'])
+        s.propose_controller_revision('ok', 'cites E1', params={'integral_ki': 1.0})
+
+    def test_hypothesis_must_cite_known_evidence_and_is_logged_append_only(self):
+        from nautilus.studio_muse import Session, ToolError
+        s = Session()
+        s.inspect_diagnosis_evidence()
+        with self.assertRaises(ToolError):
+            s.propose_controller_revision('bad', 'cites unknown', params={'integral_ki': 1.0},
+                                          evidence_refs=['E9'])
+        self.assertNotIn('bad', s.hypotheses)
+        s.propose_controller_revision('good', 'bias needs integral', params={'integral_ki': 1.0},
+                                      evidence_refs=['E1'])
+        self.assertEqual(s.hypotheses['good']['evidence_refs'], ['E1'])
+        self.assertEqual([e['seq'] for e in s.action_log], [1])
+        self.assertEqual(s.action_log[0]['action'], 'propose')
+
+
+class StrictSchemaTests(unittest.TestCase):
+    def test_every_strict_property_is_required_and_optional_nulls_are_dropped(self):
+        from nautilus.studio_muse import TOOLS
+        from nautilus.studio_muse_live import _strict_schema, _drop_nulls
+        for tool in TOOLS:
+            schema = _strict_schema(tool['parameters'])
+            self.assertEqual(set(schema.get('required', [])), set(schema.get('properties', {})), tool['name'])
+        self.assertEqual(_drop_nulls({'candidate_id': 'c', 'params': None, 'source': None}),
+                         {'candidate_id': 'c'})
+
+
+class MalformedReplyTests(unittest.TestCase):
+    def test_malformed_reply_is_recorded_and_loop_continues_until_limit(self):
+        from nautilus.studio_muse import Session, ToolError, run_session, MAX_INVALID_CALLS
+
+        class Broken:
+            name = 'broken'
+            def next_call(self, session, observations):
+                raise ToolError('model returned no supported tool call')
+
+        run = run_session(provider=Broken(), session=Session())
+        self.assertEqual(run['stopped'], 'too many invalid tool calls')
+        errors = [entry for entry in run['transcript'] if 'error' in entry]
+        self.assertEqual(len(errors), MAX_INVALID_CALLS)
+
+
+class MemoryTests(unittest.TestCase):
+    def test_memory_ids_are_stable_and_bounded(self):
+        from nautilus.studio_muse import Session
+        s = Session()
+        ids = [s.remember('note', f'entry {i}') for i in range(Session.MEMORY_LIMIT + 4)]
+        self.assertEqual(ids[0], 'M1')
+        self.assertEqual(len(s.memory), Session.MEMORY_LIMIT)
+        self.assertEqual(s.memory[-1]['id'], ids[-1])
+        self.assertNotIn('M1', [entry['id'] for entry in s.memory])
 
 
 if __name__ == '__main__':

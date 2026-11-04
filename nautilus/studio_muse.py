@@ -30,6 +30,7 @@ TOOLS = (
     {'name': 'propose_controller_revision', 'description': 'Propose a structural revision, by IR parameters or by source text.',
      'parameters': {'type': 'object', 'properties': {
          'candidate_id': {'type': 'string'}, 'rationale': {'type': 'string'},
+         'evidence_refs': {'type': 'array', 'items': {'type': 'string'}},
          'params': {'type': 'object'}, 'source': {'type': 'string'}},
          'required': ['candidate_id', 'rationale'], 'additionalProperties': False}},
     {'name': 'validate_controller', 'description': 'Validate a proposed candidate against the IR limits.',
@@ -64,8 +65,8 @@ def muse_enabled() -> bool:
 
 
 def live_available() -> bool:
-    """Live provider execution is not implemented for Studio; it stays unavailable even when enabled."""
-    return False
+    """Live Studio provider is available only when the kill switch is on and a key is configured."""
+    return muse_enabled() and bool(os.environ.get('MODEL_API_KEY', '').strip())
 
 
 class ToolError(ValueError):
@@ -110,6 +111,25 @@ class Session:
         self.evidence = None
         self.transcript = []
         self.final = None
+        # Bounded evidence memory: stable IDs (M1, M2, ...) survive eviction of older entries.
+        self.memory = []
+        self._memory_next = 1
+        # Hypotheses cite evidence IDs; the action log is append-only and never edited in place.
+        self.hypotheses = {}
+        self.action_log = []
+
+    MEMORY_LIMIT = 16
+
+    def _log(self, action, candidate_id, **detail):
+        self.action_log.append({'seq': len(self.action_log) + 1, 'action': action,
+                                'candidate_id': candidate_id, **detail})
+
+    def remember(self, kind, summary):
+        entry = {'id': f'M{self._memory_next}', 'kind': kind, 'summary': str(summary)[:300]}
+        self._memory_next += 1
+        self.memory.append(entry)
+        del self.memory[:-self.MEMORY_LIMIT]
+        return entry['id']
 
     # ---- tool implementations -------------------------------------------
     def inspect_controller(self):
@@ -127,7 +147,7 @@ class Session:
             trial = paired_trial(self.baseline, 'development',
                                  scenario_ids={cases('development')[1].identifier})
             row = trial['rows'][0]
-            self.evidence = {'scenario_id': row['scenario_id'], 'matched': True,
+            self.evidence = {'evidence_id': 'E1', 'scenario_id': row['scenario_id'], 'matched': True,
                              'baseline_rms_cross_track_m': row['baseline']['rms_cross_track_m'],
                              'baseline_max_abs_cross_track_m': row['baseline']['max_abs_cross_track_m'],
                              'baseline_fraction_outside_corridor': row['baseline']['fraction_outside_corridor'],
@@ -135,13 +155,19 @@ class Session:
                              'hidden_truth_exposed': False}
         return self.evidence
 
-    def propose_controller_revision(self, candidate_id, rationale, params=None, source=None):
+    def propose_controller_revision(self, candidate_id, rationale, params=None, source=None, evidence_refs=None):
         if candidate_id in self.candidates:
             raise ToolError('candidate id already used')
+        if self.evidence is None and self.handoff is None:
+            raise ToolError('inspect diagnosis evidence before proposing a revision')
         if len(self.candidates) >= self.budget.max_candidates:
             raise ToolError('candidate budget exhausted')
         if not isinstance(rationale, str) or not 1 <= len(rationale) <= 500:
             raise ToolError('rationale must be short text')
+        refs = list(evidence_refs or [])
+        known = {'E1'} if self.evidence is not None else set()
+        if any(ref not in known for ref in refs):
+            raise ToolError('evidence_refs must cite evidence ids returned by inspect_diagnosis_evidence')
         policy = deepcopy(self.baseline)
         policy['name'] = candidate_id
         if source is not None:
@@ -155,6 +181,9 @@ class Session:
             validate(policy)
         self.candidates[candidate_id] = {'policy': policy, 'rationale': rationale,
                                          'validated': False, 'source': to_source(policy)}
+        # Hypothesis record cites evidence IDs; written only after the candidate is accepted.
+        self.hypotheses[candidate_id] = {'hypothesis': rationale, 'evidence_refs': refs}
+        self._log('propose', candidate_id, refs=refs)
         return {'candidate_id': candidate_id, 'rationale': rationale,
                 'params': policy.get('params', {}), 'fingerprint': policy_fingerprint(policy)}
 
@@ -178,6 +207,10 @@ class Session:
         trial = paired_trial(record['policy'], 'development')
         self.budget.trials += len(trial['rows'])
         self.results[candidate_id] = trial
+        self._log('trial', candidate_id, outcome=trial['outcome']['label'])
+        # Counterfactual: each row replays the baseline controller on the identical scenario.
+        self.remember('counterfactual', f'{candidate_id} vs baseline on identical scenarios: '
+                      f"{trial['outcome']['label']}")
         return {'candidate_id': candidate_id, 'outcome': trial['outcome'],
                 'rows': [{k: row[k] for k in ('scenario_id', 'baseline', 'candidate')}
                          for row in trial['rows']],
@@ -266,7 +299,8 @@ def call(session: Session, name: str, arguments: dict) -> dict:
         raise ToolError(f'missing arguments: {missing}')
     for key, value in arguments.items():
         expected = schema['properties'][key].get('type')
-        ok = {'string': type(value) is str, 'object': type(value) is dict}.get(expected, True) if expected else True
+        ok = {'string': type(value) is str, 'object': type(value) is dict,
+              'array': type(value) is list}.get(expected, True) if expected else True
         if not ok:
             raise ToolError(f'argument {key} must be {expected}')
         if expected == 'string' and len(value) > 4000:
@@ -338,8 +372,17 @@ def run_session(provider=None, budget: Budget | None = None, session: Session | 
         try:
             decision = provider.next_call(session, list(session.transcript))
         except ToolError as exc:
-            stopped = str(exc)
-            break
+            # A malformed model reply is an invalid call the model can correct, unless a
+            # budget or ceiling is exhausted. Record it and count it toward MAX_INVALID_CALLS.
+            if 'budget' in str(exc) or 'ceiling' in str(exc):
+                stopped = str(exc)
+                break
+            session.transcript.append({'tool': None, 'arguments': {}, 'error': str(exc)})
+            invalid += 1
+            if invalid >= MAX_INVALID_CALLS:
+                stopped = 'too many invalid tool calls'
+                break
+            continue
         if decision.get('tool') not in TOOL_NAMES:
             stopped = 'provider requested an unsupported tool'
             break
