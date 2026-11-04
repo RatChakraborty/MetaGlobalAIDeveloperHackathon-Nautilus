@@ -78,3 +78,10 @@ Decision: excluded from the Production interface. Documented here as a scientifi
 4. Implement the Agent Engineering Trace and claim-to-evidence links, if feasible.
 5. Update all documentation to the final state.
 6. Rerun the release gates on the final commit, commit, merge to `main`, deploy, and run production smoke tests.
+
+## Frozen-evaluation release gate (resolved)
+
+- Symptom: two `tests/test_muse_evaluation.py` tests failed only in the full suite with `Frozen source/runtime changed` (`evaluate_muse.py:117`).
+- Diagnosis: the same tests pass in isolation (14/14), and the guard itself is intact. The full-suite failure reproduced from stale `__pycache__` bytecode against edited `nautilus/*.py` sources. No test mutates `nautilus/` sources.
+- Resolution: cleared bytecode caches. Full Python suite: 669 passed, 4 subtests, 0 failed (`/tmp/full2.log`, exit 0). Source-hash validation was not weakened, `CANDIDATE` (`340d1c1`) and frozen results are unchanged, and no data was re-pinned.
+- Limitation: historical campaigns still run against the mutable worktree. Running them from an isolated `340d1c1` worktree is planned before any new held-out campaign.
