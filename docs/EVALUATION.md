@@ -7,7 +7,7 @@ See [DEMO_RUNBOOK.md](DEMO_RUNBOOK.md) for the judge-facing script.
 
 | Area | Result | Evidence |
 |---|---|---|
-| Python test suite | 662 passed, 4 subtests passed (204.69 s) | full `pytest` run, no cache provider |
+| Python test suite | 676 passed, 4 subtests passed (at 82723c9) | full `pytest` run, no cache provider |
 | Frontend tests | 142 passed | `node --experimental-strip-types --test tests/*.test.ts` |
 | TypeScript | `tsc --noEmit` clean | `npm run build` also succeeded |
 | Production build | Vite build succeeded | `frontend/dist`, main bundle 186.35 kB (57.02 kB gzip) |

@@ -83,7 +83,7 @@ run or a live Muse run.
 
 | Check | Result |
 |---|---|
-| Python tests | 662 passed, 4 subtests passed |
+| Python tests | 676 passed, 4 subtests passed (at 82723c9) |
 | Frontend tests | 142 passed |
 | TypeScript / production build | clean / succeeded |
 | Case B determinism | identical fingerprint and rows on repeat |
