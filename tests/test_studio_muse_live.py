@@ -185,18 +185,51 @@ class StrictSchemaTests(unittest.TestCase):
 
 
 class RevisionWireVariantTests(unittest.TestCase):
+    def test_strict_wire_types_are_never_nested_lists(self):
+        from nautilus.studio_muse import TOOLS
+        from nautilus.studio_muse_live import meta_transport
+        from nautilus.muse import encode_request
+        import json
+        captured = {}
+
+        class Capture:
+            def generate(self, **kwargs):
+                captured.update(kwargs)
+                raise SystemExit
+        try:
+            meta_transport(Capture())(system='s', transcript='[]', tools=TOOLS)
+        except SystemExit:
+            pass
+        body = json.loads(encode_request(model='m', reasoning_effort='low', instructions='s',
+                                         input=captured['input'], tools=captured['tools'],
+                                         previous_response_id=None, max_output_tokens=10))
+
+        def walk(node):
+            if isinstance(node, dict):
+                kind = node.get('type')
+                if isinstance(kind, list):
+                    self.assertTrue(all(isinstance(k, str) for k in kind), kind)
+                for value in node.values():
+                    walk(value)
+            elif isinstance(node, list):
+                for value in node:
+                    walk(value)
+        walk(body['tools'])
+        names = {tool['name'] for tool in body['tools']}
+        self.assertIn('propose_parameter_revision', names)
+        self.assertIn('propose_source_revision', names)
+        self.assertNotIn('propose_controller_revision', names)
+
     def test_wire_variants_map_to_one_trusted_tool_and_carry_one_field(self):
         from nautilus.studio_muse import TOOL_NAMES
-        from nautilus.studio_muse_live import WIRE_ALIASES, _nullable_except, _drop_nulls, _strict_schema
+        from nautilus.studio_muse_live import WIRE_ALIASES, _drop_nulls
         self.assertNotIn('propose_parameter_revision', TOOL_NAMES)
         self.assertEqual(WIRE_ALIASES['propose_parameter_revision'], 'propose_controller_revision')
         self.assertEqual(WIRE_ALIASES['propose_source_revision'], 'propose_controller_revision')
-        base = {'candidate_id': {'type': 'string'}, 'params': {'type': 'object'}, 'source': {'type': 'string'}}
         params_only = _drop_nulls({'candidate_id': 'c', 'params': {'heading_kp': 1.0}, 'source': None})
         self.assertEqual(params_only, {'candidate_id': 'c', 'params': {'heading_kp': 1.0}})
         source_only = _drop_nulls({'candidate_id': 'c', 'params': None, 'source': 'x'})
         self.assertEqual(source_only, {'candidate_id': 'c', 'source': 'x'})
-        self.assertEqual(_nullable_except(base, 'source')['params'], {'type': ['object', 'null']})
 
 
 class MalformedReplyTests(unittest.TestCase):

@@ -126,11 +126,11 @@ def meta_transport(provider=None):
         if t['name'] == 'propose_controller_revision':
             # Strict mode cannot express "params or source", so the wire offers two fixed variants.
             # Both map back to the one trusted proposal tool in `to_trusted_call`.
-            base = _strict_schema(t['parameters'])
             for wire, field, kind in (('propose_parameter_revision', 'params', 'object'),
                                       ('propose_source_revision', 'source', 'string')):
-                props = {k: v for k, v in base['properties'].items() if k not in ('params', 'source')}
-                props[field] = t['parameters']['properties'][field]
+                raw = t['parameters']['properties']
+                props = {k: v for k, v in raw.items() if k not in ('params', 'source')}
+                props[field] = raw[field]
                 strict_tools.append({'type': 'function', 'name': wire,
                                      'description': t['description'] + f' Send only the {field} field.',
                                      'strict': True,
