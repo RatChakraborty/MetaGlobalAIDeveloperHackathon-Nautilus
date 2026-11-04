@@ -71,6 +71,8 @@ Decision: excluded from the Production interface. Documented here as a scientifi
 
 ## Remaining work (in order)
 
+- Recorded real Muse run (`artifacts/muse-studio-live-run.recommend.json`) verified: 11 tool events, candidate C1 proposed from E1 with evidence refs, paired and held-out robustness run before `recommend`, final host decision recorded. Origin is parameter revision (Muse-proposed), not structural source.
+- Source-mode probe (single restricted tool, output ceiling 1500): provider returned HTTP 400, recorded as a stop. Earlier source-mode requests returned HTTP 503. Error bodies are discarded by design, so the reason is not visible. Structural source generation remains unproven.
 - Phase B (Muse-authored source run): blocked. Three live source-mode Studio runs failed with provider HTTP 503 on their first request, each recorded with $0 spend (`artifacts/muse-studio-live-source-run.json`). A minimal connectivity call succeeded afterwards. The cause is not diagnosed, because provider error bodies are discarded by design.
 - Phase 3 (scientific-agent benchmarks against deterministic baselines): not built. Falsifiable-prediction and abstention machinery exists in `v3_validation.py`, `muse_v3.py` and `studio_muse.py`, but is not compared against a baseline.
 - Phase 4 (Agent Trace UI, live execution with cancellation) and Phase 6 (documentation, release gates, merge, deploy): not started.
