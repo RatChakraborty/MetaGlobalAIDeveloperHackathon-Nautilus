@@ -1,0 +1,887 @@
+{
+  "disclosure": "This is a recorded run of the Meta Muse provider. It is not a live model call. Muse proposed a parameter revision; the trusted host compiled, simulated and decided. Candidate C1 is a tested hypothesis, not a proven cause.",
+  "events": [
+    {
+      "arguments": {},
+      "index": 1,
+      "result": {
+        "fingerprint": "b91cd6c40b6b6e4616252423d9c055df688d2693d7f5aef724c9bd1fa921cc64",
+        "ir_limits": {
+          "max_depth": 14,
+          "max_nodes": 96,
+          "parameters": {
+            "heading_kd": [
+              0.0,
+              200.0
+            ],
+            "heading_kp": [
+              0.0,
+              200.0
+            ],
+            "integral_ki": [
+              0.0,
+              50.0
+            ],
+            "integral_limit": [
+              0.0,
+              5.0
+            ],
+            "yaw_filter_alpha": [
+              0.0,
+              1.0
+            ]
+          }
+        },
+        "policy": {
+          "desired_heading": {
+            "args": [
+              {
+                "args": [
+                  "max_heading_rad"
+                ],
+                "op": "neg"
+              },
+              {
+                "args": [
+                  "max_heading_rad",
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          "y_m"
+                        ],
+                        "op": "neg"
+                      },
+                      "lookahead_m"
+                    ],
+                    "op": "atan2"
+                  }
+                ],
+                "op": "min"
+              }
+            ],
+            "op": "max"
+          },
+          "name": "baseline",
+          "params": {
+            "heading_kd": 18.0,
+            "heading_kp": 39.0,
+            "integral_ki": 0.0,
+            "integral_limit": 0.5
+          },
+          "port": {
+            "args": [
+              "cruise_thrust_n",
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "name": "heading_kp",
+                                "op": "param"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              "max_heading_rad"
+                                            ],
+                                            "op": "neg"
+                                          },
+                                          {
+                                            "args": [
+                                              "max_heading_rad",
+                                              {
+                                                "args": [
+                                                  {
+                                                    "args": [
+                                                      "y_m"
+                                                    ],
+                                                    "op": "neg"
+                                                  },
+                                                  "lookahead_m"
+                                                ],
+                                                "op": "atan2"
+                                              }
+                                            ],
+                                            "op": "min"
+                                          }
+                                        ],
+                                        "op": "max"
+                                      },
+                                      "heading_rad"
+                                    ],
+                                    "op": "sub"
+                                  }
+                                ],
+                                "op": "wrap_angle"
+                              }
+                            ],
+                            "op": "mul"
+                          },
+                          {
+                            "args": [
+                              {
+                                "name": "heading_kd",
+                                "op": "param"
+                              },
+                              "yaw_rate_radps"
+                            ],
+                            "op": "mul"
+                          }
+                        ],
+                        "op": "sub"
+                      },
+                      {
+                        "args": [
+                          {
+                            "name": "integral_ki",
+                            "op": "param"
+                          },
+                          "integral_y"
+                        ],
+                        "op": "mul"
+                      }
+                    ],
+                    "op": "sub"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "const",
+                        "value": 2.0
+                      },
+                      "lever_arm_m"
+                    ],
+                    "op": "mul"
+                  }
+                ],
+                "op": "div"
+              }
+            ],
+            "op": "sub"
+          },
+          "schema": "nautilus.policy-ir.v1",
+          "starboard": {
+            "args": [
+              "cruise_thrust_n",
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "name": "heading_kp",
+                                "op": "param"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              "max_heading_rad"
+                                            ],
+                                            "op": "neg"
+                                          },
+                                          {
+                                            "args": [
+                                              "max_heading_rad",
+                                              {
+                                                "args": [
+                                                  {
+                                                    "args": [
+                                                      "y_m"
+                                                    ],
+                                                    "op": "neg"
+                                                  },
+                                                  "lookahead_m"
+                                                ],
+                                                "op": "atan2"
+                                              }
+                                            ],
+                                            "op": "min"
+                                          }
+                                        ],
+                                        "op": "max"
+                                      },
+                                      "heading_rad"
+                                    ],
+                                    "op": "sub"
+                                  }
+                                ],
+                                "op": "wrap_angle"
+                              }
+                            ],
+                            "op": "mul"
+                          },
+                          {
+                            "args": [
+                              {
+                                "name": "heading_kd",
+                                "op": "param"
+                              },
+                              "yaw_rate_radps"
+                            ],
+                            "op": "mul"
+                          }
+                        ],
+                        "op": "sub"
+                      },
+                      {
+                        "args": [
+                          {
+                            "name": "integral_ki",
+                            "op": "param"
+                          },
+                          "integral_y"
+                        ],
+                        "op": "mul"
+                      }
+                    ],
+                    "op": "sub"
+                  },
+                  {
+                    "args": [
+                      {
+                        "op": "const",
+                        "value": 2.0
+                      },
+                      "lever_arm_m"
+                    ],
+                    "op": "mul"
+                  }
+                ],
+                "op": "div"
+              }
+            ],
+            "op": "add"
+          }
+        },
+        "source": "# Nautilus controller policy (nautilus.policy-ir.v1).\n# Readable source of a validated IR policy: no imports, I/O, loops or hidden state.\n# References: y_m heading_rad yaw_rate_radps integral_y filtered_yaw_rate\n#             lookahead_m max_heading_rad cruise_thrust_n max_thrust_n lever_arm_m\n\n# parameters\n# heading_kd = 18.0   bounds (0.0, 200.0)\n# heading_kp = 39.0   bounds (0.0, 200.0)\n# integral_ki = 0.0   bounds (0.0, 50.0)\n# integral_limit = 0.5   bounds (0.0, 5.0)\n\n# control law\ndesired = max(-(max_heading_rad), min(max_heading_rad, atan2(-(y_m), lookahead_m)))\nmoment = ((((heading_kp * wrap((desired - heading_rad))) - (heading_kd * yaw_rate_radps)) - (integral_ki * integral_y)) / (2.0 * lever_arm_m))\nport = (cruise_thrust_n - moment)\nstarboard = (cruise_thrust_n + moment)\n"
+      },
+      "tool": "inspect_controller"
+    },
+    {
+      "arguments": {},
+      "index": 2,
+      "result": {
+        "baseline_fraction_outside_corridor": 0.7930327868852459,
+        "baseline_max_abs_cross_track_m": 2.366857418840945,
+        "baseline_rms_cross_track_m": 1.986163429656271,
+        "evidence_id": "E1",
+        "hidden_truth_exposed": false,
+        "matched": true,
+        "scenario_id": "current_positive",
+        "uncertainty": "inferred from observed tracking error; not a confirmed fault"
+      },
+      "tool": "inspect_diagnosis_evidence"
+    },
+    {
+      "arguments": {
+        "candidate_id": "C1_integral_moderate",
+        "evidence_refs": [
+          "E1"
+        ],
+        "params": {
+          "heading_kd": 18.0,
+          "heading_kp": 39.0,
+          "integral_ki": 6.0,
+          "integral_limit": 1.5,
+          "yaw_filter_alpha": 0.5
+        },
+        "rationale": "Hypothesis (not proven): in current_positive scenario E1, large steady cross-track error with baseline integral_ki=0 suggests adding integral action on cross-track may reject steady current offset. Keep Kp/Kd at baseline to isolate integral effect; moderate Ki=6 and limit=1.5 to bound windup."
+      },
+      "index": 3,
+      "result": {
+        "candidate_id": "C1_integral_moderate",
+        "fingerprint": "d49bd1a5d67f9fc3977b23b7a21b9779a661da6174afcb5b4766551fe1b120f7",
+        "params": {
+          "heading_kd": 18.0,
+          "heading_kp": 39.0,
+          "integral_ki": 6.0,
+          "integral_limit": 1.5,
+          "yaw_filter_alpha": 0.5
+        },
+        "rationale": "Hypothesis (not proven): in current_positive scenario E1, large steady cross-track error with baseline integral_ki=0 suggests adding integral action on cross-track may reject steady current offset. Keep Kp/Kd at baseline to isolate integral effect; moderate Ki=6 and limit=1.5 to bound windup."
+      },
+      "tool": "propose_controller_revision"
+    },
+    {
+      "arguments": {
+        "candidate_id": "C1_integral_moderate"
+      },
+      "index": 4,
+      "result": {
+        "candidate_id": "C1_integral_moderate",
+        "params": {
+          "heading_kd": 18.0,
+          "heading_kp": 39.0,
+          "integral_ki": 6.0,
+          "integral_limit": 1.5,
+          "yaw_filter_alpha": 0.5
+        },
+        "source": "# Nautilus controller policy (nautilus.policy-ir.v1).\n# Readable source of a validated IR policy: no imports, I/O, loops or hidden state.\n# References: y_m heading_rad yaw_rate_radps integral_y filtered_yaw_rate\n#             lookahead_m max_heading_rad cruise_thrust_n max_thrust_n lever_arm_m\n\n# parameters\n# heading_kd = 18.0   bounds (0.0, 200.0)\n# heading_kp = 39.0   bounds (0.0, 200.0)\n# integral_ki = 6.0   bounds (0.0, 50.0)\n# integral_limit = 1.5   bounds (0.0, 5.0)\n# yaw_filter_alpha = 0.5   bounds (0.0, 1.0)\n\n# control law\ndesired = max(-(max_heading_rad), min(max_heading_rad, atan2(-(y_m), lookahead_m)))\nmoment = ((((heading_kp * wrap((desired - heading_rad))) - (heading_kd * yaw_rate_radps)) - (integral_ki * integral_y)) / (2.0 * lever_arm_m))\nport = (cruise_thrust_n - moment)\nstarboard = (cruise_thrust_n + moment)\n",
+        "valid": true
+      },
+      "tool": "validate_controller"
+    },
+    {
+      "arguments": {
+        "candidate_id": "C1_integral_moderate"
+      },
+      "index": 5,
+      "result": {
+        "aggregate": {
+          "completed_missions": {
+            "baseline": 2,
+            "candidate": 4,
+            "difference": 2
+          },
+          "mean_effort_proxy_n_s": {
+            "baseline": 342.94656145665175,
+            "candidate": 346.757645865384,
+            "difference": 3.811084408732256
+          },
+          "mean_rms_cross_track_m": {
+            "baseline": 1.1077658450294359,
+            "candidate": 0.48437448756022633,
+            "difference": -0.6233913574692096
+          },
+          "worst_case_command_saturation_fraction": {
+            "baseline": 0.0,
+            "candidate": 0.0,
+            "difference": 0.0
+          },
+          "worst_case_fraction_outside_corridor": {
+            "baseline": 0.7930327868852459,
+            "candidate": 0.0,
+            "difference": -0.7930327868852459
+          },
+          "worst_case_max_abs_cross_track_m": {
+            "baseline": 2.366857418840945,
+            "candidate": 1.2344757020241937,
+            "difference": -1.1323817168167514
+          }
+        },
+        "candidate_id": "C1_integral_moderate",
+        "gates": [
+          {
+            "description": "Every baseline and candidate run produced finite traces.",
+            "id": "finite_runs",
+            "observed": 0,
+            "passed": true,
+            "threshold": 0
+          },
+          {
+            "description": "Mean cross-track RMS improves by at least the declared minimum.",
+            "id": "mean_rms_improvement",
+            "observed": -0.6233913574692096,
+            "passed": true,
+            "threshold": -0.05
+          },
+          {
+            "description": "No single development scenario regresses beyond the declared limit.",
+            "id": "no_scenario_rms_regression",
+            "observed": 0.009416833247751664,
+            "passed": true,
+            "threshold": 0.1
+          },
+          {
+            "description": "Worst-case maximum cross-track error does not grow beyond the declared limit.",
+            "id": "no_worst_case_cross_track_regression",
+            "observed": -1.1323817168167514,
+            "passed": true,
+            "threshold": 0.25
+          },
+          {
+            "description": "Worst-case corridor excursion fraction does not grow beyond the declared limit.",
+            "id": "no_worst_case_excursion_regression",
+            "observed": -0.7930327868852459,
+            "passed": true,
+            "threshold": 0.05
+          },
+          {
+            "description": "The number of completed development missions does not fall.",
+            "id": "no_completion_regression",
+            "observed": 4,
+            "passed": true,
+            "threshold": 2
+          },
+          {
+            "description": "Worst-case command saturation does not grow beyond the declared limit.",
+            "id": "no_saturation_regression",
+            "observed": 0.0,
+            "passed": true,
+            "threshold": 0.05
+          },
+          {
+            "description": "Mean actuation-effort proxy does not grow beyond the declared fraction.",
+            "id": "no_effort_blowup",
+            "observed": 346.757645865384,
+            "passed": true,
+            "threshold": 411.53587374798207
+          }
+        ],
+        "outcome": {
+          "failed_gates": [],
+          "gate_descriptions": {},
+          "label": "Recommended",
+          "mean_rms_difference_m": -0.6233913574692096,
+          "rationale": "All declared gates passed: cross-track RMS improved by the required margin with no regression or constraint breach."
+        },
+        "rows": [
+          {
+            "baseline": {
+              "command_saturation_fraction": 0.0,
+              "effort_proxy_n_s": 304.57395212251805,
+              "finite_samples": true,
+              "fraction_outside_corridor": 0.0,
+              "max_abs_cross_track_m": 0.005022197551754193,
+              "mission_success": true,
+              "rms_cross_track_m": 0.001980903067643098
+            },
+            "candidate": {
+              "command_saturation_fraction": 0.0,
+              "effort_proxy_n_s": 304.578839620705,
+              "finite_samples": true,
+              "fraction_outside_corridor": 0.0,
+              "max_abs_cross_track_m": 0.020530398305421554,
+              "mission_success": true,
+              "rms_cross_track_m": 0.011397736315394763
+            },
+            "scenario_id": "nominal"
+          },
+          {
+            "baseline": {
+              "command_saturation_fraction": 0.0,
+              "effort_proxy_n_s": 316.017739405797,
+              "finite_samples": true,
+              "fraction_outside_corridor": 0.7930327868852459,
+              "max_abs_cross_track_m": 2.366857418840945,
+              "mission_success": false,
+              "rms_cross_track_m": 1.986163429656271
+            },
+            "candidate": {
+              "command_saturation_fraction": 0.0,
+              "effort_proxy_n_s": 321.531146580891,
+              "finite_samples": true,
+              "fraction_outside_corridor": 0.0,
+              "max_abs_cross_track_m": 1.2344757020241937,
+              "mission_success": true,
+              "rms_cross_track_m": 0.8091211182230705
+            },
+            "scenario_id": "current_positive"
+          },
+          {
+            "baseline": {
+              "command_saturation_fraction": 0.0,
+              "effort_proxy_n_s": 316.033325768433,
+              "finite_samples": true,
+              "fraction_outside_corridor": 0.7930327868852459,
+              "max_abs_cross_track_m": 2.361603654194574,
+              "mission_success": false,
+              "rms_cross_track_m": 1.9826445263848633
+            },
+            "candidate": {
+              "command_saturation_fraction": 0.0,
+              "effort_proxy_n_s": 321.52973138631796,
+              "finite_samples": true,
+              "fraction_outside_corridor": 0.0,
+              "max_abs_cross_track_m": 1.232634331217169,
+              "mission_success": true,
+              "rms_cross_track_m": 0.8053620452914088
+            },
+            "scenario_id": "current_negative"
+          },
+          {
+            "baseline": {
+              "command_saturation_fraction": 0.0,
+              "effort_proxy_n_s": 435.16122852985905,
+              "finite_samples": true,
+              "fraction_outside_corridor": 0.0,
+              "max_abs_cross_track_m": 0.5646748202878744,
+              "mission_success": true,
+              "rms_cross_track_m": 0.4602745210089663
+            },
+            "candidate": {
+              "command_saturation_fraction": 0.0,
+              "effort_proxy_n_s": 439.39086587362203,
+              "finite_samples": true,
+              "fraction_outside_corridor": 0.0,
+              "max_abs_cross_track_m": 0.5932177603201051,
+              "mission_success": true,
+              "rms_cross_track_m": 0.31161705041103127
+            },
+            "scenario_id": "thruster_degradation"
+          }
+        ]
+      },
+      "tool": "execute_controller_trial"
+    },
+    {
+      "arguments": {
+        "candidate_id": "C2_integral_strong",
+        "evidence_refs": [
+          "E1"
+        ],
+        "params": {
+          "heading_kd": 18.0,
+          "heading_kp": 39.0,
+          "integral_ki": 12.0,
+          "integral_limit": 2.0,
+          "yaw_filter_alpha": 0.5
+        },
+        "rationale": "Hypothesis test (not proven cause): if C1's moderate integral helps current scenarios but still leaves ~0.81m RMS there, stronger Ki=12 with larger limit 2.0 may further reject steady offset; risk is nominal oscillation/windup, which paired gates will check. Kp/Kd held at baseline."
+      },
+      "index": 6,
+      "result": {
+        "candidate_id": "C2_integral_strong",
+        "fingerprint": "1aab3b2b8992c637746c6e70a337d450aea14f5f865053e5cb9215ae326855c6",
+        "params": {
+          "heading_kd": 18.0,
+          "heading_kp": 39.0,
+          "integral_ki": 12.0,
+          "integral_limit": 2.0,
+          "yaw_filter_alpha": 0.5
+        },
+        "rationale": "Hypothesis test (not proven cause): if C1's moderate integral helps current scenarios but still leaves ~0.81m RMS there, stronger Ki=12 with larger limit 2.0 may further reject steady offset; risk is nominal oscillation/windup, which paired gates will check. Kp/Kd held at baseline."
+      },
+      "tool": "propose_controller_revision"
+    },
+    {
+      "arguments": {
+        "candidate_id": "C2_integral_strong"
+      },
+      "index": 7,
+      "result": {
+        "candidate_id": "C2_integral_strong",
+        "params": {
+          "heading_kd": 18.0,
+          "heading_kp": 39.0,
+          "integral_ki": 12.0,
+          "integral_limit": 2.0,
+          "yaw_filter_alpha": 0.5
+        },
+        "source": "# Nautilus controller policy (nautilus.policy-ir.v1).\n# Readable source of a validated IR policy: no imports, I/O, loops or hidden state.\n# References: y_m heading_rad yaw_rate_radps integral_y filtered_yaw_rate\n#             lookahead_m max_heading_rad cruise_thrust_n max_thrust_n lever_arm_m\n\n# parameters\n# heading_kd = 18.0   bounds (0.0, 200.0)\n# heading_kp = 39.0   bounds (0.0, 200.0)\n# integral_ki = 12.0   bounds (0.0, 50.0)\n# integral_limit = 2.0   bounds (0.0, 5.0)\n# yaw_filter_alpha = 0.5   bounds (0.0, 1.0)\n\n# control law\ndesired = max(-(max_heading_rad), min(max_heading_rad, atan2(-(y_m), lookahead_m)))\nmoment = ((((heading_kp * wrap((desired - heading_rad))) - (heading_kd * yaw_rate_radps)) - (integral_ki * integral_y)) / (2.0 * lever_arm_m))\nport = (cruise_thrust_n - moment)\nstarboard = (cruise_thrust_n + moment)\n",
+        "valid": true
+      },
+      "tool": "validate_controller"
+    },
+    {
+      "arguments": {
+        "candidate_id": "C2_integral_strong"
+      },
+      "index": 8,
+      "result": {
+        "aggregate": {
+          "completed_missions": {
+            "baseline": 2,
+            "candidate": 1,
+            "difference": -1
+          },
+          "mean_effort_proxy_n_s": {
+            "baseline": 342.94656145665175,
+            "candidate": 404.68710982083843,
+            "difference": 61.74054836418668
+          },
+          "mean_rms_cross_track_m": {
+            "baseline": 1.1077658450294359,
+            "candidate": 0.7032309246769461,
+            "difference": -0.4045349203524897
+          },
+          "worst_case_command_saturation_fraction": {
+            "baseline": 0.0,
+            "candidate": 0.0,
+            "difference": 0.0
+          },
+          "worst_case_fraction_outside_corridor": {
+            "baseline": 0.7930327868852459,
+            "candidate": 0.1368421052631579,
+            "difference": -0.656190681622088
+          },
+          "worst_case_max_abs_cross_track_m": {
+            "baseline": 2.366857418840945,
+            "candidate": 2.198057434382281,
+            "difference": -0.16879998445866384
+          }
+        },
+        "candidate_id": "C2_integral_strong",
+        "gates": [
+          {
+            "description": "Every baseline and candidate run produced finite traces.",
+            "id": "finite_runs",
+            "observed": 0,
+            "passed": true,
+            "threshold": 0
+          },
+          {
+            "description": "Mean cross-track RMS improves by at least the declared minimum.",
+            "id": "mean_rms_improvement",
+            "observed": -0.4045349203524897,
+            "passed": true,
+            "threshold": -0.05
+          },
+          {
+            "description": "No single development scenario regresses beyond the declared limit.",
+            "id": "no_scenario_rms_regression",
+            "observed": 0.3250315547630687,
+            "passed": false,
+            "threshold": 0.1
+          },
+          {
+            "description": "Worst-case maximum cross-track error does not grow beyond the declared limit.",
+            "id": "no_worst_case_cross_track_regression",
+            "observed": -0.16879998445866384,
+            "passed": true,
+            "threshold": 0.25
+          },
+          {
+            "description": "Worst-case corridor excursion fraction does not grow beyond the declared limit.",
+            "id": "no_worst_case_excursion_regression",
+            "observed": -0.656190681622088,
+            "passed": true,
+            "threshold": 0.05
+          },
+          {
+            "description": "The number of completed development missions does not fall.",
+            "id": "no_completion_regression",
+            "observed": 1,
+            "passed": false,
+            "threshold": 2
+          },
+          {
+            "description": "Worst-case command saturation does not grow beyond the declared limit.",
+            "id": "no_saturation_regression",
+            "observed": 0.0,
+            "passed": true,
+            "threshold": 0.05
+          },
+          {
+            "description": "Mean actuation-effort proxy does not grow beyond the declared fraction.",
+            "id": "no_effort_blowup",
+            "observed": 404.68710982083843,
+            "passed": true,
+            "threshold": 411.53587374798207
+          }
+        ],
+        "outcome": {
+          "failed_gates": [
+            "no_scenario_rms_regression",
+            "no_completion_regression"
+          ],
+          "gate_descriptions": {
+            "no_completion_regression": "The number of completed development missions does not fall.",
+            "no_scenario_rms_regression": "No single development scenario regresses beyond the declared limit."
+          },
+          "label": "Rejected",
+          "mean_rms_difference_m": -0.4045349203524897,
+          "rationale": "The candidate improved tracking but failed at least one regression or safety gate; the tradeoff is not acceptable."
+        },
+        "rows": [
+          {
+            "baseline": {
+              "command_saturation_fraction": 0.0,
+              "effort_proxy_n_s": 304.57395212251805,
+              "finite_samples": true,
+              "fraction_outside_corridor": 0.0,
+              "max_abs_cross_track_m": 0.005022197551754193,
+              "mission_success": true,
+              "rms_cross_track_m": 0.001980903067643098
+            },
+            "candidate": {
+              "command_saturation_fraction": 0.0,
+              "effort_proxy_n_s": 305.243891922372,
+              "finite_samples": true,
+              "fraction_outside_corridor": 0.0,
+              "max_abs_cross_track_m": 0.2864534250346259,
+              "mission_success": true,
+              "rms_cross_track_m": 0.1005252074538499
+            },
+            "scenario_id": "nominal"
+          },
+          {
+            "baseline": {
+              "command_saturation_fraction": 0.0,
+              "effort_proxy_n_s": 316.017739405797,
+              "finite_samples": true,
+              "fraction_outside_corridor": 0.7930327868852459,
+              "max_abs_cross_track_m": 2.366857418840945,
+              "mission_success": false,
+              "rms_cross_track_m": 1.986163429656271
+            },
+            "candidate": {
+              "command_saturation_fraction": 0.0,
+              "effort_proxy_n_s": 379.9711469176114,
+              "finite_samples": true,
+              "fraction_outside_corridor": 0.1368421052631579,
+              "max_abs_cross_track_m": 2.198057434382281,
+              "mission_success": false,
+              "rms_cross_track_m": 0.9657945218070401
+            },
+            "scenario_id": "current_positive"
+          },
+          {
+            "baseline": {
+              "command_saturation_fraction": 0.0,
+              "effort_proxy_n_s": 316.033325768433,
+              "finite_samples": true,
+              "fraction_outside_corridor": 0.7930327868852459,
+              "max_abs_cross_track_m": 2.361603654194574,
+              "mission_success": false,
+              "rms_cross_track_m": 1.9826445263848633
+            },
+            "candidate": {
+              "command_saturation_fraction": 0.0,
+              "effort_proxy_n_s": 379.36270488840046,
+              "finite_samples": true,
+              "fraction_outside_corridor": 0.13508771929824562,
+              "max_abs_cross_track_m": 2.182223697804326,
+              "mission_success": false,
+              "rms_cross_track_m": 0.9612978936748595
+            },
+            "scenario_id": "current_negative"
+          },
+          {
+            "baseline": {
+              "command_saturation_fraction": 0.0,
+              "effort_proxy_n_s": 435.16122852985905,
+              "finite_samples": true,
+              "fraction_outside_corridor": 0.0,
+              "max_abs_cross_track_m": 0.5646748202878744,
+              "mission_success": true,
+              "rms_cross_track_m": 0.4602745210089663
+            },
+            "candidate": {
+              "command_saturation_fraction": 0.0,
+              "effort_proxy_n_s": 554.1706955549698,
+              "finite_samples": true,
+              "fraction_outside_corridor": 0.08118081180811808,
+              "max_abs_cross_track_m": 1.6003294981453466,
+              "mission_success": false,
+              "rms_cross_track_m": 0.785306075772035
+            },
+            "scenario_id": "thruster_degradation"
+          }
+        ]
+      },
+      "tool": "execute_controller_trial"
+    },
+    {
+      "arguments": {
+        "candidate_a": "C1_integral_moderate",
+        "candidate_b": "C2_integral_strong"
+      },
+      "index": 9,
+      "result": {
+        "a": "C1_integral_moderate",
+        "a_mean_rms_difference_m": -0.6233913574692096,
+        "a_outcome": "Recommended",
+        "b": "C2_integral_strong",
+        "b_mean_rms_difference_m": -0.4045349203524897,
+        "b_outcome": "Rejected",
+        "better": "C1_integral_moderate"
+      },
+      "tool": "compare_candidate_policies"
+    },
+    {
+      "arguments": {
+        "candidate_id": "C1_integral_moderate"
+      },
+      "index": 10,
+      "result": {
+        "candidate_id": "C1_integral_moderate",
+        "note": "Held-out split: reported for evidence, never used to select the candidate.",
+        "outcome": {
+          "failed_gates": [],
+          "gate_descriptions": {},
+          "label": "Recommended",
+          "mean_rms_difference_m": -0.49288277568850225,
+          "rationale": "All declared gates passed: cross-track RMS improved by the required margin with no regression or constraint breach."
+        },
+        "part": "held_out",
+        "per_case": [
+          {
+            "baseline_rms_cross_track_m": 1.7130413278727255,
+            "candidate_rms_cross_track_m": 0.5818880767497753,
+            "scenario_id": "heading_bias"
+          },
+          {
+            "baseline_rms_cross_track_m": 0.6649694900457787,
+            "candidate_rms_cross_track_m": 0.31415839724433214,
+            "scenario_id": "compound_current_bias_degradation"
+          },
+          {
+            "baseline_rms_cross_track_m": 0.003539381381059083,
+            "candidate_rms_cross_track_m": 0.0068553982399491556,
+            "scenario_id": "model_mismatch"
+          }
+        ]
+      },
+      "tool": "evaluate_policy_robustness"
+    },
+    {
+      "arguments": {
+        "candidate_id": "C1_integral_moderate",
+        "decision": "recommend",
+        "rationale": "Recommend C1 (Kp=39, Kd=18, Ki=6.0, integral_limit=1.5, yaw_filter_alpha=0.5). It is a hypothesis tested, not a proven cause, from E1 current_positive baseline failure (RMS 1.99m, 79.3% outside corridor, Ki=0). In matched paired dev trials C1 passed all gates: mean RMS difference -0.623m vs baseline, worst-case outside corridor 0.793->0.0, worst max cross-track 2.367->1.234m, completions 2->4, no saturation, effort +3.8 N-s. C2 stronger integral (Ki=12) was Rejected for scenario regression and completion loss, and direct comparison favoured C1. Held-out robustness for C1 also passed all gates (mean RMS diff -0.493m), reported as evidence only, not used for selection."
+      },
+      "index": 11,
+      "result": {
+        "budget": {
+          "candidates": 3,
+          "elapsed_s": 110.623,
+          "max_requests": 12,
+          "max_seconds": 180.0,
+          "max_trials": 12,
+          "requests": 11,
+          "trials": 11
+        },
+        "candidate_id": "C1_integral_moderate",
+        "decision": "recommend",
+        "rationale": "Recommend C1 (Kp=39, Kd=18, Ki=6.0, integral_limit=1.5, yaw_filter_alpha=0.5). It is a hypothesis tested, not a proven cause, from E1 current_positive baseline failure (RMS 1.99m, 79.3% outside corridor, Ki=0). In matched paired dev trials C1 passed all gates: mean RMS difference -0.623m vs baseline, worst-case outside corridor 0.793->0.0, worst max cross-track 2.367->1.234m, completions 2->4, no saturation, effort +3.8 N-s. C2 stronger integral (Ki=12) was Rejected for scenario regression and completion loss, and direct comparison favoured C1. Held-out robustness for C1 also passed all gates (mean RMS diff -0.493m), reported as evidence only, not used for selection."
+      },
+      "tool": "finalize_controller_recommendation"
+    }
+  ],
+  "final": {
+    "budget": {
+      "candidates": 3,
+      "elapsed_s": 110.623,
+      "max_requests": 12,
+      "max_seconds": 180.0,
+      "max_trials": 12,
+      "requests": 11,
+      "trials": 11
+    },
+    "candidate_id": "C1_integral_moderate",
+    "decision": "recommend",
+    "rationale": "Recommend C1 (Kp=39, Kd=18, Ki=6.0, integral_limit=1.5, yaw_filter_alpha=0.5). It is a hypothesis tested, not a proven cause, from E1 current_positive baseline failure (RMS 1.99m, 79.3% outside corridor, Ki=0). In matched paired dev trials C1 passed all gates: mean RMS difference -0.623m vs baseline, worst-case outside corridor 0.793->0.0, worst max cross-track 2.367->1.234m, completions 2->4, no saturation, effort +3.8 N-s. C2 stronger integral (Ki=12) was Rejected for scenario regression and completion loss, and direct comparison favoured C1. Held-out robustness for C1 also passed all gates (mean RMS diff -0.493m), reported as evidence only, not used for selection."
+  },
+  "label": "Recorded Real Muse",
+  "origin": {
+    "candidate_origin": "muse-proposed-parameter",
+    "source_file": "artifacts/muse-studio-live-run.recommend.json",
+    "source_sha256": "d9378d5192b0ec0475345483eb52aae5d8e8d0bc33a44d6bb1699791a900d5f1",
+    "structural_source": false
+  },
+  "usage": {
+    "input_tokens": 53476,
+    "output_tokens": 5790,
+    "requests": 11,
+    "usd_estimate": 0.091452
+  }
+}

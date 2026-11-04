@@ -20,6 +20,8 @@ export type OverviewOptions = {
   exampleBusy?: boolean;
   /** Error text from the last example run, if it failed. */
   exampleError?: string | null;
+  /** Pre-rendered recorded Muse engineering trace, or empty when it could not be loaded. */
+  recordedMuseMarkup?: string;
 };
 
 function toolIndex(apiEnabled: boolean): string {
@@ -64,6 +66,7 @@ export function overviewMarkup(session: Session, options: OverviewOptions): stri
       </ol>
     </div>
     ${caseFilesMarkup({apiEnabled: options.apiEnabled, busy: options.exampleBusy})}
+    ${options.recordedMuseMarkup ?? ''}
     <section aria-label="Current session"><div class="section-head"><h3>Current session</h3><span class="eyebrow">MEMORY ONLY · LOST ON RELOAD</span></div>${sessionStatus}${recordStatus}</section>
     <section aria-label="Tools"><div class="section-head"><h3>Where everything is</h3><span class="eyebrow">FIVE MORE DESTINATIONS</span></div><div class="tool-grid">${toolIndex(options.apiEnabled)}</div></section>
     <p class="muted">This is a scientific simulation environment. Controller comparisons are simulation-only and are not a certified safety case. Hypotheses are candidates, never proven causes.</p>

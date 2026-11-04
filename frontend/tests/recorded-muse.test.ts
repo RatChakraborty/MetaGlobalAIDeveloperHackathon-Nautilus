@@ -1,0 +1,34 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {recordedRunMarkup, eventSummary, type RecordedRun} from '../src/recorded-muse.ts';
+
+const run = JSON.parse(readFileSync(new URL('../public/recorded/muse-engineering-run.json', import.meta.url), 'utf8')) as RecordedRun;
+
+test('recorded run is labelled, complete and recommends the verified candidate', () => {
+  assert.equal(run.label, 'Recorded Real Muse');
+  assert.equal(run.events.length, 11);
+  assert.equal(run.final.decision, 'recommend');
+  assert.equal(run.origin.structural_source, false);
+  assert.match(run.origin.source_sha256, /^[0-9a-f]{64}$/);
+});
+
+test('markup shows the trusted numbers, provenance and cost estimate label', () => {
+  const markup = recordedRunMarkup(run);
+  assert.match(markup, /RECORDED REAL MUSE/);
+  assert.match(markup, /Muse-proposed parameter revision/);
+  assert.match(markup, /estimate, not billing/);
+  assert.match(markup, /mean RMS 1\.108 m → 0\.484 m/);
+  assert.equal((markup.match(/class="trace-event"/g) ?? []).length, 11);
+});
+
+test('markup escapes model-supplied text', () => {
+  const hostile = {...run, final: {...run.final, rationale: '<img src=x onerror=alert(1)>'}};
+  const markup = recordedRunMarkup(hostile as RecordedRun);
+  assert.doesNotMatch(markup, /<img src=x/);
+  assert.match(markup, /&lt;img src=x/);
+});
+
+test('event summary never invents numbers for unknown tools', () => {
+  assert.equal(eventSummary({index: 1, tool: 'mystery', arguments: {}, result: {}}), 'Tool mystery executed.');
+});
