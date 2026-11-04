@@ -188,11 +188,12 @@ class LiveMuse:
 
     name = 'muse-live'
 
-    def __init__(self, transport, envelope: LiveEnvelope | None = None):
+    def __init__(self, transport, envelope: LiveEnvelope | None = None, source_mode: bool = False):
         if not callable(transport):
             raise TypeError('a transport callable is required; no default network transport exists')
         self.transport = transport
         self.envelope = envelope or LiveEnvelope()
+        self.source_mode = source_mode
 
     def next_call(self, session, observations) -> dict:
         est_in = (len(_trim(observations)) + 2_000) // 4
@@ -210,6 +211,9 @@ class LiveMuse:
             system = ('You engineer a marine controller through the listed tools only. '
                       f'You may propose at most {session.budget.max_candidates} candidates, then compare and finalise. '
                       'Abstain when evidence is inconclusive. Candidate hypotheses are not proven causes.')
+            if self.source_mode:
+                system += (' Write each revision as controller source text through propose_source_revision, '
+                           'not as parameter overrides.')
         reply = self.transport(
             system=system,
             transcript=_trim(observations),
