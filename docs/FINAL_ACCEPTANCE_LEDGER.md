@@ -70,7 +70,19 @@ Decision: excluded from the Production interface. Documented here as a scientifi
 
 1. `tests/test_muse_evaluation.py::test_resume_skips_completed_pairs_and_prevents_duplicates` and `::test_provider_failure_is_terminal_case_and_campaign_stop` fail with `Frozen source/runtime changed`. `evaluate_muse.make_manifest` pins `CANDIDATE=340d1c1` and rejects any working-tree change under `nautilus/*.py`. The 14 tests pass at HEAD. This is an intentional protocol guard. It is not bypassed or re-pinned. Resolving it requires either reverting the `nautilus/` edits or a documented protocol revision by the owner.
 
-## Remaining work (in order)
+## Status of remaining work (as of the final release pass)
+
+The items below are the open work, with their current status. Nothing here is complete unless the status says so.
+
+- Recorded Muse parameter-revision run: complete and shown on Overview (see above).
+- Structural (source) Muse run: not verified. Source-mode requests returned HTTP 503 or 400; the cause is unknown because provider error bodies are discarded by design. No successful structural run exists.
+- Frozen benchmark against deterministic baselines: not run. The private evaluator pool is not on disk, and re-running would touch frozen results. The only measured comparison is the Studio candidate versus baseline in `docs/EVALUATION.md`.
+- Agent Engineering Trace UI with live execution and cancellation: not built.
+- Claim-to-evidence links in Reports: not built (see the table above).
+- AUV Field Case: excluded; the reasons are in the feasibility section below.
+- Browser rehearsal of the demo: not run.
+
+## Historical remaining-work list (superseded)
 
 - Recorded real Muse run (`artifacts/muse-studio-live-run.recommend.json`) verified: 11 tool events, candidate C1 proposed from E1 with evidence refs, paired and held-out robustness run before `recommend`, final host decision recorded. Origin is parameter revision (Muse-proposed), not structural source.
 - Source-mode probe (single restricted tool, output ceiling 1500): provider returned HTTP 400, recorded as a stop. Earlier source-mode requests returned HTTP 503. Error bodies are discarded by design, so the reason is not visible. Structural source generation remains unproven.
