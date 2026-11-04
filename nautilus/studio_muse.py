@@ -31,7 +31,8 @@ TOOLS = (
      'parameters': {'type': 'object', 'properties': {
          'candidate_id': {'type': 'string'}, 'rationale': {'type': 'string'},
          'evidence_refs': {'type': 'array', 'items': {'type': 'string'}},
-         'params': {'type': 'object'}, 'source': {'type': 'string'}},
+         'params': {'type': 'object', 'description': 'IR parameter overrides. Send only one of params or source; never both.'},
+         'source': {'type': 'string', 'description': 'Complete controller source text. Send only one of params or source; never both.'}},
          'required': ['candidate_id', 'rationale'], 'additionalProperties': False}},
     {'name': 'validate_controller', 'description': 'Validate a proposed candidate against the IR limits.',
      'parameters': {'type': 'object', 'properties': {'candidate_id': {'type': 'string'}},

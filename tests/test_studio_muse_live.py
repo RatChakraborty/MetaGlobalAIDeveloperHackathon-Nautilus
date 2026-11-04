@@ -175,6 +175,14 @@ class StrictSchemaTests(unittest.TestCase):
         self.assertEqual(_drop_nulls({'candidate_id': 'c', 'params': None, 'source': None}),
                          {'candidate_id': 'c'})
 
+    def test_empty_params_placeholder_beside_source_is_dropped_but_real_params_are_kept(self):
+        from nautilus.studio_muse_live import _drop_nulls
+        self.assertEqual(_drop_nulls({'candidate_id': 'c', 'params': {}, 'source': 'x'}),
+                         {'candidate_id': 'c', 'source': 'x'})
+        # Real params beside a source are still forwarded, so the trusted validator refuses them.
+        self.assertEqual(_drop_nulls({'candidate_id': 'c', 'params': {'heading_kp': 1.0}, 'source': 'x'}),
+                         {'candidate_id': 'c', 'params': {'heading_kp': 1.0}, 'source': 'x'})
+
 
 class MalformedReplyTests(unittest.TestCase):
     def test_malformed_reply_is_recorded_and_loop_continues_until_limit(self):

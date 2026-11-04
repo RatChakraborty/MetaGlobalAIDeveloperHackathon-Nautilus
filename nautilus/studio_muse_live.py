@@ -91,7 +91,13 @@ def _strict_schema(schema):
 
 
 def _drop_nulls(arguments):
-    return {key: value for key, value in arguments.items() if value is not None}
+    """Remove null optionals. Strict mode forces `params` to appear, so an empty one beside a
+    source is only the schema placeholder and is removed. Non-empty params beside a source
+    still reach the trusted validator, which refuses them."""
+    cleaned = {key: value for key, value in arguments.items() if value is not None}
+    if cleaned.get('source') is not None and cleaned.get('params') == {}:
+        del cleaned['params']
+    return cleaned
 
 
 def meta_transport(provider=None):
