@@ -89,6 +89,17 @@ Then say the separation line: “The 3 m lookahead candidate in this study is no
 bounded-integral policy. They are different controller studies and we do not merge their
 numbers.”
 
+## Optional Muse segment (recorded, not live)
+
+Only if time allows, and only after Case B. On **Overview**, open the **Recorded Real Muse** card.
+
+Say: “This is a recorded real Meta Muse session from development. It shows one controller
+study: Muse proposed a parameter change, and the host’s gates decided. It is a recording, not a
+live call, and it did not generate structural source code.”
+
+Do not say Muse picked the controller, that Muse can accept its own proposal, or that the
+recording is a live run. Structural source generation is not verified and must not be shown.
+
 ## 2:40–3:00 — Limits and close
 
 Say: “The passive scores are heuristics, not probabilities. Hidden plant truth never reaches
