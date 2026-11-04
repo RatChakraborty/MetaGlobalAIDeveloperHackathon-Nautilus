@@ -80,6 +80,7 @@ The items below are the open work, with their current status. Nothing here is co
 - Agent Engineering Trace UI with live execution and cancellation: not built.
 - Claim-to-evidence links in Reports: not built (see the table above).
 - AUV Field Case: excluded; the reasons are in the feasibility section below.
+- Untracked local files, deliberately not committed: `.vercel/` (project link), `_uv/` (a local uv binary), and `api/pyproject.toml`, `api/uv.lock`, `api/.python-version` (a uv alternative to the tracked `api/requirements.txt`; the pins are identical, and the deployed function uses `requirements.txt`).
 - Browser rehearsal of the demo: not run.
 
 ## Historical remaining-work list (superseded)
