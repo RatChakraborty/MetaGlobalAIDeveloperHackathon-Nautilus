@@ -1,7 +1,6 @@
 # Nautilus architecture
 
-Status: draft for the pre-Muse feature freeze. Branch `feature/autonomous-control-policy-studio`
-at the UI commit plus the case-files integration. Every robot result in this repository comes
+Status: current for `main` at `82723c9` (docs refreshed at `19765e2`). Every robot result in this repository comes
 from a simulator; no hardware execution is included.
 
 ## Purpose
@@ -87,11 +86,14 @@ Two bounded adapters exist:
 - investigation adapter (`nautilus/muse*.py`), with recorded live development runs documented
   in the historical reports;
 - controller-engineering loop (`nautilus/studio_muse.py`, `nautilus/studio_muse_live.py`), with
-  a deterministic `MockMuse` and a live provider that remains unavailable.
+  a deterministic `MockMuse` and a live provider (`studio_muse_live.py`). The live provider is
+  reachable only through the operator script `scripts/run_muse_studio_live.py`; the public web
+  path does not select it.
 
 The server-side kill switch is `NAUTILUS_MUSE_ENABLED`: only the exact value `true` enables the
-guard. `live_available()` in `studio_muse` still returns `False`, and the live envelope refuses
-every request until verified per-token prices are configured. Mock sessions are labelled mock
+guard. `live_available()` in `studio_muse` returns true only when that switch is on and
+`MODEL_API_KEY` is set. The live envelope refuses every request until verified per-token prices
+are configured. Mock sessions are labelled mock
 and are never scientific evidence. See [the Muse readiness contracts](#muse-readiness-contracts).
 
 ## API surface
