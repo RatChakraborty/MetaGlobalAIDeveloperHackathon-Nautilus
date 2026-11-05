@@ -61,8 +61,8 @@ test('with the API disabled the example is disabled and gated tools say so', () 
 
 test('a running example reports progress and cannot be started twice', () => {
   const markup = overviewMarkup(initialSession(), {...base, exampleBusy: true});
-  assert.match(markup, /Running example experiment…/);
-  assert.match(markup, /Simulation running on the server/);
+  assert.match(markup, /Starting investigation…/);
+  assert.match(markup, /Deterministic investigation running on the server/);
   assert.match(markup, /id="start-example" disabled/);
 });
 
@@ -70,4 +70,23 @@ test('an example failure is shown as an alert-style status without claiming succ
   const markup = overviewMarkup(initialSession(), {...base, exampleError: 'Simulation API unreachable'});
   assert.match(markup, /Simulation API unreachable/);
   assert.match(markup, /role="status" aria-live="polite"/);
+});
+
+
+test('overview offers one investigation start and separately labels recorded and 3D paths', () => {
+  const markup = overviewMarkup(initialSession(), base);
+  assert.equal((markup.match(/id="start-example"/g) ?? []).length, 1);
+  assert.match(markup, /Start an Investigation/);
+  assert.match(markup, /href="#verified-cases"/);
+  assert.match(markup, /href="#recorded-muse"/);
+  assert.match(markup, /data-goto="Trajectory"/);
+  assert.match(markup, /no bundled 3D example/);
+  assert.match(markup, /may disappear after refreshing/);
+});
+
+test('a trial is evidence of comparison, never evidence that engineering or robustness is complete', () => {
+  const session = {...initialSession(), trials:[{id:'trial', fingerprint:'a'.repeat(64), outcome:'Not recommended', meanRmsDifferenceM:1, scenarios:2, finishedAt:'2026-01-01'}]};
+  const markup = overviewMarkup(session, base);
+  assert.doesNotMatch(markup, /<li class="done"><small>0[345]<\/small>/);
+  assert.match(markup, /Export the latest report/);
 });
