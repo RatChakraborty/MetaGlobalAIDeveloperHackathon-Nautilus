@@ -1,0 +1,201 @@
+{
+  "schema_version": "nautilus.field-verification.v1",
+  "source": "https://github.com/nature1949/AUV_navigation_dataset/blob/main/20220712_0_1.csv",
+  "source_sha256": "3287424eafd36f5e3129ad9bd2c21c827fc9779338f4136e84b2a6ea6369973c",
+  "matches_reviewed_source": true,
+  "license": {
+    "name": "CC0-1.0",
+    "source": "https://github.com/nature1949/AUV_navigation_dataset/blob/main/LICENSE"
+  },
+  "reference": "https://www.mdpi.com/2079-9292/12/18/3788",
+  "rows": 940,
+  "valid_rows": 940,
+  "excluded_rows": [],
+  "time": {
+    "first": 0.0,
+    "last": 118.23700000000008,
+    "strictly_increasing": true,
+    "interval_min": 0.09999999999990905,
+    "interval_median": 0.10000000000013642,
+    "interval_max": 0.20900000000006003
+  },
+  "checks": {
+    "geographic_ranges": "Passed",
+    "finite_values": "Passed",
+    "timestamp_monotonicity": "Passed",
+    "source_license": "Passed",
+    "heading_convention": "Not verified",
+    "velocity_frame": "Not verified",
+    "physical_units": "Not independently reverified from original workbook in this environment"
+  },
+  "transformation": {
+    "classification": "TRANSFORMED / ASSUMED",
+    "method": "Local tangent-plane equirectangular approximation, R=6378137 m; east=R*cos(lat0)*delta_lon, north=R*delta_lat; angular deltas converted from assumed degrees.",
+    "origin": {
+      "lat": 34.526212674,
+      "lon": 108.425183332
+    },
+    "selected_rows": 158,
+    "selected_interval": [
+      0.0,
+      19.830000000000155
+    ],
+    "height": "Not used; no depth inferred.",
+    "preview": [
+      {
+        "source_row": 0,
+        "time_s_assumed": 0.0,
+        "measured_lat": 34.526212674,
+        "measured_lon": 108.425183332,
+        "east_m_assumed": 0.0,
+        "north_m_assumed": 0.0
+      },
+      {
+        "source_row": 9,
+        "time_s_assumed": 1.2140000000001692,
+        "measured_lat": 34.526211976,
+        "measured_lon": 108.425182098,
+        "east_m_assumed": -0.1131731665518199,
+        "north_m_assumed": -0.07770100467493445
+      },
+      {
+        "source_row": 18,
+        "time_s_assumed": 2.423000000000002,
+        "measured_lat": 34.526210372,
+        "measured_lon": 108.425177589,
+        "east_m_assumed": -0.526704611574994,
+        "north_m_assumed": -0.25625746765269475
+      },
+      {
+        "source_row": 27,
+        "time_s_assumed": 3.5289999999999964,
+        "measured_lat": 34.526203573,
+        "measured_lon": 108.425160625,
+        "east_m_assumed": -2.0825146455098853,
+        "north_m_assumed": -1.013118686087794
+      },
+      {
+        "source_row": 36,
+        "time_s_assumed": 4.635999999999967,
+        "measured_lat": 34.526198296,
+        "measured_lon": 108.425150622,
+        "east_m_assumed": -2.9999143019732797,
+        "north_m_assumed": -1.6005516389635068
+      },
+      {
+        "source_row": 45,
+        "time_s_assumed": 5.741999999999962,
+        "measured_lat": 34.526191559,
+        "measured_lon": 108.425138492,
+        "east_m_assumed": -4.112386343828201,
+        "north_m_assumed": -2.3505110483983653
+      },
+      {
+        "source_row": 54,
+        "time_s_assumed": 6.951000000000022,
+        "measured_lat": 34.5261811,
+        "measured_lon": 108.425124525,
+        "east_m_assumed": -5.393334159774537,
+        "north_m_assumed": -3.5148016020449075
+      },
+      {
+        "source_row": 63,
+        "time_s_assumed": 8.057999999999993,
+        "measured_lat": 34.526174818,
+        "measured_lon": 108.425112153,
+        "east_m_assumed": -6.528000614873558,
+        "north_m_assumed": -4.214110643328346
+      },
+      {
+        "source_row": 72,
+        "time_s_assumed": 9.163999999999987,
+        "measured_lat": 34.526161533,
+        "measured_lon": 108.425102567,
+        "east_m_assumed": -7.4071561793094425,
+        "north_m_assumed": -5.692990078674758
+      },
+      {
+        "source_row": 81,
+        "time_s_assumed": 10.269999999999982,
+        "measured_lat": 34.526146662,
+        "measured_lon": 108.425094795,
+        "east_m_assumed": -8.11994535459328,
+        "north_m_assumed": -7.348422225998862
+      },
+      {
+        "source_row": 90,
+        "time_s_assumed": 11.479000000000042,
+        "measured_lat": 34.52612597,
+        "measured_lon": 108.425088573,
+        "east_m_assumed": -8.690580231336456,
+        "north_m_assumed": -9.651845129454957
+      },
+      {
+        "source_row": 99,
+        "time_s_assumed": 12.586000000000013,
+        "measured_lat": 34.526110028,
+        "measured_lon": 108.425088072,
+        "east_m_assumed": -8.736528169961991,
+        "north_m_assumed": -11.426500452187042
+      },
+      {
+        "source_row": 108,
+        "time_s_assumed": 13.692000000000007,
+        "measured_lat": 34.526094026,
+        "measured_lon": 108.425088579,
+        "east_m_assumed": -8.6900299559278,
+        "north_m_assumed": -13.207834943337415
+      },
+      {
+        "source_row": 117,
+        "time_s_assumed": 14.798999999999978,
+        "measured_lat": 34.526078558,
+        "measured_lon": 108.425093176,
+        "east_m_assumed": -8.2684278144686,
+        "north_m_assumed": -14.929724827022518
+      },
+      {
+        "source_row": 126,
+        "time_s_assumed": 16.008000000000038,
+        "measured_lat": 34.526064965,
+        "measured_lon": 108.425097614,
+        "east_m_assumed": -7.861407953744119,
+        "north_m_assumed": -16.44289066520624
+      },
+      {
+        "source_row": 135,
+        "time_s_assumed": 17.114000000000033,
+        "measured_lat": 34.526050862,
+        "measured_lon": 108.425104925,
+        "east_m_assumed": -7.1908982174024905,
+        "north_m_assumed": -18.01282944443708
+      },
+      {
+        "source_row": 144,
+        "time_s_assumed": 18.220000000000027,
+        "measured_lat": 34.526038208,
+        "measured_lon": 108.425115504,
+        "east_m_assumed": -6.22067218817687,
+        "north_m_assumed": -19.421466280422358
+      },
+      {
+        "source_row": 153,
+        "time_s_assumed": 19.326999999999998,
+        "measured_lat": 34.526026508,
+        "measured_lon": 108.425129322,
+        "east_m_assumed": -4.953389527718593,
+        "north_m_assumed": -20.7239043228956
+      }
+    ]
+  },
+  "compatibility": {
+    "decision": "withheld",
+    "bridge_executed": false,
+    "reason": "Original heading/velocity conventions and full units documentation could not be independently retrieved here. No thruster commands or physical fault labels are supplied; a matched dynamic bridge is not established."
+  },
+  "limitations": [
+    "The navigation observations are real. Fault and controller evaluations elsewhere in Nautilus are simulated. No controller revision was validated on the original physical vehicle.",
+    "No velocity-to-thrust conversion, current estimate, fault diagnosis or physical controller evaluation is inferred from this CSV.",
+    "The coordinate preview assumes latitude/longitude degrees and a short local tangent plane; heading and velocity are intentionally not transformed."
+  ]
+}

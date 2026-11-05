@@ -94,9 +94,9 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-    def _body(self):
+    def _body(self, limit=MAX_BODY):
         length = int(self.headers.get("Content-Length") or 0)
-        if length > MAX_BODY:
+        if length > limit:
             raise RequestError("Request body too large")
         raw = self.rfile.read(length) if length else b"{}"
         try:
@@ -111,18 +111,13 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if method == "POST" and parts[2:] == ["simulations"]:
                 faults, mission, request = scenario(self._body())
-                result = simulate(faults=faults, mission=mission, controller=Controller(),
-                                  plant=HIDDEN_PLANT)
-                observed = public_rows(result.observations)
-                protocol = PassiveProtocol(duration_s=mission.duration_s, dt_s=mission.dt_s,
-                                           scales=(0.035, 0.004, 0.003))
-                return self._send(200, {"request": request, "observations": observed,
-                                        "diagnosis": summary(passive(observed, protocol))})
+                from api.v1.simulations import run_simulation
+                return self._send(200, run_simulation(faults, mission, request))
             if method == "POST" and parts[2:] == ["investigations"]:
                 faults, mission, request = scenario(self._body())
                 return self._send(202, {"job": _public_job(STORE.submit(faults, mission, request))})
             if method == "POST" and parts[2:] == ["studio"]:
-                return self._studio(self._body())
+                return self._studio(self._body(65536))
             if method == "POST" and parts[2:] == ["muse-investigations"]:
                 if not _authorized(self.headers):
                     return self._send(401, {"error": "Unauthorized"})
@@ -162,7 +157,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(200, dispatch(body))
         except StudioRequestError as exc:
             return self._send(400, {"error": str(exc)})
-        except StudioPolicyError as exc:
+        except (StudioPolicyError, ValueError) as exc:
             return self._send(422, {"error": str(exc)})
 
     def do_OPTIONS(self):

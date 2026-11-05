@@ -52,8 +52,8 @@ test('every original view round-trips through a stable hash regardless of its vi
   assert.equal(viewFromHash('#studio'), 'Policy Studio');
   assert.equal(viewFromHash('#/workspace'), 'Simulation Lab');
   assert.equal(viewFromHash('#/engineer'), 'Policy Studio');
-  assert.equal(viewFromHash('#recorded-muse'), null);
-  assert.equal(viewFromHash('#verified-cases'), null);
+  assert.equal(viewFromHash('#recorded-muse'), 'Overview');
+  assert.equal(viewFromHash('#verified-cases'), 'Overview');
   for(const route of ['unknown','constructor','__proto__','toString']) assert.equal(viewFromHash('#/'+route), null);
 });
 

@@ -39,7 +39,7 @@ export function studioHandoff(record: Investigation): InvestigationHandoff {
       if (y !== null) maxY = maxY === null ? Math.abs(y) : Math.max(maxY, Math.abs(y));
     }
   }
-  const hypotheses = events.filter(e => e.type === 'fit' && obj(e.report)).map(e => {
+  const fitted = events.filter(e => e.type === 'fit' && obj(e.report)).map(e => {
     const report = e.report as Record<string, unknown>;
     const ident = obj(report.identifiability) ?? {};
     const parameters: Record<string, number> = {};
@@ -58,12 +58,14 @@ export function studioHandoff(record: Investigation): InvestigationHandoff {
       status: 'candidate_hypothesis' as const,
     };
   });
-  const finalized = events.find(e => e.type === 'finalized');
+  const latest = new Map(fitted.map(h=>[h.hypothesis,h]));
+  const hypotheses=[...latest.values()].sort((a,b)=>(a.weighted_rmse??Infinity)-(b.weighted_rmse??Infinity)).slice(0,4);
+  const finalized = [...events].reverse().find(e => e.type === 'finalized');
   const diagnosis = obj(finalized?.diagnosis);
   const conclusion = diagnosis ? {
     diagnosis: str(diagnosis.hypothesis),
-    confidence: str(diagnosis.confidence),
-    ambiguity_statement: str(diagnosis.ambiguity_statement),
+    confidence: str(finalized?.confidence) ?? str(diagnosis.confidence),
+    ambiguity_statement: str(finalized?.ambiguity_statement) ?? str(diagnosis.ambiguity_statement),
     evidence_refs: Array.isArray(diagnosis.evidence_refs) ? diagnosis.evidence_refs.map(String) : [],
     status: 'recorded_conclusion_not_proof' as const,
   } : null;

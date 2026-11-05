@@ -78,7 +78,7 @@ export function viewHash(view: string): string {
 }
 export function viewFromHash(hash: string): ViewName | null {
   const key = hash.replace(/^#\/?/, '').toLowerCase();
-  const aliases: Record<string, ViewName> = {'':'Overview',overview:'Overview',workspace:'Simulation Lab','simulation-lab':'Simulation Lab',investigator:'Investigator',trajectory:'Trajectory',dashboards:'Dashboards',evidence:'Dashboards',studio:'Policy Studio','policy-studio':'Policy Studio',engineer:'Policy Studio',experiments:'Experiments',history:'Experiments',reports:'Reports'};
+  const aliases: Record<string, ViewName> = {'':'Overview',overview:'Overview','recorded-muse':'Overview','verified-cases':'Overview',workspace:'Simulation Lab','simulation-lab':'Simulation Lab',investigator:'Investigator',trajectory:'Trajectory',dashboards:'Dashboards',evidence:'Dashboards',studio:'Policy Studio','policy-studio':'Policy Studio',engineer:'Policy Studio',experiments:'Experiments',history:'Experiments',reports:'Reports'};
   return Object.hasOwn(aliases,key) ? aliases[key] : null;
 }
 export function activeStage(view: string): string | null {

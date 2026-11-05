@@ -42,3 +42,12 @@ test('missing fit is stated as a limitation rather than invented', () => {
   assert.equal(h.hypotheses.length, 0);
   assert.ok(h.limitations.some(l => /No numerical fit/.test(l)));
 });
+
+test('repeated fits transfer only the latest bounded hypothesis set and actual final confidence',()=>{
+  const fits=Array.from({length:7},(_,i)=>({...fit,hash:`fit-${i}`,report:{...fit.report,hypothesis:`hyp-${i%5}`,weighted_rmse:7-i}}));
+  const h=studioHandoff(record([observation,...fits,{...finalized,confidence:'abstain',ambiguity_statement:'Further evidence required.'}]));
+  assert.equal(h.hypotheses.length,4);
+  assert.equal(h.hypotheses[0].weighted_rmse,1);
+  assert.equal(h.conclusion?.confidence,'abstain');
+  assert.equal(h.conclusion?.ambiguity_statement,'Further evidence required.');
+});

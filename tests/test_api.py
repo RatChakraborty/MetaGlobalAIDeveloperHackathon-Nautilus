@@ -127,6 +127,10 @@ def test_muse_route_rejects_client_supplied_key_and_hidden_fields(demo):
 
 
 def test_muse_route_enforces_budget_and_does_not_store_key(demo, monkeypatch):
+    from nautilus.muse import MetaProvider, ProviderError
+    def offline_provider(*args, **kwargs):
+        raise ProviderError('offline_test_no_requests')
+    monkeypatch.setattr(MetaProvider, 'generate', offline_provider)
     from nautilus_api import budget, ledger
     monkeypatch.setenv("MODEL_API_KEY", "sk-server-" + "z" * 40)
     # Fake in-memory ledger: allow runs while the worst-case reservations fit the daily cap.
@@ -187,3 +191,19 @@ def test_investigation_job_lifecycle(base_url):
     assert "ledger" not in json.dumps(job["request"])
     assert not any(k in json.dumps(job) for k in HIDDEN_KEYS)
     assert job["result"]["investigation"]["ledger"][0]["type"] == "initial_observation"
+
+
+def test_local_studio_accepts_bounded_linked_evidence_without_relaxing_simulation_limit(base_url):
+    from api.v1.simulations import run_simulation
+    from nautilus.policy_ir import baseline_policy
+    from nautilus.policy_source import to_source
+    faults,mission,request=scenario({'scenario':{},'duration_s':2.,'seed':74224})
+    context=run_simulation(faults,mission,request)['engineering_context']
+    body={'action':'validate','source':to_source(baseline_policy()),'engineering_context':context}
+    assert len(json.dumps(body).encode())>server.MAX_BODY
+    status,result=_call(base_url+'/api/v1/studio','POST',body)
+    assert status==200 and result['valid']
+    status,_=_call(base_url+'/api/v1/simulations','POST',{'pad':'x'*5000})
+    assert status==400
+    status,_=_call(base_url+'/api/v1/studio','POST',{'pad':'x'*65536})
+    assert status==400

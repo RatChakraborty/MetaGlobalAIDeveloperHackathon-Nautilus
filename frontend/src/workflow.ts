@@ -41,7 +41,7 @@ export function nextStep(state: WorkflowState): {stage: StageId; text: string} {
   if (!state.inEngineering) {
     return state.canHandoff === false
       ? {stage: 'investigate', text: 'Read the run diagnosis and statistics, then open Policy Studio from the navigation to test a controller change.'}
-      : {stage: 'investigate', text: 'Review the evidence, then choose “Open in Policy Studio” to test a controller change.'};
+      : {stage: 'investigate', text: 'Review the evidence, then choose “Engineer this failure” (API run) or “Open in Policy Studio” (loaded record) to test a controller change.'};
   }
   if (!state.hasTrialResult) {
     return {stage: 'evaluate', text: 'Run the baseline and a candidate revision in Policy Studio to compare them on the same scenarios.'};
