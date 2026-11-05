@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 460">
+<title>Illustrative AUV corridor-tracking schematic, not a renderer screenshot</title>
+<rect width="1000" height="460" rx="20" fill="#102b3a"/>
+<path d="M0 110H1000M0 220H1000M0 330H1000M130 0V460M270 0V460M410 0V460M550 0V460M690 0V460M830 0V460" stroke="#416b7a" opacity=".22"/>
+<path d="M45 170H955M45 290H955" stroke="#cbaa76" stroke-width="2" stroke-dasharray="9 10"/>
+<path d="M45 230H955" stroke="#e3dddd" stroke-width="2" stroke-dasharray="5 8"/>
+<path d="M50 230C260 230 350 236 455 259S650 317 820 333S925 338 950 342" stroke="#80ccc9" stroke-width="6" fill="none"/>
+<path d="M725 230V321" stroke="#eabc7d" stroke-width="2" stroke-dasharray="5 5"/>
+<g transform="translate(790 327) rotate(12)">
+<path d="M-95 -8L-40 -20Q26 -32 88 -7L99 0L88 7Q26 32 -40 20L-95 8Z" fill="#397f8a" stroke="#addbd8" stroke-width="3"/>
+<path d="M-50 -12L-70 -31L-6 -17V17L-70 31L-50 12" fill="#245c6b" stroke="#addbd8"/>
+<rect x="12" y="-9" width="34" height="18" rx="9" fill="#193f50" stroke="#b8dbe1"/>
+</g>
+<g fill="#e4eeed" font-family="sans-serif"><text x="48" y="52" font-size="28">Nautilus | Recorded AUV trajectory</text><text x="48" y="81" font-size="16">Illustrative schematic; not a Three.js screenshot or scientific case result</text><text x="48" y="408" font-size="18">Teal: simulated motion    White: reference centerline    Gold: corridor limits</text></g>
+</svg>

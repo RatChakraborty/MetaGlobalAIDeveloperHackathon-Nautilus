@@ -1,89 +1,157 @@
-# Nautilus (nautilus-demo-delta.vercel.app)
+# Nautilus
 
-Evidence-first investigation and controller engineering for simulated underwater robots.
+Agentic failure investigation and evidence-based controller engineering for simulated underwater robots.
 
-Nautilus connects simulated AUV telemetry to competing physical explanations, bounded controller changes, matched numerical trials, held-out robustness checks, and auditable engineering reports. It distinguishes computed results, recorded studies, scripted agent behavior, and real recorded Meta Muse activity. All robot experiments are simulated; no hardware deployment or safety certification is claimed.
+[Live workbench](https://nautilus-demo-delta.vercel.app/) | [Source repository](https://github.com/RatChakraborty/MetaGlobalAIDeveloperHackathon-Nautilus)
 
-## How it works
+Nautilus is an engineering research prototype developed for the Meta Global AI Developer Hackathon 2026. It connects a physics-based planar underwater-vehicle simulator, numerical fault diagnosis, experiment planning, bounded controller engineering, auditable evidence, a Three.js AUV replay viewer, and authentic recorded Meta Muse tool activity.
+
+All robot motion and engineering results are simulated. Nautilus does not claim physical deployment, hardware validation, or a certified repair.
+
+## The problem
+
+An autonomous underwater vehicle inspecting an offshore pipeline begins drifting off course. Ocean currents, failing thrusters, and faulty heading measurements may produce similar observations, but require different engineering responses. Nautilus compares competing explanations and tests controller interventions numerically rather than trusting an unsupported agent assertion.
+
+## End-to-end workflow
 
 Run → Investigate → Engineer → Verify → Report
 
-1. Run: Generate public telemetry for a planar marine-vehicle simulator with disturbances such as lateral current, reduced thruster effectiveness, or heading-sensor bias.
-2. Investigate: Fit competing hypotheses, preserve ambiguity where the data do not identify a unique cause, and retain public evidence references.
-3. Engineer: Carry an investigated session into Policy Studio using a bounded evidence handoff. Propose a host example or scripted candidate; validate its exact controller source, parameters, and fingerprint.
-4. Verify: Run matched baseline/candidate comparisons, predefined acceptance gates, and a distinct held-out robustness check. The trusted host makes the final decision.
-5. Report: Export the linked investigation and controller evidence. Hash-sensitive reports preserve host-canonical JSON for verification on reimport.
+1. Run reproducible 3-DOF surge, sway, and yaw simulations with explicit disturbances and random seeds.
+2. Investigate public measurements through competing physical hypotheses, residual comparisons, ambiguity handling, and bounded experimental probes.
+3. Engineer a controller revision with Policy Studio, using the evidence-preserving Engineer this failure handoff or a distinct host-defined example candidate.
+4. Verify the source and parameters, run matched baseline-versus-candidate trials, check predeclared acceptance gates, and evaluate held-out robustness.
+5. Report with linked investigation records, evidence hashes, controller fingerprints, source/parameter diffs, and canonical host JSON preserved across export and reimport.
 
-The browser provides Overview, Run and Investigate, Evidence, Engineer, History, and Reports. The Three.js AUV viewer replays compatible recorded visualization companions; live public telemetry omits longitudinal position, so it cannot be plotted as a fabricated 3D trajectory.
+The browser destinations are Overview, Run and Investigate, Evidence, Engineer, History, and Reports.
 
-## Demonstrations and provenance
+## Features
 
-| Study | Execution | Supported conclusion |
-|---|---|---|
-| Case A ,  Ambiguous drift | Fresh deterministic simulation and passive diagnosis | Five declared hypotheses fit; the protocol reports `kind=ambiguous` and `selected=null`. This is not Muse or an agent abstaining. |
-| Case B ,  Bounded integral controller | Host-proposed deterministic controller evaluation | The bounded integral revision passes 8/8 predefined development gates; mean RMS cross-track error improves from 0.994 m to 0.410 m, with a 0.493 m mean held-out improvement. It is not Muse-proposed. |
-| Case C ,  Aggressive lookahead rejected | Retained development recording | A predeclared 14 m lookahead candidate performs worse than the 7 m baseline in all three retained development scenarios (approximately 5.02 m vs 2.68 m RMS in the first). The inputs are private; it is a separate study from Case B. |
-| Recorded Real Muse | Authentic recorded parameter-engineering session | Shows model proposals and real host-run numerical evaluations; it is not a newly executed live model call and not an unrestricted source-code repair. |
+### Simulator and numerical investigation
 
-Source artifacts and study details are available through the frontend's evidence panels and [evaluation documentation](docs/EVALUATION.md). Do not combine measurements across the separate studies.
+- Simplified 3-DOF marine dynamics with hydrodynamic damping, thrust commands, and corridor-following control.
+- Configurable lateral current, independent port/starboard efficiencies, heading bias, observation noise, and deterministic seeds.
+- Public observations include lateral position, heading, yaw rate, and commanded thrust. Hidden simulation truth and world-frame longitudinal position are not public diagnostic telemetry.
+- Numerical fitting of competing fault hypotheses, evidence tables, uncertainty and ambiguity, and bounded experimental actions.
+- Public experiment history, action references, session identity, and reproducible evidence ledger.
 
-## Run locally
+### Controller engineering and trusted evaluation
 
-Prerequisites: Python 3.10+ and a recent supported Node.js release (the current frontend uses Vite 7).
+- Investigation-to-Policy-Studio handoff preserving public observations, hypothesis evidence, identifiability limits, and run references.
+- Restricted source/parameter edits with trusted validation and exact controller fingerprints.
+- Matched paired baseline/candidate simulations, tracking and effort metrics, development acceptance gates, and separate held-out checks.
+- Host-enforced final recommendation, not a conclusion generated by a model.
+- Engineering traces, policy comparisons, reports, and canonical hash-sensitive evidence exports.
 
-```bash
+### Meta Muse agent integration
+
+Meta Muse is connected through bounded tool interfaces for parameter proposals and requests for numerical evaluation. An authentic, sanitized real development recording is presented on Overview. The C1 and C2 proposals and the corresponding host validations, paired trials, robustness checks, and final host decision are visible as recorded events.
+
+The recording is not a fresh model call. Offline scripted workflows are labeled as scripted, and live paid Muse engineering is disabled by default in the public workbench. Model output never overrides trusted numerical gates or executes arbitrary generated controller Python.
+
+### Three.js underwater vehicle replay
+
+The existing viewer supports an illustrative research AUV model, underwater environment, recorded trajectory playback, Play/Pause and timeline controls, reset camera, presentation mode, chase/onboard/top/free and inspection cameras, motion trails, corridor reference and breach overlays, optional matched reference comparison, controller provenance, graphics quality, and commanded-thrust overlays when supported by a matching record.
+
+This viewer replays recorded simulator pose. It is not a second simulator or a real camera feed. Public live observations omit longitudinal position, so spatial motion requires a separate matching visualization companion.
+
+![Illustrative AUV tracking and corridor schematic, not an actual Three.js screenshot](assets/nautilus-replay-schematic.svg)
+
+*Illustrative schematic, not an actual screenshot or scientific result. To see the rendered research AUV, load a compatible recording in the interactive browser viewer.*
+
+#### Generate a real simulator-backed replay
+
+From the repository root, after installing Python dependencies:
+
+~~~bash
+python scripts/generate_nautilus_replay.py --output ~/Downloads/nautilus-replay
+~~~
+
+This creates real simulator-derived disturbance and nominal-reference runs, each with a public investigation JSON and separate visualization-only JSON. Spatial simulator truth is never inserted into public investigator observations.
+
+To view the disturbance:
+
+1. On the website expand Advanced - Load an external recording in the left rail and select disturbance.public.json.
+2. Navigate to Run and Investigate → Recorded visualization.
+3. Click Load visualization file and select disturbance.visualization.json.
+4. Use Play/Pause, timeline seeking, Camera, Reset view, and the corridor overlays.
+5. Optionally load reference.public.json then reference.visualization.json under Reference comparison & visualization provenance.
+
+These are separately generated simulator demonstrations, not Cases A/B/C and not evidence of a repaired real vehicle.
+
+## Scientific demonstrations
+
+These represent distinct studies; their measurements must not be conflated.
+
+| Study | Mode | Evidence-backed outcome |
+| --- | --- | --- |
+| Case A: Ambiguous drift | Fresh deterministic passive diagnosis | Five declared hypotheses fit; kind=ambiguous and selected=null. This is passive protocol ambiguity, not a Muse abstention. |
+| Case B: Bounded integral revision | Host-proposed deterministic controller evaluation | Mean RMS tracking error improves from 0.994 m to 0.410 m; 8/8 predeclared development gates pass; held-out mean improvement is about 0.493 m. It was not Muse-proposed. |
+| Case C: Aggressive lookahead rejected | Recorded controller development study | A 14 m lookahead candidate loses to the 7 m baseline on three development scenarios; 5.02 m vs 2.68 m RMS in the first. Inputs for this historical study are private. |
+| Recorded real Muse | Authentic recorded model/tool interactions | Muse-proposed parameter changes and host-run numerical evaluations. No live model call occurs when replaying. |
+
+Original case artifacts are in [frontend/public/evidence/](frontend/public/evidence/), and the sanitized Muse recording is in [frontend/public/recorded/muse-engineering-run.json](frontend/public/recorded/muse-engineering-run.json).
+
+## Architecture
+
+~~~text
+TypeScript / Vite browser UI
+   |  investigations, evidence, engineering, reports, 3D recorded replay
+   v
+Trusted Python API
+   |  planar simulator and public telemetry
+   |  fault-model fitting and bounded experiments
+   |  hash-linked evidence and investigation-to-engineer handoff
+   |  candidate validation, matched trials, held-out robustness
+   v
+Host-enforced numerical decision and engineering report
+
+Meta Muse or offline scripted agent -> validated host tool interface
+Visualization-only simulator pose -> Three.js viewer, never diagnostic input
+~~~
+
+## Install and run
+
+Requires Python 3.10+ and a compatible Node.js release.
+
+~~~bash
 python -m venv .venv
 .venv/bin/python -m pip install -e '.[dev]'
-```
+~~~
 
-In terminal 1, from the repository root:
+API terminal:
 
-```bash
+~~~bash
 .venv/bin/python -m nautilus_api.server 8000
-```
+~~~
 
-In terminal 2:
+Frontend terminal:
 
-```bash
+~~~bash
 cd frontend
 npm ci
 npm run dev
-```
+~~~
 
-Open `http://127.0.0.1:3000/`. The development frontend proxies `/api` to `127.0.0.1:8000`.
+Open http://127.0.0.1:3000/. Vite proxies API requests to port 8000 in development.
 
-For offline checks:
+## Testing and limits
 
-```bash
+~~~bash
 .venv/bin/python -m pytest -q -p no:cacheprovider
-cd frontend && npm test && npm run build
-```
+cd frontend
+npm test
+npm run build
+~~~
 
-Use the [engineering-session guide](docs/ENGINEERING_SESSION.md) for the linked investigation → controller workflow and [demo runbook](docs/DEMO_RUNBOOK.md) for a presentation outline. The linked documents provide development and evaluation details.
+At the integrated-release checkpoint, agents reported 159 passing frontend tests, 114 release-critical Python/API tests, 646 broader Python tests, and a successful TypeScript/production build. Nine Git-metadata failures and 30 Redis setup errors affected environment-dependent checks. The canonical export/import and linked deterministic numerical workflow passed focused checks. These are prior checkpoint results, not a new test run.
 
-## Testing and limitations
+- Simulation only; no hardware validation, deployment, field repair, or safety certification.
+- Fault scores are heuristic, not calibrated probabilities; controller improvement does not prove the physical cause.
+- Some historical study inputs are private; recorded evidence is not always fully regenerable from the public tree.
+- The 3D replay uses simulation truth for presentation, never as investigator evidence.
+- Browser session history is in-memory; export records before refreshing.
+- Live paid model access requires explicit server-side authorization, credentials, and budget controls, and is disabled by default.
 
-The integrated release test session reported:
+## Security and license
 
-| Check | Result |
-|---|---|
-| Frontend | 159 tests passed, TypeScript and production build passed |
-| Release-critical Python/API | 114 passed |
-| Broader Python suite | 646 passed, plus 4 subtests; 9 Git-metadata failures and 30 Redis setup errors occurred during environment setup |
-| Canonical JSON export/import | Passed, retaining hashes, session identity, and controller fingerprints |
-| Linked numerical workflow | Passed in deterministic verification: investigation, validation, paired trials, robustness, host decision, report |
-
-Results above are from the release integration test session. Tests that require Git metadata or Redis-backed services had environment setup failures.
-
-Diagnostic scores are heuristic rather than calibrated probabilities. Hidden simulator truth is not diagnostic input. A controller passing host gates is a result for declared simulated scenarios, not a physical repair or a safety guarantee. The in-browser session is not durable storage.
-
-## Muse and security
-
-The system includes server-side bounded Meta Muse adapters and an authentic recorded Muse study. Live paid calls are disabled by default and were not used for the release verification. The free deterministic and scripted engineering paths should not be described as live Muse.
-
-Keep `MODEL_API_KEY`, `NAUTILUS_DEMO_TOKEN`, Upstash credentials, evaluator secrets, and private fault-truth files outside version control. Use [`.env.example`](.env.example) only as a list of variable names. The trusted host validates model proposals, executes numerical tools, and enforces its gates; model text never authorizes its own acceptance.
-
-
-## License
-
-See [LICENSE](LICENSE).
+Keep MODEL_API_KEY, NAUTILUS_DEMO_TOKEN, Upstash credentials, private evaluation fixtures, and hidden truth outside version control. See [.env.example](.env.example) for variable names, not values. See [LICENSE](LICENSE) for license terms.
