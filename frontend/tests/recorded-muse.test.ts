@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {recordedRunMarkup, eventSummary, type RecordedRun} from '../src/recorded-muse.ts';
+import {recordedRunMarkup, eventSummary, loadRecordedRun, type RecordedRun} from '../src/recorded-muse.ts';
 
 const run = JSON.parse(readFileSync(new URL('../public/recorded/muse-engineering-run.json', import.meta.url), 'utf8')) as RecordedRun;
 
@@ -31,4 +31,24 @@ test('markup escapes model-supplied text', () => {
 
 test('event summary never invents numbers for unknown tools', () => {
   assert.equal(eventSummary({index: 1, tool: 'mystery', arguments: {}, result: {}}), 'Tool mystery executed.');
+});
+
+
+test('recorded engineering keeps the full trace behind an explicit disclosure', () => {
+  const markup = recordedRunMarkup(run);
+  assert.match(markup, /id="recorded-muse"/);
+  assert.match(markup, /Recorded Real Muse — Parameter Engineering/);
+  assert.match(markup, /<details class="recorded-trace"><summary>Explore 11 recorded tool events/);
+  assert.match(markup, /C1/);
+  assert.match(markup, /C2/);
+});
+
+
+test('the authentic recording loads under a nested deployment base without making a provider request', async () => {
+  const urls:string[]=[];
+  const fetcher:typeof fetch=async url=>{urls.push(String(url));return Response.json(run);};
+  const result=await loadRecordedRun(fetcher,'/nautilus/');
+  assert.deepEqual(result,run);
+  assert.deepEqual(urls,['/nautilus/recorded/muse-engineering-run.json']);
+  await assert.rejects(loadRecordedRun(async()=>new Response(null,{status:404})), /unavailable/);
 });

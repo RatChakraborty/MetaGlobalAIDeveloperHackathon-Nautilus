@@ -129,7 +129,7 @@ Python-derived public events and, when visual data is supplied, separate truth
 markers. `--episode-ref OBSERVATION_HASH` explicitly binds a new visualization v3
 file to one reset-aligned episode. Legacy multi-episode files still load, but
 ambiguous command overlays remain unavailable. Never append these companions to
-the laboratory ledger. See [the milestone report](../SUPERVISOR_AND_EXPORT_REPORT.md).
+the laboratory ledger. See [the milestone report](../reports/SUPERVISOR_AND_EXPORT_REPORT.md).
 
 The Investigator tab imports public supervisor events and offers validated
 `investigation_report.md` and, with an accepted recorded proposal, `config_diff.json`

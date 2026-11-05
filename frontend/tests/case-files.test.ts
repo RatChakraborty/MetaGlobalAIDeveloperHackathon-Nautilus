@@ -9,10 +9,10 @@ import {initialSession} from '../src/session.ts';
 test('the legend names all four execution modes and says every experiment is simulated', () => {
   const markup = modeLegendMarkup();
   assert.deepEqual(MODE_LEGEND.map(m => m.mode), ['recorded', 'live', 'muse', 'mock']);
-  for (const mode of ['Recorded demonstration', 'Live deterministic computation', 'Live Meta Muse', 'Mock development session']) {
+  for (const mode of ['Recorded', 'Live deterministic', 'Live Muse', 'Offline scripted']) {
     assert.match(markup, new RegExp(mode));
   }
-  assert.match(markup, /All robot experiments are simulated, including live calculations\./);
+  assert.match(markup, /All robot experiments are simulated\./);
   assert.match(markup, /off by default/);
 });
 
@@ -91,7 +91,7 @@ test('unavailable API and a running case both disable their actions', () => {
 test('the overview renders the legend once and the three case files', () => {
   const markup = overviewMarkup(initialSession(), {apiEnabled: true, recordId: null, recordSource: null});
   assert.equal((markup.match(/class="case-card case-/g) ?? []).length, 3);
-  assert.match(markup, /Case files/);
-  assert.match(markup, /THREE VERIFIED RECORDS/);
+  assert.match(markup, /Verified Cases/);
+  assert.match(markup, /THREE SEPARATE STUDIES/);
   assert.doesNotMatch(markup, /<script/i);
 });

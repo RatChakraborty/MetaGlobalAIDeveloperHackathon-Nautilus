@@ -148,7 +148,9 @@ def run_muse_investigation(faults, mission, request):
     if provider.model != budget.PRICED_MODEL:
         raise RuntimeError("unpriced model: live Muse refused")
     out = muse_run(lab, provider, limits=Limits(**DEMO_MUSE_LIMITS))
-    return {"public_record": out["public_record"], "provenance": out["provenance"]}
+    from nautilus.engineering_session import context_from_muse
+    return {"public_record": out["public_record"], "provenance": out["provenance"],
+            "engineering_context": context_from_muse(out["public_record"], out["provenance"])}
 
 
 def run_investigation(faults, mission, request):
@@ -159,5 +161,9 @@ def run_investigation(faults, mission, request):
     backend = HiddenExperimentBackend(faults=faults, controller=Controller(), plant=HIDDEN_PLANT,
                                       seed=mission.seed, dt_s=mission.dt_s)
     outcome = investigate(observed, protocol, backend.execute)
-    return {"observations": observed, "investigation": outcome,
-            "protocol_fingerprint": protocol.fingerprint}
+    payload = {"observations": observed, "investigation": outcome,
+               "protocol_fingerprint": protocol.fingerprint}
+    from nautilus.engineering_session import context_from_result
+    payload["public_ledger_canonical"] = json.dumps(outcome["ledger"],sort_keys=True,separators=(",",":"),allow_nan=False)
+    payload["engineering_context"] = context_from_result(payload)
+    return payload

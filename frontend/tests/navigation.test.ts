@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {SECTIONS, WORKSPACE_VIEWS, defaultView, isWorkspaceView, navMarkup, sectionOf, stageOf, subnavMarkup} from '../src/navigation.ts';
+import {SECTIONS, WORKSPACE_VIEWS, defaultView, isWorkspaceView, navMarkup, sectionOf, stageOf, subnavMarkup, viewHash, viewFromHash, activeStage} from '../src/navigation.ts';
 
 test('the six destinations appear once each, in workflow order', () => {
-  assert.deepEqual(SECTIONS.map(s => s.label), ['Overview', 'Workspace', 'Dashboards', 'Policy Studio', 'Experiments', 'Reports']);
+  assert.deepEqual(SECTIONS.map(s => s.label), ['Overview', 'Run and Investigate', 'Evidence', 'Engineer', 'History', 'Reports']);
   assert.deepEqual(SECTIONS.map(s => s.id), ['overview', 'workspace', 'dashboards', 'studio', 'experiments', 'reports']);
 });
 
@@ -16,8 +16,8 @@ test('each destination belongs to exactly one section, and unknown views fall ba
 
 test('the five workflow stages are labelled in the navigation, in order', () => {
   const stages = SECTIONS.map(s => s.stage).join(' | ');
-  assert.equal(stages, 'Start | 01–02 · Simulate · Investigate | 02 · Investigate | 03–04 · Engineer · Evaluate | 04 · Evaluate | 05 · Report');
-  const order = ['Simulate', 'Investigate', 'Engineer', 'Evaluate', 'Report'].map(stage => stages.indexOf(stage));
+  assert.equal(stages, 'Start | 01–02 · Run · Investigate | 02 · Investigate | 03–04 · Engineer · Verify | Session history | 05 · Report');
+  const order = ['Run', 'Investigate', 'Engineer', 'Verify', 'Report'].map(stage => stages.indexOf(stage));
   assert.deepEqual(order, [...order].sort((a, b) => a - b));
 });
 
@@ -42,6 +42,24 @@ test('a section opens on its default view and reports its stage', () => {
   assert.equal(defaultView('overview'), 'Overview');
   assert.equal(defaultView('workspace'), 'Simulation Lab');
   assert.equal(defaultView('reports'), 'Reports');
-  assert.equal(stageOf('Investigator'), '01–02 · Simulate · Investigate');
-  assert.equal(stageOf('Policy Studio'), '03–04 · Engineer · Evaluate');
+  assert.equal(stageOf('Investigator'), '02 · Investigate');
+  assert.equal(stageOf('Policy Studio'), '03–04 · Engineer · Verify');
+});
+
+
+test('every original view round-trips through a stable hash regardless of its visible label', () => {
+  for(const section of SECTIONS) for(const view of section.views) assert.equal(viewFromHash(viewHash(view)), view);
+  assert.equal(viewFromHash('#studio'), 'Policy Studio');
+  assert.equal(viewFromHash('#/workspace'), 'Simulation Lab');
+  assert.equal(viewFromHash('#/engineer'), 'Policy Studio');
+  assert.equal(viewFromHash('#recorded-muse'), 'Overview');
+  assert.equal(viewFromHash('#verified-cases'), 'Overview');
+  for(const route of ['unknown','constructor','__proto__','toString']) assert.equal(viewFromHash('#/'+route), null);
+});
+
+test('navigation highlights the current screen, without assigning a stage to history or replay', () => {
+  assert.equal(activeStage('Simulation Lab'), 'simulate');
+  assert.equal(activeStage('Policy Studio'), 'engineer');
+  for(const view of ['Overview','Experiments','Trajectory']) assert.equal(activeStage(view), null);
+  assert.equal(stageOf('Trajectory'), 'Recorded visualization');
 });

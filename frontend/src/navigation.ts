@@ -27,10 +27,10 @@ export interface NavSection {
 
 export const SECTIONS: readonly NavSection[] = [
   {id: 'overview', label: 'Overview', stage: 'Start', views: ['Overview'], description: 'Starting point, example experiment and session status.'},
-  {id: 'workspace', label: 'Workspace', stage: '01–02 · Simulate · Investigate', views: ['Simulation Lab', 'Investigator', 'Trajectory'], description: 'Run a simulation, open a verified record, replay recorded telemetry.'},
-  {id: 'dashboards', label: 'Dashboards', stage: '02 · Investigate', views: ['Dashboards'], description: 'Measured channels, fit evidence, fault diagnosis and controller comparisons.'},
-  {id: 'studio', label: 'Policy Studio', stage: '03–04 · Engineer · Evaluate', views: ['Policy Studio'], description: 'Edit a controller policy, validate it and run free paired trials.'},
-  {id: 'experiments', label: 'Experiments', stage: '04 · Evaluate', views: ['Experiments'], description: 'Runs and paired trials produced in this session, plus any loaded export.'},
+  {id: 'workspace', label: 'Run and Investigate', stage: '01–02 · Run · Investigate', views: ['Simulation Lab', 'Investigator', 'Trajectory'], description: 'Run a simulation, open a verified record, replay recorded telemetry.'},
+  {id: 'dashboards', label: 'Evidence', stage: '02 · Investigate', views: ['Dashboards'], description: 'Measured channels, fit evidence, fault diagnosis and controller comparisons.'},
+  {id: 'studio', label: 'Engineer', stage: '03–04 · Engineer · Verify', views: ['Policy Studio'], description: 'Edit a controller policy, validate it and run free paired trials.'},
+  {id: 'experiments', label: 'History', stage: 'Session history', views: ['Experiments'], description: 'Runs and paired trials produced in this session, plus any loaded export.'},
   {id: 'reports', label: 'Reports', stage: '05 · Report', views: ['Reports'], description: 'Download the record, configuration diff, comparison and engineering report.'},
 ];
 
@@ -46,7 +46,7 @@ export function defaultView(section: SectionId): ViewName {
 }
 
 export function stageOf(view: string): string {
-  return sectionOf(view).stage;
+  return ({'Simulation Lab':'01 · Run',Investigator:'02 · Investigate',Trajectory:'Recorded visualization',Experiments:'Session history'} as Record<string,string>)[view] ?? sectionOf(view).stage;
 }
 
 export function isWorkspaceView(view: string): boolean {
@@ -69,4 +69,18 @@ export function subnavMarkup(view: string): string {
     return `<button type="button" role="tab" data-tab="${name}" aria-selected="${selected}" class="${selected ? 'active' : ''}">${name}</button>`;
   }).join('');
   return `<nav class="subnav" role="tablist" aria-label="Workspace views">${items}</nav>`;
+}
+
+// Route IDs are independent of visitor-facing labels.
+export function viewHash(view: string): string {
+  const routes: Record<string, string> = {'Overview':'overview','Simulation Lab':'workspace','Investigator':'investigator','Trajectory':'trajectory','Dashboards':'dashboards','Policy Studio':'studio','Experiments':'experiments','Reports':'reports'};
+  return '#/' + (routes[view] ?? 'overview');
+}
+export function viewFromHash(hash: string): ViewName | null {
+  const key = hash.replace(/^#\/?/, '').toLowerCase();
+  const aliases: Record<string, ViewName> = {'':'Overview',overview:'Overview','recorded-muse':'Overview','verified-cases':'Overview',workspace:'Simulation Lab','simulation-lab':'Simulation Lab',investigator:'Investigator',trajectory:'Trajectory',dashboards:'Dashboards',evidence:'Dashboards',studio:'Policy Studio','policy-studio':'Policy Studio',engineer:'Policy Studio',experiments:'Experiments',history:'Experiments',reports:'Reports'};
+  return Object.hasOwn(aliases,key) ? aliases[key] : null;
+}
+export function activeStage(view: string): string | null {
+  return ({'Simulation Lab':'simulate',Investigator:'investigate',Dashboards:'investigate','Policy Studio':'engineer',Reports:'report'} as Record<string,string>)[view] ?? null;
 }

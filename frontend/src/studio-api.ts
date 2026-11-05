@@ -1,3 +1,4 @@
+import type {EngineeringBinding} from './engineering-session.ts';
 // Free, deterministic Control Policy Studio endpoints. The server compiles controller source
 // into a validated IR and executes it in the real simulator; nothing here sends executable Python.
 import {ApiError} from './simulation-api.ts';
@@ -9,17 +10,18 @@ export type Gate = {id: string; passed: boolean; observed?: number; threshold?: 
 export type Outcome = {label: 'Recommended' | 'Rejected' | 'Inconclusive'; mean_rms_difference_m: number;
   failed_gates: string[]; rationale: string};
 export type Trace = {time_s: number[]; y_m: number[]; heading_rad: number[]; port_command_n: number[]; starboard_command_n: number[]};
-export type Trial = {policy: {params: Record<string, number>}; source: string; fingerprint: string; part: string;
+export type Trial = {policy_canonical?:string;session_id?:string|null;evidence_hash?:string|null;scenario_fingerprint?:string|null;policy: {params: Record<string, number>}; source: string; fingerprint: string; part: string;
   rows: TrialRow[]; gates: Gate[]; outcome: Outcome; traces: Record<string, Trace>;
   methodology: {matched: boolean; note: string; split: string}};
-export type Baseline = {policy: {params: Record<string, number>}; source: string; fingerprint: string;
+export type Baseline = {policy_canonical?:string;policy: {params: Record<string, number>}; source: string; fingerprint: string;
   supported: {references: string[]; functions: string[]; limits: {nodes: number; depth: number}}; live_muse: false};
 export type MuseStep = {tool: string; arguments: Record<string, unknown>; result?: unknown; error?: string};
-export type MuseSession = {final: {decision: string; rationale: string; candidate_id: string | null; budget: Record<string, unknown>} | null;
+export type MuseSession = {selected_trial?:Trial|null;selected_robustness?:{rows:TrialRow[];gates:Gate[];outcome:Outcome;fingerprint:string;host_decision:Record<string,unknown>}|null;final: {decision: string; rationale: string; candidate_id: string | null; budget: Record<string, unknown>} | null;
   stopped: string | null; transcript: MuseStep[]; mock: boolean; live_available: false; model: string; provider_calls: number;
   disclosure: string; budget: Record<string, unknown>;
   results: Record<string, {outcome: Outcome; rows: TrialRow[]}>;
-  candidates: Record<string, {rationale: string; params: Record<string, number>; source: string}>};
+  robustness?:Record<string,{outcome:Outcome;rows:TrialRow[]}>;
+  candidates: Record<string, {rationale: string; params: Record<string, number>; source: string;fingerprint?:string}>};
 
 async function post<T>(base: string, body: Record<string, unknown>): Promise<T> {
   let response: Response;
@@ -34,14 +36,15 @@ async function post<T>(base: string, body: Record<string, unknown>): Promise<T> 
 }
 
 export const studioBaseline = (base: string) => post<Baseline>(base, {action: 'baseline'});
-export const studioValidate = (base: string, source: string, params?: Record<string, number>) =>
-  post<{valid: boolean; source?: string; error?: string; fingerprint?: string}>(base, {action: 'validate', source, params});
-export const studioTrial = (base: string, source: string, params?: Record<string, number>) =>
-  post<Trial>(base, {action: 'trial', source, params});
-export const studioRobustness = (base: string, source: string, params?: Record<string, number>) =>
-  post<{part: string; rows: TrialRow[]; gates: Gate[]; outcome: Outcome; note: string}>(base, {action: 'robustness', source, params});
-export const studioMuse = (base: string, handoff?: unknown) =>
-  post<MuseSession>(base, handoff === undefined ? {action: 'muse'} : {action: 'muse', handoff});
+const linked=(binding?:EngineeringBinding|null)=>binding?{engineering_context:binding.context,scenario_request:binding.request}:{};
+export const studioValidate = (base: string, source: string, params?: Record<string, number>, name='candidate') =>
+  post<{valid: boolean; source?: string; error?: string; fingerprint?: string}>(base, {action: 'validate', source, params, name});
+export const studioTrial = (base: string, source: string, params?: Record<string, number>, binding?:EngineeringBinding|null, name='candidate') =>
+  post<Trial>(base, {action: 'trial', source, params, name, ...linked(binding)});
+export const studioRobustness = (base: string, source: string, params?: Record<string, number>, binding?:EngineeringBinding|null, name='candidate') =>
+  post<{part: string; rows: TrialRow[]; gates: Gate[]; outcome: Outcome; note: string; fingerprint:string;host_decision:Record<string,unknown>}>(base, {action: 'robustness', source, params, name, ...linked(binding)});
+export const studioMuse = (base: string, handoff?: unknown, binding?:EngineeringBinding|null) =>
+  post<MuseSession>(base, {...(handoff === undefined ? {action: 'muse'} : {action: 'muse', handoff}),...linked(binding)});
 
 export class StudioError extends Error {}
 export const parseParams = (text: string): Record<string, number> => {

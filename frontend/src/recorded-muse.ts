@@ -43,8 +43,8 @@ export function recordedRunMarkup(run: RecordedRun): string {
       <span>${eventSummary(event)}</span>
       <details><summary>Arguments and trusted result</summary><pre>${escapeText(JSON.stringify({arguments: event.arguments, result: event.result}, null, 2))}</pre></details>
     </li>`).join('');
-  return `<section class="recorded-muse" aria-label="Recorded Real Muse engineering run">
-    <div class="section-head"><h3>Muse Engineering — Proposal to Verified Decision</h3><span class="eyebrow">RECORDED REAL MUSE</span></div>
+  return `<section id="recorded-muse" class="recorded-muse" aria-label="Recorded Real Muse engineering run">
+    <div class="section-head"><h3>Recorded Real Muse — Parameter Engineering</h3><span class="eyebrow">RECORDED REAL MUSE</span></div>
     <p class="muted">${escapeText(run.disclosure)}</p>
     <dl class="trace-facts">
       <div><dt>Candidate</dt><dd>${escapeText(run.final.candidate_id)}</dd></div>
@@ -55,15 +55,15 @@ export function recordedRunMarkup(run: RecordedRun): string {
       <div><dt>Estimated cost</dt><dd>$${num(run.usage.usd_estimate, 2)} (estimate, not billing)</dd></div>
       <div><dt>Record hash</dt><dd class="hash">${escapeText(run.origin.source_sha256.slice(0, 16))}</dd></div>
     </dl>
-    <ol class="trace-events" aria-label="Engineering events">${steps}</ol>
+    <details class="recorded-trace"><summary>Explore ${run.events.length} recorded tool events — C1 / C2 proposals, trials and robustness</summary><ol class="trace-events" aria-label="Engineering events">${steps}</ol></details>
     <p class="muted">${escapeText(run.final.rationale)}</p>
   </section>`;
 }
 
 export const RECORDED_RUN_URL = '/recorded/muse-engineering-run.json';
 
-export async function loadRecordedRun(fetcher: typeof fetch = fetch): Promise<RecordedRun> {
-  const response = await fetcher(RECORDED_RUN_URL);
+export async function loadRecordedRun(fetcher: typeof fetch = fetch, base = '/'): Promise<RecordedRun> {
+  const response = await fetcher(base.replace(/\/?$/, '/') + RECORDED_RUN_URL.slice(1));
   if (!response.ok) throw new Error(`recorded run unavailable (${response.status})`);
   const run = await response.json() as RecordedRun;
   if (run.label !== 'Recorded Real Muse') throw new Error('unexpected recorded-run label');

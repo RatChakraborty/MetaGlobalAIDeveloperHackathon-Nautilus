@@ -1,0 +1,70 @@
+/* Presentation refinements use the existing palette and typography. */
+:where(button,a,input,select,summary):focus-visible{outline:2px solid var(--accent);outline-offset:4px}
+:where(button,a,summary){-webkit-tap-highlight-color:transparent}
+main,section,.overview,.case-card,.tool-card{min-width:0}
+pre,code,.hash,.case-hash{overflow-wrap:anywhere}
+pre{max-width:100%;overflow-x:auto}
+.app-nav-inner{flex-wrap:wrap}
+.app-nav button{white-space:normal}
+.mode-legend{display:flex;align-items:center;flex-wrap:wrap;gap:10px 24px;padding:12px 28px}
+.simulation-label{color:var(--text);font-size:13px;font-weight:500}
+.mode-labels{font:11px var(--font-mono);color:var(--muted)}
+.execution-details{position:relative;font-size:13px}
+.execution-details summary{cursor:pointer;color:var(--accent)}
+.mode-definitions{max-width:760px;padding:8px 0}
+.mode-definitions p{margin:8px 0;line-height:1.6}
+.workspace[data-view="Overview"]{display:block;max-width:1500px;margin:auto}
+.workspace[data-view="Overview"]>.rail{display:none}
+.overview-hero h3{font-size:clamp(28px,3.4vw,48px);line-height:1.12;letter-spacing:-.03em}
+.overview-hero p{max-width:660px;font-size:16px;line-height:1.7}
+.overview-shortcuts{display:flex;flex-wrap:wrap;gap:12px;margin:22px 0 30px}
+.overview-shortcuts .button{font-size:13px}
+.overview-steps li{line-height:1.5}
+.overview section{scroll-margin-top:28px}
+.how-it-works dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:20px;margin:18px 0 0}
+.how-it-works dt{font-weight:500;color:var(--text);margin-bottom:8px}
+.how-it-works dd{margin:0;line-height:1.6;color:var(--muted);font-size:14px}
+.case-grid{align-items:start}
+.case-card{display:flex;flex-direction:column;gap:12px}
+.case-card h4,.case-card p{margin:0}
+.case-card .case-mode{line-height:1.5;font-size:11px}
+.case-headline{line-height:1.5;color:var(--text)}
+.case-details{border-top:1px solid var(--line);padding-top:12px;margin-top:6px}
+.case-details summary{cursor:pointer;color:var(--accent);font-size:13px}
+.case-details p{margin:12px 0;line-height:1.65}
+.case-details a{color:var(--accent);text-decoration:underline;text-underline-offset:3px}
+.case-details .case-hash{font-size:11px}
+.recorded-trace{margin:20px 0}
+.recorded-trace>summary{cursor:pointer;color:var(--accent);line-height:1.6}
+.trace-facts{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.external-recording{font-size:13px;max-width:650px}
+.external-recording summary{cursor:pointer;color:var(--accent);line-height:1.6}
+.external-recording p{line-height:1.6;color:var(--muted)}
+.workbench>p{font-size:12px}
+.workspace[data-view="Overview"] .workbench{display:none}
+.workflow-strip li.current{border-color:var(--accent);color:var(--text);background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.immersive .trajectory-controls{gap:12px 20px}
+.immersive .viewer-settings{margin:14px 0}
+.immersive .viewer-settings>summary{cursor:pointer;color:var(--accent);font-size:13px}
+.immersive #tracking-explanation{font-size:14px;line-height:1.7;max-width:900px}
+.immersive #scene{height:clamp(420px,64vh,780px)}
+.immersive .scene-instruments{background:#071b24e8;line-height:1.8;color:#f0f5ef}
+.immersive .scene-caption{max-width:calc(100% - 28px);line-height:1.5;background:#071b24e8}
+.immersive .empty{inset:25% 8% 16%;overflow:auto}
+.trajectory.presentation .trajectory-controls{display:flex}
+.trajectory.presentation .section-head p,.trajectory.presentation .muted{display:block}
+.trajectory.presentation #scene{min-height:65vh}
+.transport{gap:12px;flex-wrap:wrap}
+#play{min-width:44px;min-height:44px}
+@media(max-width:800px){
+ .mode-legend{padding:12px 16px}.mode-labels{display:none}
+ .overview-hero{grid-template-columns:1fr}.overview-steps{margin-top:20px}
+ .overview-shortcuts>*{flex:1 1 220px;text-align:center}
+ .case-grid{grid-template-columns:1fr}.trace-facts{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .immersive #scene{height:480px;max-height:75vh;min-height:350px}
+ .immersive .scene-instruments{left:8px;right:8px;top:8px;gap:4px 12px;font-size:11px}
+ .immersive .empty{inset:30% 6% 15%;font-size:13px}
+ .app-nav-inner{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+ .app-nav button{min-width:0;font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation:none!important;transition:none!important}}

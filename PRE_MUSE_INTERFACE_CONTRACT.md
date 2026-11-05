@@ -86,4 +86,4 @@ model versus host finalization origin. It binds to the initial observation and
 final ledger anchor, without changing historical public v1/v2 records or their
 hashes. The Investigator tab imports it separately and includes it in reports.
 No credentials, hidden reasoning or private evaluator configuration are retained.
-See MUSE_PHASE_B_REPORT.md for the live outcome and schema/continuation limits.
+See reports/MUSE_PHASE_B_REPORT.md for the live outcome and schema/continuation limits.

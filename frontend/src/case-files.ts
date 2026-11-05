@@ -18,17 +18,17 @@ const escapeText = (x: unknown) => String(x ?? 'n/a').replace(/[&<>"']/g, c => (
 export type ExecutionMode = 'recorded' | 'live' | 'muse' | 'mock';
 
 export const MODE_LEGEND: readonly {mode: ExecutionMode; label: string; meaning: string}[] = [
-  {mode: 'recorded', label: 'Recorded demonstration', meaning: 'A stored trace or artifact; not computed now.'},
-  {mode: 'live', label: 'Live deterministic computation', meaning: 'The Python simulator runs now; same seed and inputs give the same numbers.'},
-  {mode: 'muse', label: 'Live Meta Muse', meaning: 'A paid model call, server-side and off by default; not used in these cases.'},
-  {mode: 'mock', label: 'Mock development session', meaning: 'Scripted UI data for tests; never scientific evidence.'},
+  {mode: 'recorded', label: 'Recorded', meaning: 'Stored evidence or a real historical Muse trace; the underlying experiment is not run again.'},
+  {mode: 'live', label: 'Live deterministic', meaning: 'Fresh Python computation with supplied inputs. Fixed examples still run the numerical tools; no model call.'},
+  {mode: 'muse', label: 'Live Muse', meaning: 'Paid Meta Muse requests through authenticated server-side controls; off by default. Availability is not inferred from this legend.'},
+  {mode: 'mock', label: 'Offline scripted', meaning: 'Trusted tools with scripted development choices, not live Meta Muse reasoning. Test fixtures are never scientific evidence.'},
 ];
 
 export function modeLegendMarkup(): string {
   return `<div class="mode-legend" aria-label="Execution mode legend">
-    <span class="eyebrow">EXECUTION MODES</span>
-    ${MODE_LEGEND.map(entry => `<span class="mode-chip" data-mode="${entry.mode}"><b>${escapeText(entry.label)}</b><span>${escapeText(entry.meaning)}</span></span>`).join('')}
-    <span class="mode-note">All robot experiments are simulated, including live calculations.</span>
+    <strong class="simulation-label">All robot experiments are simulated.</strong>
+    <details class="execution-details"><summary>About Execution Modes</summary><div class="mode-definitions">${MODE_LEGEND.map(entry => `<p data-mode="${entry.mode}"><b>${escapeText(entry.label)}</b> — ${escapeText(entry.meaning)}</p>`).join('')}</div></details>
+    <span class="mode-labels" aria-hidden="true">Recorded · Live deterministic · Offline scripted · Live Muse</span>
   </div>`;
 }
 
@@ -94,29 +94,30 @@ export const DEMO_CASES: readonly DemoCase[] = [
 ];
 
 export function caseFilesMarkup(options: {apiEnabled: boolean; busy?: boolean}): string {
-  return `<section class="case-files" aria-label="Verified case files">
-    <div class="section-head"><h3>Case files</h3><span class="eyebrow">THREE VERIFIED RECORDS · SEPARATE STUDIES</span></div>
-    <p class="case-intro">Start with one measured comparison. Each case exposes its own artifact; the badge and provenance line state how it was produced. Case A and Case B are computed live and are free. Case C is a retained development study with private inputs.</p>
+  const outcomes = {A:'Several causes remain plausible.', B:'A bounded controller revision improves tracking.', C:'A controller change makes tracking worse.'};
+  const descriptions = {A:'Passive numerical ambiguity: the evidence does not select a cause. This is not Muse abstention.', B:'Host-proposed integral compensation passes eight development gates, with a separate held-out check.', C:'Recorded rejection of a 14 m lookahead candidate. Private study inputs prevent full public reproduction.'};
+  return `<section id="verified-cases" class="case-files" aria-label="Verified case files">
+    <div class="section-head"><h3>Verified Cases</h3><span class="eyebrow">THREE SEPARATE STUDIES</span></div>
+    <p class="case-intro">Read the retained evidence, or run the supported deterministic examples. Each study keeps its own provenance.</p>
     <div class="case-grid">
       ${DEMO_CASES.map(item => `<article class="case-card case-${item.id}" aria-label="Case ${item.id}: ${escapeText(item.title)}">
-        <div class="case-top"><span class="case-id">CASE ${item.id}</span><span class="case-mode">${escapeText(item.mode)}</span></div>
-        <h4>${escapeText(item.title)}</h4>
-        <p class="case-purpose">${escapeText(item.purpose)}</p>
-        <b class="case-headline">${escapeText(item.headline)}</b>
-        <p>${escapeText(item.detail)}</p>
-        <dl class="case-meta">
-          <dt>Provenance</dt><dd>${escapeText(item.provenance)}</dd>
-          <dt>Result IDs</dt><dd>${escapeText(item.resultIds)}</dd>
-          <dt>Browser workflow</dt><dd class="case-pending">${escapeText(item.browser)}</dd>
-        </dl>
+        <div class="case-top"><span class="case-id">CASE ${item.id}</span><span class="case-mode">Recorded evidence${item.action !== 'none' ? ' · live deterministic example available' : ''}</span></div>
+        <h4>${escapeText(item.title)}</h4><b class="case-headline">${outcomes[item.id]}</b><p>${descriptions[item.id]}</p>
         <div class="case-actions">
-          <a class="button secondary" href="${escapeText(item.evidence.file)}" target="_blank" rel="noopener">Show evidence · ${escapeText(item.evidence.label)}</a>
           ${item.action === 'run-a' ? `<button class="button" type="button" id="case-a-run" ${options.apiEnabled && !options.busy ? '' : 'disabled'}>${options.busy ? 'Case A running…' : 'Run case A now'}</button>` : ''}
           ${item.action === 'studio' ? `<button class="button" type="button" data-goto="Policy Studio" ${options.apiEnabled ? '' : 'disabled'}>Open Policy Studio</button>` : ''}
+          ${item.action === 'none' ? `<a class="button" href="${item.evidence.file}" target="_blank" rel="noopener">Read recorded rejection</a>` : ''}
         </div>
-        <p class="case-hash">SHA-256 ${escapeText(item.evidence.sha256.slice(0, 16))}…</p>
+        ${item.action !== 'none' && !options.apiEnabled ? '<p class="hint">Live example unavailable in this build; recorded evidence remains available below.</p>' : ''}
+        <details class="case-details"><summary>Technical Details and evidence</summary>
+          <p><b>${escapeText(item.headline)}</b></p><p>${escapeText(item.detail)}</p>
+          <dl class="case-meta"><dt>Provenance</dt><dd>${escapeText(item.provenance)}</dd><dt>Result IDs</dt><dd>${escapeText(item.resultIds)}</dd></dl>
+          <a href="${escapeText(item.evidence.file)}" target="_blank" rel="noopener">${escapeText(item.evidence.label)}</a>
+          ${item.id === 'B' ? '<p><a href="evidence/case-b-studio-robustness.json" target="_blank" rel="noopener">Separate held-out robustness evidence</a></p>' : ''}
+          <p class="case-hash">SHA-256 ${escapeText(item.evidence.sha256)}</p>
+        </details>
       </article>`).join('')}
     </div>
-    <p class="case-limit">Limitations: scores are heuristic, not probabilities; hidden plant truth never reaches the protocol or lab UI, and Case A labels its post-hoc truth check; Case A is passive ambiguity, not an agent or Muse abstention; Case B covers two development scenarios plus three held-out scenarios, not a benchmark; Case C cannot be regenerated from the public tree. Only these three cases are exposed.</p>
+    <details><summary>Scientific limitations</summary><p class="case-limit">Scores are heuristic, not probabilities; hidden plant truth never reaches the protocol or lab UI, and Case A labels its post-hoc truth check. Case A is passive ambiguity, not an agent or Muse abstention. Case B covers two development scenarios plus three held-out scenarios, not a benchmark. Case C cannot be regenerated from the public tree. Its 3 m alternative is a separate study from Case B.</p></details>
   </section>`;
 }
