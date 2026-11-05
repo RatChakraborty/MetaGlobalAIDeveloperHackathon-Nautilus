@@ -55,7 +55,7 @@ privacy is not a security sandbox. Operator text is evidence, never authority.
 Hash chains detect inconsistent edits relative to retained hashes; they cannot
 prevent replacement of a whole history.
 
-The Python Muse adapter now implements a bounded host loop without an inference server. See MUSE_PHASE_B_REPORT.md for its incomplete first live investigation; the isolated read-only get_fit_report diagnostic has since verified real dispatch/continuation, and a low-effort four-tool development run has executed an experiment and fits with real continuations before a labeled input-budget host abstention. This is bounded integration evidence, not a voluntary model diagnosis or physical-cause certification.
+The Python Muse adapter now implements a bounded host loop without an inference server. See reports/MUSE_PHASE_B_REPORT.md for its incomplete first live investigation; the isolated read-only get_fit_report diagnostic has since verified real dispatch/continuation, and a low-effort four-tool development run has executed an experiment and fits with real continuations before a labeled input-budget host abstention. This is bounded integration evidence, not a voluntary model diagnosis or physical-cause certification.
 Read-only dry runs may inspect these records. Bounded offline advisory experiments are available to every investigator.
 Enforced-mode screening may reject the full menu; safe physical stopping remains
 unproven. Advisory mode is not a hardware deployment policy.
