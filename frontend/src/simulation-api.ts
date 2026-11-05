@@ -1,3 +1,4 @@
+import type {EngineeringContext} from './engineering-session.ts';
 // Client for the Nautilus API. Only public scenario knobs are sent; responses are
 // public telemetry, protocol outcomes and the investigation ledger.
 
@@ -5,8 +6,8 @@ export type Scenario = {current_y?: number; port_efficiency?: number; starboard_
 export type SimulationRequest = {scenario: Scenario; seed?: number; duration_s?: number};
 export type Observation = {time_s: number; observed_y_m: number; observed_heading_rad: number; observed_yaw_rate_radps: number; port_command_n: number; starboard_command_n: number};
 export type Diagnosis = {kind: string; selected: string | null; competitive: string[]; reasons: string[]};
-export type Simulation = {request: SimulationRequest; observations: Observation[]; diagnosis: Diagnosis};
-export type Job = {id: string; status: 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled'; request: SimulationRequest; result: {observations: Observation[]; investigation: {outcome: Diagnosis; ledger: unknown[]; tests: number; time_s: number; error: string | null; decision: string | null}; protocol_fingerprint: string} | null; error: string | null};
+export type Simulation = {request: SimulationRequest; observations: Observation[]; diagnosis: Diagnosis; engineering_context?:EngineeringContext};
+export type Job = {id: string; status: 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled'; request: SimulationRequest; result: {observations: Observation[]; investigation: {outcome: Diagnosis; ledger: unknown[]; tests: number; time_s: number; error: string | null; decision: string | null}; protocol_fingerprint: string; public_ledger_canonical?:string; engineering_context?:EngineeringContext} | null; error: string | null};
 
 export class ApiError extends Error {}
 
@@ -33,7 +34,7 @@ export async function runInvestigation(base: string, request: SimulationRequest,
 
 // Live Muse run (paid, protected). The operator types the demo token at click time; it is kept
 // in memory only and sent as a Bearer header. It is never read from the bundle, storage or the URL.
-export type MuseRun = {result: {public_record: unknown; provenance: unknown}; request: SimulationRequest};
+export type MuseRun = {result: {public_record: unknown; provenance: unknown; engineering_context?:EngineeringContext}; request: SimulationRequest};
 
 export function runMuseInvestigation(base: string, request: SimulationRequest, token: string): Promise<MuseRun> {
   return call<MuseRun>(base, '/api/muse', {method: 'POST', body: JSON.stringify(request), headers: {Authorization: `Bearer ${token}`}});

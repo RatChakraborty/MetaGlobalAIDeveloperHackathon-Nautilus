@@ -35,6 +35,12 @@ merged with Case B's.
 - Runs a bounded, server-side Muse adapter in development. It is off by default; the controller
   Studio's live provider is not available.
 
+Completed API investigations now offer **Engineer this failure**: public telemetry and evidence
+move directly into Policy Studio, where the exact candidate is validated, compared on the
+investigated scenario and the fixed development suite, and checked against the existing
+held-out split. The combined report retains public evidence and candidate identity.
+[Session contract and release checks](docs/ENGINEERING_SESSION.md).
+
 Six destinations mirror the workflow: **Overview** (start and cases), **Workspace**
 (Simulation Lab, Investigator, Trajectory), **Dashboards**, **Policy Studio**, **Experiments**
 and **Reports**.

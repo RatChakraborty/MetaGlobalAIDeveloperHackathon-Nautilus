@@ -52,9 +52,9 @@ test('trial markup reports every metric and gate from the payload', () => {
   assert.equal(trialMarkup(null).includes('<table'), false);
 });
 
-test('traces draw baseline and candidate with corridor overlays', () => {
-  const html = traceMarkup({nominal: trace}, ['y_m', 'port_command_n'], 'cross-track · m', 1.5);
-  assert.equal((html.match(/<polyline/g) ?? []).length, 2);
+test('single-channel displacement traces preserve corridor units', () => {
+  const html = traceMarkup({nominal: trace}, ['y_m'], 'cross-track · m', 1.5);
+  assert.equal((html.match(/<polyline/g) ?? []).length, 1);
   assert.match(html, /stroke-dasharray/);
   assert.match(html, /cross-track/);
 });
@@ -119,4 +119,12 @@ test('studio diff shows parameter and source changes against the server baseline
   assert.match(html, /Changes from baseline/);
   assert.match(html, /integral_ki/);
   assert.match(html, /integral_term = 0\.0/);
+});
+
+
+test('in-flight evaluation prevents stale edits and duplicate engineer requests',()=>{
+ const html=studioMarkup({...initialStudio(),status:'loading'});
+ assert.match(html,/textarea readonly id="studio-source"/);
+ assert.match(html,/textarea readonly id="studio-params"/);
+ assert.match(html,/data-studio="muse" disabled/);
 });

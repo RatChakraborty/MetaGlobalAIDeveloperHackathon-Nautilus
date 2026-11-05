@@ -14,6 +14,7 @@ does. No credential, price or reservation is read here.
 from __future__ import annotations
 
 import os
+import json
 import time
 from copy import deepcopy
 from dataclasses import dataclass, field
@@ -102,9 +103,15 @@ class Budget:
 class Session:
     """State and trust boundary of one engineering session."""
 
-    def __init__(self, budget: Budget | None = None, handoff: dict | None = None):
+    def __init__(self, budget: Budget | None = None, handoff: dict | None = None, *, engineering_context=None, scenario_request=None):
         self.budget = budget or Budget()
         self.handoff = handoff
+        self.engineering_context = engineering_context
+        self.scenario_request = deepcopy(scenario_request)
+        if engineering_context is not None:
+            from .engineering_session import handoff_from_context
+            self.handoff = handoff_from_context(engineering_context)
+        self._evidence_inspected = False
         self.baseline = baseline_policy()
         self.candidates = {}
         self.results = {}
@@ -141,9 +148,10 @@ class Session:
     def inspect_diagnosis_evidence(self):
         """Public, truth-free evidence: the investigation handoff when provided, else matched tracking error."""
         if self.handoff is not None:
-            return {'source': 'investigation_handoff', 'handoff': self.handoff,
+            self._evidence_inspected = True
+            return {'source' : 'investigation_handoff', 'handoff': self.handoff,
                     'uncertainty': 'hypotheses are candidate explanations, not proven causes',
-                    'hidden_truth_exposed': False}
+                    'hidden_truth_exposed': False, 'telemetry': self.engineering_context}
         if self.evidence is None:
             trial = paired_trial(self.baseline, 'development',
                                  scenario_ids={cases('development')[1].identifier})
@@ -157,6 +165,10 @@ class Session:
         return self.evidence
 
     def propose_controller_revision(self, candidate_id, rationale, params=None, source=None, evidence_refs=None):
+        if self.robustness:
+            raise ToolError('Candidate selection is closed after held-out evaluation')
+        if self.handoff is not None and not self._evidence_inspected:
+            raise ToolError('inspect diagnosis evidence before proposing a revision')
         if candidate_id in self.candidates:
             raise ToolError('candidate id already used')
         if self.evidence is None and self.handoff is None:
@@ -166,7 +178,9 @@ class Session:
         if not isinstance(rationale, str) or not 1 <= len(rationale) <= 500:
             raise ToolError('rationale must be short text')
         refs = list(evidence_refs or [])
-        known = {'E1'} if self.evidence is not None else set()
+        if self.engineering_context is not None and not refs:
+            raise ToolError('Linked proposals must cite public investigation evidence')
+        known = set(self.handoff['observations']['evidence_refs']) if self.handoff is not None else {'E1'} if self.evidence is not None else set()
         if any(ref not in known for ref in refs):
             raise ToolError('evidence_refs must cite evidence ids returned by inspect_diagnosis_evidence')
         policy = deepcopy(self.baseline)
@@ -203,16 +217,19 @@ class Session:
         record = self._candidate(candidate_id)
         if not record['validated']:
             raise ToolError('candidate must be validated before execution')
-        if self.budget.trials >= self.budget.max_trials:
+        if self.budget.trials + (5 if self.engineering_context else 4) > self.budget.max_trials:
             raise ToolError('trial budget exhausted')
-        trial = paired_trial(record['policy'], 'development')
+        from .engineering_session import linked_trial
+        trial = (linked_trial(record['policy'], self.engineering_context, self.scenario_request)
+                 if self.engineering_context is not None else paired_trial(record['policy'], 'development'))
         self.budget.trials += len(trial['rows'])
         self.results[candidate_id] = trial
         self._log('trial', candidate_id, outcome=trial['outcome']['label'])
         # Counterfactual: each row replays the baseline controller on the identical scenario.
         self.remember('counterfactual', f'{candidate_id} vs baseline on identical scenarios: '
                       f"{trial['outcome']['label']}")
-        return {'candidate_id': candidate_id, 'outcome': trial['outcome'],
+        return {'candidate_id': candidate_id, 'fingerprint':policy_fingerprint(record['policy']),
+                'session_id':trial.get('session_id'), 'outcome': trial['outcome'],
                 'rows': [{k: row[k] for k in ('scenario_id', 'baseline', 'candidate')}
                          for row in trial['rows']],
                 'aggregate': trial['decision']['aggregate'], 'gates': trial['decision']['gates']}
@@ -243,12 +260,14 @@ class Session:
 
     def evaluate_policy_robustness(self, candidate_id):
         record = self._candidate(candidate_id)
+        if candidate_id not in self.results or self.budget.trials + 3 > self.budget.max_trials:
+            raise ToolError('Executed development trial and remaining robustness budget required')
         report = robustness(record['policy'])
         # Approval is bound to the exact controller version and the held-out split.
         self.robustness[candidate_id] = {**report, 'fingerprint': policy_fingerprint(record['policy']),
                                          'protocol': 'held_out:' + report['part']}
         self.budget.trials += len(report['rows'])
-        return {'candidate_id': candidate_id, 'part': report['part'],
+        return {'candidate_id': candidate_id, 'fingerprint':policy_fingerprint(record['policy']), 'part': report['part'],
                 'outcome': report['outcome'],
                 'per_case': [{'scenario_id': row['scenario_id'],
                               'baseline_rms_cross_track_m': row['baseline']['rms_cross_track_m'],
@@ -275,7 +294,10 @@ class Session:
             if robust['outcome']['label'] != 'Recommended':
                 raise ToolError('refusing to recommend a candidate whose held-out robustness is not Recommended')
         self.final = {'decision': decision, 'rationale': rationale, 'candidate_id': candidate_id,
-                      'budget': self.budget.as_dict()}
+                      'budget': self.budget.as_dict(),
+                      'candidate_fingerprint':policy_fingerprint(self._candidate(candidate_id)['policy']) if candidate_id in self.candidates else None,
+                      'actor':'trusted_host',
+                      'session_id':json.loads(self.engineering_context['body_canonical'])['session_id'] if self.engineering_context else None}
         return self.final
 
     def _candidate(self, candidate_id):
@@ -337,7 +359,8 @@ class MockMuse:
             return {'tool': 'propose_controller_revision', 'arguments': {
                 'candidate_id': 'integral-ki-6',
                 'rationale': 'Observed cross-track bias with zero steady-state correction; add bounded integral action.',
-                'params': dict(self.first_params)}}
+                'params': dict(self.first_params),
+                'evidence_refs':list(session.handoff['observations']['evidence_refs']) if session.handoff else ['E1']}}
         last = proposals[-1]['arguments']['candidate_id']
         if not any(step['arguments'].get('candidate_id') == last for step in observations
                    if step['tool'] == 'validate_controller'):
@@ -356,17 +379,18 @@ class MockMuse:
             return {'tool': 'propose_controller_revision', 'arguments': {
                 'candidate_id': 'integral-ki-3',
                 'rationale': 'Previous integral gain destabilised degraded-thruster cases; reduce gain and bound.',
-                'params': dict(self.second_params)}}
+                'params': dict(self.second_params),
+                'evidence_refs':list(session.handoff['observations']['evidence_refs']) if session.handoff else ['E1']}}
         return {'tool': 'finalize_controller_recommendation', 'arguments': {
             'candidate_id': last, 'decision': 'abstain',
             'rationale': 'Recorded evidence is inconclusive: neither a gated improvement nor a clear regression.'}}
 
 
 def run_session(provider=None, budget: Budget | None = None, session: Session | None = None,
-                handoff: dict | None = None) -> dict:
+                handoff: dict | None = None, engineering_context=None, scenario_request=None) -> dict:
     """Run the bounded loop. Stops on finalize, on budget exhaustion, or on tool error."""
     provider = provider or MockMuse()
-    session = session or Session(budget, handoff=handoff)
+    session = session or Session(budget, handoff=handoff, engineering_context=engineering_context, scenario_request=scenario_request)
     stopped = None
     invalid = 0
     while session.final is None:
@@ -411,7 +435,7 @@ def run_session(provider=None, budget: Budget | None = None, session: Session | 
     return {'final': session.final, 'stopped': stopped, 'transcript': session.transcript,
             'budget': session.budget.as_dict(),
             'candidates': {key: {'rationale': value['rationale'], 'params': value['policy'].get('params', {}),
-                                 'source': value['source']} for key, value in session.candidates.items()},
+                                 'source': value['source'], 'fingerprint':policy_fingerprint(value['policy'])} for key, value in session.candidates.items()},
             'results': {key: {'outcome': value['outcome'],
                               'rows': [{k: row[k] for k in ('scenario_id', 'baseline', 'candidate')}
                                        for row in value['rows']],
@@ -421,5 +445,7 @@ def run_session(provider=None, budget: Budget | None = None, session: Session | 
                                  'rows': [{k: row[k] for k in ('scenario_id', 'baseline', 'candidate')}
                                           for row in value['rows']]}
                            for key, value in session.robustness.items()},
+            'session_id': (json.loads(session.engineering_context['body_canonical'])['session_id'] if session.engineering_context else None),
+            'evidence_hash': session.engineering_context['hash'] if session.engineering_context else None,
             'mock': True, 'live_available': live_available(),
             'model': provider.name, 'provider_calls': 0}

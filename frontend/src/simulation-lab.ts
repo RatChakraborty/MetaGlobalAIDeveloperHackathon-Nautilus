@@ -1,6 +1,6 @@
-import {runSimulation, runInvestigation, runMuseInvestigation, ApiError, type Job, type Simulation, type Scenario, type Observation, type SimulationRequest} from './simulation-api.ts';
+import {runSimulation, runInvestigation, runMuseInvestigation, ApiError, type Job, type Simulation, type Scenario, type Observation, type SimulationRequest, type MuseRun} from './simulation-api.ts';
 
-export type LabState = {status: 'idle' | 'running' | 'done' | 'error'; message: string; simulation: Simulation | null; job: Job | null};
+export type LabState = {status: 'idle' | 'running' | 'done' | 'error'; message: string; simulation: Simulation | null; job: Job | null; museRun?:MuseRun};
 
 export const initialLab = (): LabState => ({status: 'idle', message: 'Set a disturbance and run it against the simulator.', simulation: null, job: null});
 
@@ -78,6 +78,7 @@ export function labMarkup(state: LabState, paidEnabled = false, values: LabValue
     </div>` : ''}
     ${state.job?.result ? `<h3>Observed lateral deviation</h3><p class="muted">Observed cross-track position from public telemetry · ${state.job.result.observations.length} samples · not a plan-view replay.</p><svg class="lab-trace" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="Observed lateral deviation over time"><polyline fill="none" stroke="currentColor" stroke-width="0.8" points="${lateralSeries(state.job.result.observations).points}"/></svg>` : ''}
     ${state.job?.result ? `<h3>Evidence ledger</h3>${timelineMarkup(state.job.result.investigation.ledger)}` : ''}
+    ${(state.simulation?.engineering_context||state.job?.result?.engineering_context||state.museRun?.result.engineering_context)?'<button class="button primary" id="engineer-failure" type="button">Engineer this failure</button><p class="muted">Transfer public telemetry, fits and evidence into Policy Studio. Generation inputs stay on the trusted host path.</p>':''}
     <p class="hint">The three-dimensional replay in Workspace replays recorded public telemetry from an export. A simulator run here records planar observations without a world-frame pose, so it is plotted above rather than shown in 3D.</p>
     </div>
   </section>`;
@@ -168,7 +169,7 @@ export async function museLab(base: string, request: ReturnType<typeof readLabFo
   set({status: 'running', message: 'Running live Muse investigation (paid)…', simulation: null, job: null});
   try {
     const run = await runMuseInvestigation(base, request, token);
-    set({status: 'done', message: `Live Muse investigation complete (paid). Public record returned by the server: ${Object.keys(run.result.public_record ?? {}).length} fields.`, simulation: null, job: null});
+    set({status: 'done', message: `Live Muse investigation complete (paid). Public record returned by the server: ${Object.keys(run.result.public_record ?? {}).length} fields.`, simulation: null, job: null, museRun:run});
   } catch (error) {
     set({status: 'error', message: error instanceof ApiError ? error.message : 'Live Muse investigation failed.', simulation: null, job: null});
   }

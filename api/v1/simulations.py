@@ -33,8 +33,10 @@ def run_simulation(faults, mission, request):
     observed = public_rows(result.observations)
     protocol = PassiveProtocol(duration_s=mission.duration_s, dt_s=mission.dt_s,
                                scales=(0.035, 0.004, 0.003))
-    return {"request": request, "observations": observed,
-            "diagnosis": summary(passive(observed, protocol))}
+    diagnosis = summary(passive(observed, protocol))
+    from nautilus.engineering_session import context_from_simulation
+    return {"request": request, "observations": observed, "diagnosis": diagnosis,
+            "engineering_context": context_from_simulation(observed, diagnosis, protocol.fingerprint)}
 
 
 class handler(BaseHTTPRequestHandler):
